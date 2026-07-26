@@ -1,7 +1,7 @@
 """Pydantic sxemalar — frontend DATA tuzilmasiga birebir mos validatsiya."""
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class PackageIn(BaseModel):
@@ -55,6 +55,14 @@ class LeadIn(BaseModel):
     phone: str = Field(default="", max_length=120)
     project_type: str = Field(default="", max_length=60)
     message: str = Field(default="", max_length=4000)
+
+    @field_validator("name")
+    @classmethod
+    def _name_not_blank(cls, v: str) -> str:
+        v = v.strip()
+        if not v:  # faqat probeldan iborat ism o'tmasin
+            raise ValueError("Ism bo'sh bo'lishi mumkin emas")
+        return v
 
 
 class LeadStatusIn(BaseModel):

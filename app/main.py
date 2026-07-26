@@ -49,6 +49,7 @@ from .security import (
     BodyLimitMiddleware,
     RateLimitMiddleware,
     SecurityHeadersMiddleware,
+    check_lead_limits,
     login_limiter,
 )
 
@@ -286,7 +287,7 @@ app.add_middleware(SecurityHeadersMiddleware)
 
 # ══════════ PUBLIC ══════════
 
-@app.get("/api/health")
+@app.api_route("/api/health", methods=["GET", "HEAD"])
 async def health():
     return {"status": "ok", "service": "promtchi-api", "version": app.version}
 
@@ -342,8 +343,12 @@ async def list_posts_public(request: Request):
 async def create_lead(
     payload: LeadIn, request: Request, session: AsyncSession = Depends(get_session)
 ):
-    # Rate-limit RateLimitMiddleware'da, DB ulanishi olinishidan oldin tekshirilgan.
     ip = getattr(request.state, "client_ip", "") or ""
+    # Lead limitlari validatsiyadan KEYIN — xato forma (422) limit yemaydi.
+    # DB'ga hali tegilmagan (sessiya birinchi so'rovgacha ulanish olmaydi).
+    ok, retry, msg = check_lead_limits(ip or "unknown")
+    if not ok:
+        raise HTTPException(429, msg, headers={"Retry-After": str(retry)})
     lead = Lead(
         name=payload.name.strip(),
         phone=payload.phone.strip(),
@@ -577,7 +582,7 @@ async def test_telegram(_: str = Depends(require_admin)):
 _PAGE_CACHE = f"public, max-age={settings.STATIC_CACHE_SECONDS}, must-revalidate"
 
 
-@app.get("/", include_in_schema=False)
+@app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
 async def index(request: Request):
     """Bosh sahifa — xotiradan, oldindan gzip qilingan holda.
 
@@ -594,6 +599,8 @@ async def index(request: Request):
     }
     if request.headers.get("if-none-match") == index_cache.etag:
         return Response(status_code=304, headers=headers)
+    if request.method == "HEAD":  # HEAD'da body yuborilmaydi (monitoring uchun)
+        return Response(status_code=200, media_type="text/html", headers=headers)
 
     if "gzip" in request.headers.get("accept-encoding", ""):
         headers["Content-Encoding"] = "gzip"
