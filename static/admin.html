@@ -274,6 +274,7 @@ const API = '';
 let TOKEN = localStorage.getItem('promtchi_token') || '';
 let DATA = null;
 let LEADS = [];
+let CONTENT_VERSION = '—';
 let currentPage = 'dashboard';
 
 /* ═══ UTILS ═══ */
@@ -332,6 +333,9 @@ function timeAgo(iso) {
 async function login() {
   const pass = $('loginPass').value.trim();
   if (!pass) { $('loginErr').textContent = 'Parolni kiriting'; return; }
+  const btn = $('loginBtn');
+  if (btn.disabled) return;
+  btn.disabled = true;
   try {
     const r = await fetch(API + '/api/auth/login', {
       method: 'POST',
@@ -344,11 +348,15 @@ async function login() {
       localStorage.setItem('promtchi_token', TOKEN);
       $('loginErr').textContent = '';
       showApp();
+    } else if (r.status === 429) {
+      $('loginErr').textContent = "Juda ko'p urinish — birozdan so'ng qayta urining";
     } else {
       $('loginErr').textContent = "Parol noto'g'ri";
     }
   } catch (e) {
     $('loginErr').textContent = "Server bilan aloqa yo'q";
+  } finally {
+    btn.disabled = false;
   }
 }
 
@@ -376,7 +384,10 @@ async function showApp() {
 async function loadContent() {
   try {
     const r = await apiFetch('/api/content');
-    if (r.ok) DATA = await r.json();
+    if (r.ok) {
+      DATA = await r.json();
+      CONTENT_VERSION = r.headers.get('X-Content-Version') || '—';
+    }
   } catch (e) { /* silent */ }
 }
 
@@ -816,7 +827,7 @@ function renderSettings() {
       </div>
       <div class="field">
         <label>Kontent versiyasi</label>
-        <div style="padding:.7rem 0;font-family:var(--mono);font-size:.88rem">Yuklanmoqda...</div>
+        <div style="padding:.7rem 0;font-family:var(--mono);font-size:.88rem">v${esc(CONTENT_VERSION)}</div>
       </div>
       <div class="field">
         <label>Arizalar soni</label>

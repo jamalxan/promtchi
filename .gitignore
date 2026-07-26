@@ -1,0 +1,19 @@
+# Maxfiy sozlamalar — hech qachon commit qilinmasin
+.env
+.env.bak
+.env.*.local
+
+# Ma'lumotlar bazasi (mijoz arizalari)
+*.db
+*.db-wal
+*.db-shm
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# IDE
+.idea/
+.vscode/
