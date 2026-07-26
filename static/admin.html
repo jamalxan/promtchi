@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>promtchi® — Admin Panel</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--blk:#0B0B0E;--cream:#F3EFE6;--blue:#2B2BFF;--acid:#D9FF3F;--coral:#FF4B2E;
+  --w:#FCFBF7;--green:#22c55e;--orange:#f59e0b;
+  --anton:'Anton',sans-serif;--grot:'Space Grotesk',sans-serif;--mono:'JetBrains Mono',monospace;
+  --sidebar:260px;--radius:13px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--grot);background:var(--cream);color:var(--blk);min-height:100vh;display:flex}
+button,input,textarea,select{font-family:inherit;font-size:inherit}
+button{cursor:pointer;border:none;background:none}
+a{color:inherit;text-decoration:none}
+
+/* ═══ LOGIN ═══ */
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;width:100%;padding:1.5rem}
+.login-card{background:var(--w);border:3px solid var(--blk);border-radius:var(--radius);padding:2.5rem;
+  width:100%;max-width:400px;box-shadow:6px 6px 0 var(--blk)}
+.login-card h1{font-family:var(--anton);font-size:2.2rem;text-transform:uppercase;margin-bottom:.3rem}
+.login-card p{opacity:.6;margin-bottom:1.5rem;font-size:.92rem}
+.login-card input{width:100%;padding:.85rem 1rem;border:2.5px solid var(--blk);border-radius:10px;
+  font-size:1rem;background:var(--cream);outline:none;transition:.2s}
+.login-card input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(43,43,255,.12)}
+.login-card .btn{margin-top:1rem;width:100%}
+.login-card .err{color:var(--coral);font-size:.85rem;margin-top:.7rem;min-height:1.2em;font-weight:600}
+
+/* ═══ BTN ═══ */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
+  padding:.78rem 1.4rem;border-radius:999px;font-weight:700;font-size:.92rem;
+  border:2.5px solid var(--blk);transition:.18s;min-height:44px}
+.btn-blk{background:var(--blk);color:var(--w)}
+.btn-blk:hover{background:var(--blue)}
+.btn-acid{background:var(--acid);color:var(--blk)}
+.btn-acid:hover{background:var(--blk);color:var(--acid)}
+.btn-coral{background:var(--coral);color:var(--w);border-color:var(--coral)}
+.btn-coral:hover{opacity:.85}
+.btn-outline{background:var(--w);color:var(--blk)}
+.btn-outline:hover{background:var(--blk);color:var(--w)}
+.btn-sm{padding:.5rem 1rem;font-size:.82rem;min-height:36px}
+
+/* ═══ LAYOUT ═══ */
+.app{display:flex;width:100%;min-height:100vh}
+.sidebar{width:var(--sidebar);background:var(--blk);color:var(--w);display:flex;flex-direction:column;
+  position:fixed;top:0;left:0;height:100vh;z-index:100;transition:transform .3s}
+.sidebar .logo{padding:1.5rem;font-family:var(--anton);font-size:1.5rem;text-transform:uppercase;
+  border-bottom:1px solid rgba(255,255,255,.1);letter-spacing:.05em}
+.sidebar .logo span{color:var(--acid)}
+.sidebar nav{flex:1;padding:1rem 0;overflow-y:auto}
+.sidebar nav a{display:flex;align-items:center;gap:.75rem;padding:.85rem 1.5rem;
+  font-weight:600;font-size:.9rem;color:rgba(255,255,255,.65);transition:.15s;border-left:3px solid transparent}
+.sidebar nav a:hover{color:var(--w);background:rgba(255,255,255,.05)}
+.sidebar nav a.active{color:var(--acid);border-left-color:var(--acid);background:rgba(217,255,63,.06)}
+.sidebar nav a svg{width:20px;height:20px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.sidebar .logout{padding:1.2rem 1.5rem;border-top:1px solid rgba(255,255,255,.1)}
+.sidebar .logout button{color:rgba(255,255,255,.6);font-weight:600;font-size:.85rem;
+  display:flex;align-items:center;gap:.5rem;transition:.15s}
+.sidebar .logout button:hover{color:var(--coral)}
+.sidebar .logout button svg{width:18px;height:18px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+.main{flex:1;margin-left:var(--sidebar);padding:2rem;min-height:100vh}
+.main-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;gap:1rem;flex-wrap:wrap}
+.main-header h2{font-family:var(--anton);font-size:1.8rem;text-transform:uppercase}
+.main-header .actions{display:flex;gap:.6rem;flex-wrap:wrap}
+
+/* ═══ MOBILE MENU ═══ */
+.menu-toggle{display:none;position:fixed;top:12px;left:12px;z-index:200;width:44px;height:44px;
+  border-radius:50%;background:var(--blk);color:var(--w);place-items:center;border:2px solid var(--w)}
+.menu-toggle svg{width:22px;height:22px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90}
+
+/* ═══ STATS ═══ */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:2rem}
+.stat-card{background:var(--w);border:2.5px solid var(--blk);border-radius:var(--radius);padding:1.3rem;
+  box-shadow:4px 4px 0 var(--blk);transition:.2s}
+.stat-card:hover{transform:translateY(-2px);box-shadow:6px 6px 0 var(--blk)}
+.stat-card .label{font-family:var(--mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.15em;
+  color:rgba(11,11,14,.5);margin-bottom:.4rem}
+.stat-card .value{font-family:var(--anton);font-size:2.2rem;line-height:1}
+.stat-card .sub{font-size:.78rem;color:rgba(11,11,14,.5);margin-top:.3rem}
+.stat-card.accent{background:var(--acid)}
+.stat-card.dark{background:var(--blk);color:var(--w)}
+.stat-card.dark .label{color:rgba(255,255,255,.5)}
+.stat-card.dark .sub{color:rgba(255,255,255,.5)}
+
+/* ═══ TABLE ═══ */
+.table-wrap{background:var(--w);border:2.5px solid var(--blk);border-radius:var(--radius);
+  overflow:hidden;box-shadow:4px 4px 0 var(--blk)}
+.table-bar{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 1.2rem;
+  border-bottom:2px solid var(--blk);flex-wrap:wrap}
+.table-bar .left{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap}
+.table-bar .count{font-family:var(--mono);font-size:.78rem;opacity:.6}
+.search-box{display:flex;align-items:center;gap:.5rem;background:var(--cream);border:2px solid var(--blk);
+  border-radius:999px;padding:.45rem .9rem}
+.search-box input{border:none;background:none;outline:none;font-size:.88rem;width:160px}
+.search-box svg{width:16px;height:16px;stroke:var(--blk);stroke-width:2;fill:none;opacity:.5}
+table{width:100%;border-collapse:collapse}
+thead{background:var(--cream)}
+th{font-family:var(--mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;
+  text-align:left;padding:.8rem 1.2rem;font-weight:700;white-space:nowrap}
+td{padding:.85rem 1.2rem;border-top:1.5px solid rgba(11,11,14,.08);font-size:.88rem;vertical-align:top}
+tr:hover td{background:rgba(217,255,63,.08)}
+.badge{display:inline-block;padding:.2rem .6rem;border-radius:999px;font-size:.72rem;font-weight:700;
+  font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em}
+.badge-web{background:#e0e7ff;color:#3730a3}
+.badge-auto{background:#dcfce7;color:#166534}
+.badge-ai{background:#fef3c7;color:#92400e}
+.badge-default{background:var(--cream);color:var(--blk)}
+.td-actions{white-space:nowrap}
+.td-actions button{width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;
+  justify-content:center;transition:.15s}
+.td-actions button:hover{background:var(--coral);color:var(--w)}
+.td-actions button svg{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none}
+.empty-state{text-align:center;padding:3rem 1rem;opacity:.5}
+.empty-state svg{width:48px;height:48px;stroke:currentColor;stroke-width:1.5;fill:none;margin-bottom:.8rem;opacity:.4}
+
+/* ═══ CONTENT EDITOR ═══ */
+.editor-tabs{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1.5rem}
+.editor-tabs button{padding:.6rem 1.1rem;border-radius:999px;border:2.5px solid var(--blk);
+  background:var(--w);color:var(--blk);font-size:.86rem;font-weight:700;min-height:44px;transition:.15s}
+.editor-tabs button.on{background:var(--blk);color:var(--acid)}
+.editor-tabs button:hover:not(.on){background:var(--cream)}
+
+.card-list{display:flex;flex-direction:column;gap:.8rem}
+.edit-card{background:var(--w);border:2.5px solid var(--blk);border-radius:var(--radius);padding:1.2rem;
+  box-shadow:3px 3px 0 var(--blk);transition:.2s}
+.edit-card:hover{box-shadow:5px 5px 0 var(--blk)}
+.edit-card .card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem;gap:.5rem}
+.edit-card .card-hd .num{font-family:var(--mono);font-size:.75rem;font-weight:700;
+  background:var(--blk);color:var(--acid);padding:.2rem .5rem;border-radius:6px}
+.edit-card .card-hd .del-btn{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;
+  justify-content:center;border:2px solid var(--coral);color:var(--coral);transition:.15s}
+.edit-card .card-hd .del-btn:hover{background:var(--coral);color:var(--w)}
+.edit-card .card-hd .del-btn svg{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none}
+
+.field{margin-top:.7rem}
+.field label{display:block;font-family:var(--mono);font-size:.7rem;text-transform:uppercase;
+  letter-spacing:.12em;margin-bottom:.3rem;font-weight:700;color:rgba(11,11,14,.6)}
+.field input,.field textarea,.field select{width:100%;padding:.7rem .9rem;border:2px solid rgba(11,11,14,.15);
+  border-radius:10px;font-size:.9rem;background:var(--cream);outline:none;transition:.2s;resize:vertical}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(43,43,255,.1)}
+.field textarea{min-height:80px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.field-check{display:flex;align-items:center;gap:.6rem;margin-top:.7rem}
+.field-check input[type=checkbox]{width:20px;height:20px;accent-color:var(--blue)}
+.field-check span{font-size:.88rem;font-weight:600}
+
+.add-btn{display:flex;align-items:center;justify-content:center;gap:.5rem;width:100%;padding:1rem;
+  border:2.5px dashed rgba(11,11,14,.25);border-radius:var(--radius);font-weight:700;
+  color:rgba(11,11,14,.5);transition:.2s;margin-top:.8rem}
+.add-btn:hover{border-color:var(--blue);color:var(--blue);background:rgba(43,43,255,.03)}
+.add-btn svg{width:20px;height:20px;stroke:currentColor;stroke-width:2.5;fill:none}
+
+/* ═══ TOAST ═══ */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--blk);color:var(--w);
+  padding:.85rem 1.4rem;border-radius:10px;font-weight:600;font-size:.88rem;z-index:9999;
+  transform:translateY(100px);opacity:0;transition:.3s;pointer-events:none;
+  display:flex;align-items:center;gap:.5rem}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{background:var(--green)}
+.toast.error{background:var(--coral)}
+
+/* ═══ CONFIRM MODAL ═══ */
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;
+  display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;pointer-events:none;transition:.2s}
+.confirm-overlay.show{opacity:1;pointer-events:all}
+.confirm-box{background:var(--w);border:3px solid var(--blk);border-radius:var(--radius);
+  padding:1.8rem;max-width:400px;width:100%;box-shadow:6px 6px 0 var(--blk);text-align:center}
+.confirm-box h4{font-family:var(--anton);font-size:1.3rem;text-transform:uppercase;margin-bottom:.5rem}
+.confirm-box p{font-size:.9rem;opacity:.7;margin-bottom:1.2rem}
+.confirm-box .btns{display:flex;gap:.6rem;justify-content:center}
+
+/* ═══ LEAD DETAIL ═══ */
+.lead-detail{background:var(--w);border:2.5px solid var(--blk);border-radius:var(--radius);
+  padding:1.5rem;box-shadow:4px 4px 0 var(--blk);margin-bottom:1.5rem}
+.lead-detail .ld-row{display:flex;gap:.8rem;margin-bottom:.6rem;align-items:flex-start}
+.lead-detail .ld-label{font-family:var(--mono);font-size:.7rem;text-transform:uppercase;
+  letter-spacing:.12em;width:100px;flex-shrink:0;color:rgba(11,11,14,.5);padding-top:.15rem}
+.lead-detail .ld-val{font-size:.92rem}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:860px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .overlay.show{display:block}
+  .menu-toggle{display:grid}
+  .main{margin-left:0;padding:1.2rem;padding-top:4rem}
+  .field-row{grid-template-columns:1fr}
+  .stats{grid-template-columns:1fr 1fr}
+  .table-wrap{overflow-x:auto}
+}
+@media(max-width:500px){
+  .stats{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN ═══ -->
+<div class="login-wrap" id="loginPage">
+  <div class="login-card">
+    <h1>promtchi<span style="color:var(--acid)">®</span></h1>
+    <p>Admin panelga kirish uchun parolni kiriting.</p>
+    <input type="password" id="loginPass" placeholder="Parol" autofocus>
+    <button class="btn btn-blk" style="width:100%;margin-top:1rem" id="loginBtn">Kirish →</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div class="app" id="appPage" style="display:none">
+  <!-- OVERLAY (mobile) -->
+  <div class="overlay" id="overlay"></div>
+  <!-- MOBILE MENU BUTTON -->
+  <button class="menu-toggle" id="menuToggle">
+    <svg viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+  </button>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="logo">promtchi<span>®</span></div>
+    <nav>
+      <a href="#" data-page="dashboard" class="active">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </a>
+      <a href="#" data-page="leads">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Arizalar
+      </a>
+      <a href="#" data-page="content">
+        <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+        Kontent
+      </a>
+      <a href="#" data-page="settings">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Sozlamalar
+      </a>
+    </nav>
+    <div class="logout">
+      <button id="logoutBtn">
+        <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Chiqish
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main" id="mainContent"></main>
+</div>
+
+<!-- ═══ TOAST ═══ -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══ CONFIRM ═══ -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <h4 id="confirmTitle">Tasdiqlash</h4>
+    <p id="confirmText">Ishonchingiz komilmi?</p>
+    <div class="btns">
+      <button class="btn btn-outline btn-sm" id="confirmNo">Bekor</button>
+      <button class="btn btn-coral btn-sm" id="confirmYes">Ha, o'chirish</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '';
+let TOKEN = localStorage.getItem('promtchi_token') || '';
+let DATA = null;
+let LEADS = [];
+let currentPage = 'dashboard';
+
+/* ═══ UTILS ═══ */
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function toast(msg, type = 'success') {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+let _confirmCb = null;
+function confirm(title, text, yesLabel) {
+  return new Promise(resolve => {
+    $('confirmTitle').textContent = title;
+    $('confirmText').textContent = text;
+    $('confirmYes').textContent = yesLabel || "Ha, o'chirish";
+    $('confirmOverlay').classList.add('show');
+    _confirmCb = resolve;
+  });
+}
+$('confirmYes').onclick = () => { $('confirmOverlay').classList.remove('show'); if (_confirmCb) _confirmCb(true); };
+$('confirmNo').onclick = () => { $('confirmOverlay').classList.remove('show'); if (_confirmCb) _confirmCb(false); };
+
+async function apiFetch(path, opts = {}) {
+  const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+  if (TOKEN) headers['Authorization'] = 'Bearer ' + TOKEN;
+  const res = await fetch(API + path, { ...opts, headers });
+  if (res.status === 401) { logout(); throw new Error('Unauthorized'); }
+  return res;
+}
+
+function formatDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
+    ' ' + d.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+}
+
+function timeAgo(iso) {
+  if (!iso) return '';
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'hozirgina';
+  if (mins < 60) return mins + ' daqiqa oldin';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + ' soat oldin';
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return days + ' kun oldin';
+  return Math.floor(days / 30) + ' oy oldin';
+}
+
+/* ═══ AUTH ═══ */
+async function login() {
+  const pass = $('loginPass').value.trim();
+  if (!pass) { $('loginErr').textContent = 'Parolni kiriting'; return; }
+  try {
+    const r = await fetch(API + '/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pass })
+    });
+    if (r.ok) {
+      const data = await r.json();
+      TOKEN = data.token;
+      localStorage.setItem('promtchi_token', TOKEN);
+      $('loginErr').textContent = '';
+      showApp();
+    } else {
+      $('loginErr').textContent = "Parol noto'g'ri";
+    }
+  } catch (e) {
+    $('loginErr').textContent = "Server bilan aloqa yo'q";
+  }
+}
+
+function logout() {
+  TOKEN = '';
+  localStorage.removeItem('promtchi_token');
+  $('appPage').style.display = 'none';
+  $('loginPage').style.display = '';
+  $('loginPass').value = '';
+  $('loginPass').focus();
+}
+
+$('loginBtn').onclick = login;
+$('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+$('logoutBtn').onclick = logout;
+
+/* ═══ APP INIT ═══ */
+async function showApp() {
+  $('loginPage').style.display = 'none';
+  $('appPage').style.display = '';
+  await Promise.all([loadContent(), loadLeads()]);
+  navigate(currentPage);
+}
+
+async function loadContent() {
+  try {
+    const r = await apiFetch('/api/content');
+    if (r.ok) DATA = await r.json();
+  } catch (e) { /* silent */ }
+}
+
+async function loadLeads() {
+  try {
+    const r = await apiFetch('/api/admin/leads');
+    if (r.ok) LEADS = await r.json();
+  } catch (e) { /* silent */ }
+}
+
+/* ═══ NAVIGATION ═══ */
+function navigate(page) {
+  currentPage = page;
+  document.querySelectorAll('.sidebar nav a').forEach(a => {
+    a.classList.toggle('active', a.dataset.page === page);
+  });
+  closeMobileMenu();
+  const renderers = { dashboard: renderDashboard, leads: renderLeads, content: renderContent, settings: renderSettings };
+  (renderers[page] || renderDashboard)();
+}
+
+document.querySelectorAll('.sidebar nav a').forEach(a => {
+  a.onclick = e => { e.preventDefault(); navigate(a.dataset.page); };
+});
+
+/* ═══ MOBILE MENU ═══ */
+$('menuToggle').onclick = () => { $('sidebar').classList.add('open'); $('overlay').classList.add('show'); };
+$('overlay').onclick = closeMobileMenu;
+function closeMobileMenu() { $('sidebar').classList.remove('open'); $('overlay').classList.remove('show'); }
+
+/* ═══ DASHBOARD ═══ */
+function renderDashboard() {
+  const totalLeads = LEADS.length;
+  const todayLeads = LEADS.filter(l => {
+    const d = new Date(l.created_at);
+    const now = new Date();
+    return d.toDateString() === now.toDateString();
+  }).length;
+  const weekLeads = LEADS.filter(l => {
+    const d = new Date(l.created_at);
+    return Date.now() - d.getTime() < 7 * 86400000;
+  }).length;
+  const totalCases = DATA ? DATA.cases.length : 0;
+
+  const recentLeads = LEADS.slice(0, 5);
+
+  $('mainContent').innerHTML = `
+    <div class="main-header"><h2>Dashboard</h2></div>
+    <div class="stats">
+      <div class="stat-card accent">
+        <div class="label">Jami arizalar</div>
+        <div class="value">${totalLeads}</div>
+        <div class="sub">Barcha vaqt davomida</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Bugun</div>
+        <div class="value">${todayLeads}</div>
+        <div class="sub">Yangi arizalar</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Shu hafta</div>
+        <div class="value">${weekLeads}</div>
+        <div class="sub">Oxirgi 7 kun</div>
+      </div>
+      <div class="stat-card dark">
+        <div class="label">Case-study</div>
+        <div class="value">${totalCases}</div>
+        <div class="sub">Portfolioda</div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-bar">
+        <div class="left"><b>Oxirgi arizalar</b></div>
+        <button class="btn btn-outline btn-sm" onclick="navigate('leads')">Barchasini ko'rish →</button>
+      </div>
+      <table>
+        <thead><tr><th>Ism</th><th>Telefon</th><th>Turi</th><th>Vaqt</th></tr></thead>
+        <tbody>
+          ${recentLeads.length ? recentLeads.map(l => `
+            <tr>
+              <td><b>${esc(l.name)}</b></td>
+              <td>${esc(l.phone) || '—'}</td>
+              <td>${l.project_type ? `<span class="badge badge-default">${esc(l.project_type)}</span>` : '—'}</td>
+              <td style="white-space:nowrap;font-size:.8rem;opacity:.7">${timeAgo(l.created_at)}</td>
+            </tr>
+          `).join('') : '<tr><td colspan="4" class="empty-state">Hali arizalar yo\'q</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+/* ═══ LEADS ═══ */
+let leadsSearch = '';
+function renderLeads() {
+  const filtered = LEADS.filter(l => {
+    if (!leadsSearch) return true;
+    const q = leadsSearch.toLowerCase();
+    return (l.name || '').toLowerCase().includes(q) ||
+      (l.phone || '').toLowerCase().includes(q) ||
+      (l.project_type || '').toLowerCase().includes(q) ||
+      (l.message || '').toLowerCase().includes(q);
+  });
+
+  $('mainContent').innerHTML = `
+    <div class="main-header">
+      <h2>Arizalar</h2>
+      <div class="actions">
+        <button class="btn btn-outline btn-sm" onclick="refreshLeads()">↻ Yangilash</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-bar">
+        <div class="left">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" placeholder="Qidirish..." id="leadsSearchInput" value="${esc(leadsSearch)}">
+          </div>
+          <span class="count">${filtered.length} ta ariza</span>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>Ism</th><th>Telefon</th><th>Loyiha turi</th><th>Xabar</th><th>Sana</th><th></th></tr></thead>
+        <tbody>
+          ${filtered.length ? filtered.map((l, i) => `
+            <tr>
+              <td style="font-family:var(--mono);font-size:.78rem;opacity:.5">${i + 1}</td>
+              <td><b>${esc(l.name)}</b></td>
+              <td>${esc(l.phone) || '—'}</td>
+              <td>${l.project_type ? `<span class="badge badge-default">${esc(l.project_type)}</span>` : '—'}</td>
+              <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.message) || '—'}</td>
+              <td style="white-space:nowrap;font-size:.8rem">${formatDate(l.created_at)}</td>
+              <td class="td-actions">
+                <button onclick="viewLead(${l.id})" title="Ko'rish">
+                  <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+                <button onclick="deleteLead(${l.id})" title="O'chirish">
+                  <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+              </td>
+            </tr>
+          `).join('') : `<tr><td colspan="7" class="empty-state">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            <p>Hali arizalar yo'q</p>
+          </td></tr>`}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  const searchInput = $('leadsSearchInput');
+  if (searchInput) {
+    searchInput.oninput = e => { leadsSearch = e.target.value; renderLeads(); };
+    if (leadsSearch) searchInput.focus();
+  }
+}
+
+function viewLead(id) {
+  const l = LEADS.find(x => x.id === id);
+  if (!l) return;
+  $('mainContent').innerHTML = `
+    <div class="main-header">
+      <h2>Ariza #${l.id}</h2>
+      <div class="actions">
+        <button class="btn btn-outline btn-sm" onclick="renderLeads()">← Orqaga</button>
+        <button class="btn btn-coral btn-sm" onclick="deleteLead(${l.id})">O'chirish</button>
+      </div>
+    </div>
+    <div class="lead-detail">
+      <div class="ld-row"><div class="ld-label">Ism</div><div class="ld-val"><b>${esc(l.name)}</b></div></div>
+      <div class="ld-row"><div class="ld-label">Telefon</div><div class="ld-val">${esc(l.phone) || '—'}</div></div>
+      <div class="ld-row"><div class="ld-label">Loyiha turi</div><div class="ld-val">${esc(l.project_type) || '—'}</div></div>
+      <div class="ld-row"><div class="ld-label">Xabar</div><div class="ld-val">${esc(l.message) || '—'}</div></div>
+      <div class="ld-row"><div class="ld-label">Sana</div><div class="ld-val">${formatDate(l.created_at)}</div></div>
+    </div>
+  `;
+}
+
+async function deleteLead(id) {
+  const ok = await confirm("O'chirish", "Bu arizani o'chirishni xohlaysizmi?", "Ha, o'chirish");
+  if (!ok) return;
+  try {
+    const r = await apiFetch('/api/admin/leads/' + id, { method: 'DELETE' });
+    if (r.ok) {
+      LEADS = LEADS.filter(l => l.id !== id);
+      toast("Ariza o'chirildi");
+      renderLeads();
+    }
+  } catch (e) { toast("Xatolik yuz berdi", 'error'); }
+}
+
+async function refreshLeads() {
+  await loadLeads();
+  renderLeads();
+  toast('Yangilandi');
+}
+
+/* ═══ CONTENT EDITOR ═══ */
+let contentTab = 'cases';
+let _saveTimer = null;
+
+function saveContent() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(async () => {
+    try {
+      const r = await apiFetch('/api/admin/content', {
+        method: 'PUT',
+        body: JSON.stringify(DATA)
+      });
+      if (r.ok) toast('Saqlandi ✓');
+      else toast('Saqlashda xatolik', 'error');
+    } catch (e) { toast('Saqlashda xatolik', 'error'); }
+  }, 600);
+}
+
+function renderContent() {
+  const TABS = [
+    ['cases', 'Case-study', DATA ? DATA.cases.length : 0],
+    ['packages', 'Paketlar', DATA ? DATA.packages.length : 0],
+    ['team', 'Jamoa', DATA ? DATA.team.length : 0],
+    ['testimonials', 'Fikrlar', DATA ? DATA.testimonials.length : 0]
+  ];
+
+  $('mainContent').innerHTML = `
+    <div class="main-header">
+      <h2>Kontent</h2>
+      <div class="actions">
+        <button class="btn btn-outline btn-sm" onclick="exportContent()">⤓ Export</button>
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('importFile').click()">⤒ Import</button>
+        <button class="btn btn-coral btn-sm" onclick="resetContent()">↺ Reset</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none">
+      </div>
+    </div>
+    <div class="editor-tabs" id="editorTabs"></div>
+    <div class="card-list" id="editorCards"></div>
+  `;
+
+  const tabsEl = $('editorTabs');
+  TABS.forEach(([key, label, count]) => {
+    const btn = document.createElement('button');
+    btn.textContent = `${label} (${count})`;
+    if (key === contentTab) btn.className = 'on';
+    btn.onclick = () => { contentTab = key; renderContent(); };
+    tabsEl.appendChild(btn);
+  });
+
+  renderContentCards();
+
+  $('importFile').onchange = importContent;
+}
+
+function renderContentCards() {
+  if (!DATA) return;
+  const list = DATA[contentTab];
+  const box = $('editorCards');
+  box.innerHTML = '';
+
+  list.forEach((item, i) => {
+    const card = document.createElement('div');
+    card.className = 'edit-card';
+
+    let fields = '';
+    if (contentTab === 'cases') {
+      fields = `
+        <div class="field-row">
+          ${makeField('Sarlavha', 'title', i, item.title)}
+          ${makeField('Kategoriya', 'cat', i, item.cat)}
+        </div>
+        <div class="field-row">
+          ${makeField('Mijoz', 'client', i, item.client)}
+          ${makeField('Muddat', 'duration', i, item.duration)}
+        </div>
+        ${makeField('Qisqa tavsif', 'short', i, item.short, true)}
+        ${makeField('Muammo', 'problem', i, item.problem, true)}
+        ${makeField('Yechim', 'solution', i, item.solution, true)}
+        ${makeField('Natija', 'result', i, item.result, true)}
+        <div class="field-row">
+          ${makeField('Texnologiyalar', 'tech', i, item.tech)}
+          ${makeField('Rasm URL', 'image', i, item.image)}
+        </div>`;
+    } else if (contentTab === 'packages') {
+      fields = `
+        <div class="field-row">
+          ${makeField('Nomi', 'name', i, item.name)}
+          ${makeField('Narx', 'price', i, item.price)}
+        </div>
+        ${makeField('Xususiyatlar (har qatorda 1 ta)', 'features', i, (item.features || []).join('\n'), true)}
+        <div class="field-check">
+          <input type="checkbox" id="pop_${i}" ${item.popular ? 'checked' : ''}>
+          <span>OMMABOP</span>
+        </div>`;
+    } else if (contentTab === 'team') {
+      fields = `
+        <div class="field-row">
+          ${makeField('Ism', 'name', i, item.name)}
+          ${makeField('Rol', 'role', i, item.role)}
+        </div>
+        ${makeField('Rasm URL', 'photo', i, item.photo)}`;
+    } else if (contentTab === 'testimonials') {
+      fields = `
+        ${makeField('Matn', 'text', i, item.text, true)}
+        <div class="field-row">
+          ${makeField('Ism', 'name', i, item.name)}
+          ${makeField('Rol', 'role', i, item.role)}
+        </div>
+        ${makeField('Avatar URL', 'photo', i, item.photo)}`;
+    }
+
+    card.innerHTML = `
+      <div class="card-hd">
+        <span class="num">#${i + 1}</span>
+        <button class="del-btn" data-idx="${i}">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </div>
+      ${fields}
+    `;
+    box.appendChild(card);
+  });
+
+  // Add button
+  const addBtn = document.createElement('button');
+  addBtn.className = 'add-btn';
+  addBtn.innerHTML = `<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Yangi qo'shish`;
+  addBtn.onclick = addItem;
+  box.appendChild(addBtn);
+
+  // Bind events
+  box.querySelectorAll('.del-btn').forEach(btn => {
+    btn.onclick = async () => {
+      const idx = +btn.dataset.idx;
+      const ok = await confirm("O'chirish", `#${idx + 1} elementni o'chirishni xohlaysizmi?`, "Ha, o'chirish");
+      if (ok) { DATA[contentTab].splice(idx, 1); saveContent(); renderContent(); }
+    };
+  });
+
+  box.querySelectorAll('.field input, .field textarea').forEach(el => {
+    el.oninput = () => {
+      const idx = +el.dataset.idx;
+      const key = el.dataset.key;
+      if (key === 'features') {
+        DATA[contentTab][idx][key] = el.value.split('\n').filter(x => x.trim());
+      } else {
+        DATA[contentTab][idx][key] = el.value;
+      }
+      saveContent();
+    };
+  });
+
+  box.querySelectorAll('.field-check input[type=checkbox]').forEach(el => {
+    el.onchange = () => {
+      const idx = +el.id.split('_')[1];
+      DATA.packages.forEach(p => p.popular = false);
+      DATA.packages[idx].popular = el.checked;
+      saveContent();
+      renderContentCards();
+    };
+  });
+}
+
+function makeField(label, key, idx, value, isTextarea) {
+  const id = `f_${key}_${idx}`;
+  if (isTextarea) {
+    return `<div class="field"><label for="${id}">${label}</label><textarea id="${id}" data-idx="${idx}" data-key="${key}">${esc(value || '')}</textarea></div>`;
+  }
+  return `<div class="field"><label for="${id}">${label}</label><input id="${id}" data-idx="${idx}" data-key="${key}" value="${esc(value || '')}"></div>`;
+}
+
+function addItem() {
+  const templates = {
+    cases: { title: 'Yangi loyiha', cat: 'Web & ilova', client: '', short: '', problem: '', solution: '', result: '', tech: '', duration: '', image: '' },
+    packages: { name: 'Yangi paket', price: '0$', popular: false, features: ['Xususiyat'] },
+    team: { name: "Yangi a'zo", role: 'Rol', photo: '' },
+    testimonials: { text: 'Fikr matni', name: 'Ism', role: 'Rol', photo: '' }
+  };
+  DATA[contentTab].push(JSON.parse(JSON.stringify(templates[contentTab])));
+  saveContent();
+  renderContent();
+  const cards = document.querySelectorAll('.edit-card');
+  if (cards.length) cards[cards.length - 1].scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function exportContent() {
+  const blob = new Blob([JSON.stringify(DATA, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'promtchi-content.json';
+  a.click();
+  toast('Export qilindi');
+}
+
+function importContent(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      if (parsed.packages && parsed.team && parsed.testimonials && parsed.cases) {
+        DATA = parsed;
+        saveContent();
+        renderContent();
+        toast('Import muvaffaqiyatli');
+      } else {
+        toast("Noto'g'ri fayl formati", 'error');
+      }
+    } catch (err) { toast('Xato fayl', 'error'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+async function resetContent() {
+  const ok = await confirm('Reset', "Barcha kontentni boshlang'ich holatga qaytarishni xohlaysizmi?", 'Ha, qaytarish');
+  if (!ok) return;
+  try {
+    await apiFetch('/api/admin/content/reset', { method: 'POST' });
+    await loadContent();
+    renderContent();
+    toast("Kontent qaytarildi");
+  } catch (e) { toast('Xatolik', 'error'); }
+}
+
+/* ═══ SETTINGS ═══ */
+function renderSettings() {
+  $('mainContent').innerHTML = `
+    <div class="main-header"><h2>Sozlamalar</h2></div>
+    <div class="edit-card" style="max-width:500px">
+      <div class="card-hd"><span class="num">INFO</span></div>
+      <div class="field">
+        <label>Tizim holati</label>
+        <div style="padding:.7rem 0;display:flex;align-items:center;gap:.5rem">
+          <span style="width:10px;height:10px;background:var(--green);border-radius:50%;display:inline-block"></span>
+          <span style="font-weight:600">Ishlayapti</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Kontent versiyasi</label>
+        <div style="padding:.7rem 0;font-family:var(--mono);font-size:.88rem">Yuklanmoqda...</div>
+      </div>
+      <div class="field">
+        <label>Arizalar soni</label>
+        <div style="padding:.7rem 0;font-weight:600">${LEADS.length} ta</div>
+      </div>
+      <div class="field">
+        <label>Kontent bo'limlari</label>
+        <div style="padding:.7rem 0;font-size:.88rem">
+          Cases: ${DATA ? DATA.cases.length : 0} ·
+          Packages: ${DATA ? DATA.packages.length : 0} ·
+          Team: ${DATA ? DATA.team.length : 0} ·
+          Testimonials: ${DATA ? DATA.testimonials.length : 0}
+        </div>
+      </div>
+    </div>
+    <div class="edit-card" style="max-width:500px;margin-top:1rem">
+      <div class="card-hd"><span class="num">XAVFLI ZONA</span></div>
+      <p style="font-size:.88rem;opacity:.7;margin-bottom:1rem">Kontentni boshlang'ich holatga qaytarish barcha tahrirlarni o'chiradi.</p>
+      <button class="btn btn-coral btn-sm" onclick="resetContent()">↺ Kontentni reset qilish</button>
+    </div>
+  `;
+}
+
+/* ═══ INIT ═══ */
+(async function init() {
+  if (TOKEN) {
+    try {
+      const r = await fetch(API + '/api/admin/leads', {
+        headers: { 'Authorization': 'Bearer ' + TOKEN }
+      });
+      if (r.ok) { showApp(); return; }
+    } catch (e) { /* token expired */ }
+    TOKEN = '';
+    localStorage.removeItem('promtchi_token');
+  }
+  $('loginPage').style.display = '';
+  $('loginPass').focus();
+})();
+</script>
+</body>
+</html>
