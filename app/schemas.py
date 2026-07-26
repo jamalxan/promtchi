@@ -1,4 +1,6 @@
 """Pydantic sxemalar — frontend DATA tuzilmasiga birebir mos validatsiya."""
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -53,6 +55,32 @@ class LeadIn(BaseModel):
     phone: str = Field(default="", max_length=120)
     project_type: str = Field(default="", max_length=60)
     message: str = Field(default="", max_length=4000)
+
+
+class LeadStatusIn(BaseModel):
+    """Ariza holatini o'zgartirish: new (yangi) / replied (javob berilgan)."""
+
+    status: Literal["new", "replied"]
+
+
+class PostIn(BaseModel):
+    """Blog/yangilik posti."""
+
+    title: str = Field(min_length=1, max_length=200)
+    body: str = Field(default="", max_length=20000)
+    image: str = Field(default="", max_length=1000)
+    published: bool = True
+
+
+class TelegramSettingsIn(BaseModel):
+    """Telegram sozlamalari.
+
+    bot_token=None — o'zgartirilmaydi (maskalangan qiymat qaytarilgani uchun
+    admin uni qayta yubormasligi mumkin); bo'sh satr — o'chirish.
+    """
+
+    bot_token: str | None = Field(default=None, max_length=200)
+    chat_id: str = Field(default="", max_length=64)
 
 
 # ── Boshlang'ich kontent (saytdagi bilan bir xil) ─────────────────────────────
