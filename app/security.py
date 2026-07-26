@@ -97,6 +97,21 @@ lead_limiter = TokenBucket(
     settings.LEAD_RATE_LIMIT, settings.LEAD_RATE_WINDOW_SECONDS, settings.RATE_LIMIT_MAX_KEYS
 )
 lead_gap = MinInterval(settings.LEAD_MIN_INTERVAL_SECONDS, settings.RATE_LIMIT_MAX_KEYS)
+
+
+def check_lead_limits(ip: str) -> tuple[bool, int, str]:
+    """Ariza limitlari: (ruxsat, retry_after, xabar).
+
+    Endpoint ichida, Pydantic validatsiyasi MUVAFFAQIYATLI o'tgandan keyin
+    chaqiriladi — noto'g'ri to'ldirilgan forma limit yemaydi.
+    """
+    ok, retry = lead_gap.hit(ip)
+    if not ok:
+        return False, retry, "Juda tez — bir necha soniyadan so'ng urining"
+    ok, retry = lead_limiter.hit(ip)
+    if not ok:
+        return False, retry, "Ariza chegarasiga yetdingiz — birozdan so'ng qayta urining"
+    return True, 0, ""
 # Login: token faqat NOTO'G'RI parolda yeyiladi (main.py), middleware faqat tekshiradi
 login_limiter = TokenBucket(
     settings.LOGIN_MAX_ATTEMPTS, settings.LOGIN_LOCKOUT_SECONDS, settings.RATE_LIMIT_MAX_KEYS
@@ -142,18 +157,11 @@ class RateLimitMiddleware:
         if not ok:
             return await self._429("Juda ko'p so'rov — birozdan so'ng urining", retry, scope, receive, send)
 
-        method = scope["method"]
-        if path == "/api/leads" and method == "POST":
-            ok, retry = lead_gap.hit(ip)
-            if not ok:
-                return await self._429("Juda tez — bir necha soniyadan so'ng urining", retry, scope, receive, send)
-            ok, retry = lead_limiter.hit(ip)
-            if not ok:
-                return await self._429(
-                    "Ariza chegarasiga yetdingiz — birozdan so'ng qayta urining", retry, scope, receive, send
-                )
+        # Eslatma: lead gap/limit endpoint ichida (validatsiyadan KEYIN) tekshiriladi —
+        # xato to'ldirilgan forma (422) foydalanuvchi limitini yemasligi kerak.
+        # Flood'dan yuqoridagi api_limiter himoya qiladi.
 
-        if path == "/api/auth/login" and method == "POST":
+        if path == "/api/auth/login" and scope["method"] == "POST":
             # Faqat tekshiramiz — token noto'g'ri parolda main.py'da yeyiladi,
             # shuning uchun to'g'ri parol bilan qayta-qayta kirish bloklanmaydi.
             ok, retry = login_limiter.peek(ip)
