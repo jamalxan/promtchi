@@ -1,13 +1,53 @@
-"""Async SQLAlchemy: engine, session, modellar."""
+"""Async SQLAlchemy: engine, session, modellar.
+
+Konkurentlik uchun muhim:
+  • SQLite  — WAL rejimi + busy_timeout, aks holda 1000 bir vaqtdagi yozuvda
+              "database is locked" xatosi chiqadi.
+  • Pool    — default 5+10 ulanish 1000 konkurent so'rovda tugab qoladi
+              (QueuePool TimeoutError). Sozlamalar config.py da.
+"""
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, DateTime, Integer, String, Text, func
+from sqlalchemy import JSON, DateTime, Index, Integer, String, Text, event, func
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from .config import settings
 
-engine = create_async_engine(settings.DATABASE_URL, echo=False)
+_kwargs: dict = {"echo": False, "pool_pre_ping": True}
+
+if settings.is_sqlite:
+    # SQLite'da yozuv baribir ketma-ket bo'ladi; pul asosan o'qish uchun.
+    _kwargs.update(
+        pool_size=settings.DB_POOL_SIZE,
+        max_overflow=settings.DB_MAX_OVERFLOW,
+        pool_timeout=settings.DB_POOL_TIMEOUT,
+        connect_args={"timeout": settings.SQLITE_BUSY_TIMEOUT_MS / 1000},
+    )
+else:
+    _kwargs.update(
+        pool_size=settings.DB_POOL_SIZE,
+        max_overflow=settings.DB_MAX_OVERFLOW,
+        pool_timeout=settings.DB_POOL_TIMEOUT,
+        pool_recycle=settings.DB_POOL_RECYCLE,
+    )
+
+engine = create_async_engine(settings.DATABASE_URL, **_kwargs)
+
+if settings.is_sqlite:
+
+    @event.listens_for(engine.sync_engine, "connect")
+    def _sqlite_pragmas(dbapi_conn, _rec):
+        """Har bir ulanishda WAL + busy_timeout — konkurent yozuv uchun shart."""
+        cur = dbapi_conn.cursor()
+        cur.execute("PRAGMA journal_mode=WAL")
+        cur.execute("PRAGMA synchronous=NORMAL")
+        cur.execute(f"PRAGMA busy_timeout={settings.SQLITE_BUSY_TIMEOUT_MS}")
+        cur.execute("PRAGMA foreign_keys=ON")
+        cur.execute("PRAGMA cache_size=-16000")  # ~16 MB sahifa keshi
+        cur.close()
+
+
 SessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
@@ -36,6 +76,7 @@ class Lead(Base):
     """Aloqa formasi arizalari."""
 
     __tablename__ = "leads"
+    __table_args__ = (Index("ix_leads_created_at", "created_at"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)

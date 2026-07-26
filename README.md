@@ -84,9 +84,32 @@ Boshqa hech narsa o'zgarmaydi — jadvallar avtomatik yaratiladi.
 - `JWT_SECRET` ni albatta almashtiring: `openssl rand -hex 32`
 - `ADMIN_PASSWORD` ni kuchli parolga o'zgartiring
 - `CORS_ORIGINS=https://promtchi.uz` qilib qo'ying
-- HTTPS ortida ishga tushiring (Nginx/Caddy reverse-proxy), masalan:
-  `uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2`
+- HTTPS ortida ishga tushiring (Nginx/Caddy reverse-proxy)
+- Nginx/Caddy/Cloudflare ortida **`TRUST_PROXY=true`** qo'ying — aks holda
+  hamma bitta IP bo'lib ko'rinadi va rate-limit butun saytni bloklaydi
 - systemd servis yoki Docker bilan doimiy ishlatish tavsiya etiladi
+
+## Yuqori yuklama (10 000+ so'rov, 1000+ bir vaqtdagi ariza)
+
+Kod allaqachon shunga mo'ljallangan: kontent va bosh sahifa xotiradan
+(oldindan gzip qilingan holda) beriladi, rate-limit DB'dan oldin ishlaydi,
+Telegram xabarnomalar navbatda yuboriladi. Server tomonda esa:
+
+```bash
+# 1) PostgreSQL (SQLite yozuvni ketma-ket qiladi — 1000+ parallel yozuv uchun shart)
+DATABASE_URL=postgresql+asyncpg://user:parol@localhost:5432/promtchi
+
+# 2) CPU yadrolari soniga mos workerlar (Linux'da uvloop avtomatik yoqiladi)
+uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 4 --backlog 4096
+
+# 3) Nginx oldida: gzip'ni o'chirish shart emas (backend o'zi beradi),
+#    /static/ ni to'g'ridan-to'g'ri nginx'dan berish yanada tezlashtiradi
+```
+
+Eslatma: rate-limit xotirada, har worker o'z hisobini yuritadi — limitlar
+worker soniga ko'paytiriladi deb hisoblang (yoki qat'iy global limit kerak
+bo'lsa Redis backend qo'shiladi). `DB_POOL_SIZE`/`DB_MAX_OVERFLOW` ham har
+worker uchun alohida — Postgres `max_connections` ni shunga moslang.
 
 ## Tezkor test (curl)
 
