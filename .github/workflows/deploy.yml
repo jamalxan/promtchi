@@ -1,0 +1,45 @@
+name: Deploy
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: SSH kalitini tayyorlash
+        run: |
+          install -m 600 /dev/null key.pem
+          printf '%s\n' "${{ secrets.SERVER_SSH_KEY }}" > key.pem
+
+      - name: Kodni serverga yuklash (rsync)
+        run: |
+          rsync -az --delete \
+            -e "ssh -i key.pem -o StrictHostKeyChecking=no" \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude '.env' \
+            --exclude '.env.bak' \
+            --exclude '*.db' --exclude '*.db-wal' --exclude '*.db-shm' \
+            --exclude '.venv' \
+            --exclude '__pycache__' \
+            ./ ubuntu@3.235.28.241:/home/ubuntu/promtchi/
+
+      - name: Kutubxonalarni yangilash va xizmatni qayta ishga tushirish
+        run: |
+          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@3.235.28.241 '
+            set -e
+            cd ~/promtchi
+            .venv/bin/pip install -q -r requirements.txt
+            sudo systemctl restart promtchi
+            sleep 3
+            curl -sf http://127.0.0.1:8000/api/health
+          '
