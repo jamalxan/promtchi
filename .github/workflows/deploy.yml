@@ -16,9 +16,16 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: SSH kalitini tayyorlash
+        env:
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
         run: |
           install -m 600 /dev/null key.pem
-          printf '%s\n' "${{ secrets.SERVER_SSH_KEY }}" > key.pem
+          # Windows'dan nusxalanganda kirib qolishi mumkin bo'lgan \r belgilarini
+          # olib tashlaymiz va oxirida yangi qator borligini kafolatlaymiz
+          printf '%s' "$SERVER_SSH_KEY" | tr -d '\r' > key.pem
+          printf '\n' >> key.pem
+          # Kalit yaroqliligini deploy'dan oldin tekshirish
+          ssh-keygen -y -f key.pem > /dev/null || { echo "::error::SERVER_SSH_KEY secret'dagi kalit yaroqsiz — .pem faylni to'liq (BEGIN/END qatorlari bilan) qayta joylashtiring"; exit 1; }
 
       - name: Kodni serverga yuklash (rsync)
         run: |
