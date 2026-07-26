@@ -8,7 +8,9 @@ Konkurentlik uchun muhim:
 """
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, DateTime, Index, Integer, String, Text, event, func
+from sqlalchemy import (
+    JSON, Boolean, DateTime, Index, Integer, String, Text, event, func, text,
+)
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -73,7 +75,11 @@ class Content(Base):
 
 
 class Lead(Base):
-    """Aloqa formasi arizalari."""
+    """Aloqa formasi arizalari.
+
+    status  — admin belgilaydi: "new" (yangi) / "replied" (javob berilgan)
+    tg_sent — Telegram guruhiga xabarnoma muvaffaqiyatli yuborildimi
+    """
 
     __tablename__ = "leads"
     __table_args__ = (Index("ix_leads_created_at", "created_at"),)
@@ -84,6 +90,8 @@ class Lead(Base):
     project_type: Mapped[str] = mapped_column(String(60), default="")
     message: Mapped[str] = mapped_column(Text, default="")
     ip: Mapped[str] = mapped_column(String(64), default="")
+    status: Mapped[str] = mapped_column(String(16), default="new", nullable=False)
+    tg_sent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -97,8 +105,78 @@ class Lead(Base):
             "phone": self.phone,
             "project_type": self.project_type,
             "message": self.message,
+            "status": self.status or "new",
+            "tg_sent": bool(self.tg_sent),
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
+
+
+class Post(Base):
+    """Blog/yangilik postlari — landing'da alohida bo'limda chiqadi."""
+
+    __tablename__ = "posts"
+    __table_args__ = (Index("ix_posts_created_at", "created_at"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    body: Mapped[str] = mapped_column(Text, default="")
+    image: Mapped[str] = mapped_column(String(1000), default="")
+    published: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    def as_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "title": self.title,
+            "body": self.body,
+            "image": self.image,
+            "published": bool(self.published),
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class Setting(Base):
+    """Kalit-qiymat sozlamalar (masalan Telegram bot token/chat ID).
+
+    .env dagi qiymatlar default bo'lib xizmat qiladi; admin panel orqali
+    o'zgartirilganlari shu jadvalda saqlanadi va ustunlik qiladi.
+    """
+
+    __tablename__ = "settings"
+
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[str] = mapped_column(Text, default="", nullable=False)
+
+
+# Eski bazalarga yangi ustunlarni qo'shish (create_all mavjud jadvalni o'zgartirmaydi)
+_MIGRATIONS = [
+    "ALTER TABLE leads ADD COLUMN status VARCHAR(16) NOT NULL DEFAULT 'new'",
+    "ALTER TABLE leads ADD COLUMN tg_sent BOOLEAN NOT NULL DEFAULT 0",
+]
+
+
+async def run_migrations(eng) -> None:
+    """Yo'q ustunlarni qo'shadi; allaqachon mavjud bo'lsa jim o'tadi.
+
+    Har bir stmt alohida tranzaksiyada — Postgres'da xato tranzaksiyani
+    bekor qilsa ham keyingilariga ta'sir qilmaydi.
+    """
+    for stmt in _MIGRATIONS:
+        try:
+            async with eng.begin() as conn:
+                await conn.execute(text(stmt))
+        except Exception:
+            pass  # ustun allaqachon bor
 
 
 async def get_session() -> AsyncSession:

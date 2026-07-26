@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0B0B0E">
 <title>promtchi® — raqamli mahsulotlar studiyasi</title>
 <meta name="description" content="Biznesingizni bitta tizimda jonlantiramiz — dizayn, ishlab chiqish, avtomatlashtirish va AI.">
 <meta property="og:type" content="website">
@@ -45,6 +46,11 @@ body.cur-on select, body.cur-on textarea{cursor:none}
 
 .grain{position:fixed;inset:0;z-index:60;pointer-events:none;opacity:.06;mix-blend-mode:overlay;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+/* Mobil GPU'larda butun ekranli blend qatlami kompozitsiyani sindirib, BARCHA
+   animatsiyalarni muzlatib qo'yadi — telefonlarda o'chiramiz */
+@media(max-width:1023px){.grain{display:none}}
+/* cheksiz marqueelarga alohida GPU qatlami */
+.mq,.tm-track,.hero-bg .ghost,.badge{will-change:transform}
 
 /* ══════════ PRELOADER ══════════ */
 #loader{position:fixed;inset:0;z-index:2000;display:flex;flex-direction:column;justify-content:space-between;
@@ -217,12 +223,19 @@ section{position:relative}
 .chip.c1{background:var(--acid);color:var(--blk);left:46%;top:16%;transform:rotate(-7deg);--rr:-7deg}
 .chip.c2{background:var(--w);color:var(--blk);right:6%;bottom:34%;transform:rotate(5deg);--rr:5deg;animation-delay:-2s}
 @media(max-width:900px){
-  .chip{display:none}
+  /* chip'lar mobilda ham jonli tursin — kichraytirilib qayta joylashtiriladi */
+  .chip{font-size:.56rem;padding:.4rem .7rem}
+  .chip.c1{left:5%;top:13%}
+  .chip.c2{display:none}
   .hero-bg .col-blue{width:100%;height:32%;top:auto;bottom:0}
   .badge{width:92px;top:11%;right:6%}
   .hero-data{gap:1.4rem}
   .hd-i b{font-size:1.5rem}
 }
+/* touch qurilmalarda bosish reaksiyasi — hover o'rnini bosadi */
+.btn:active{transform:scale(.96)}
+.ccard:active,.pstcard:active,.pcard:active,.con-a:active{transform:scale(.98)}
+.filters button:active,.fq:active,.stackrow span:active{transform:scale(.95)}
 
 /* scroll hint */
 .s-hint{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);font-family:var(--mono);
@@ -267,7 +280,9 @@ section{position:relative}
 .svc{background:var(--blk)}
 .svc-row{position:relative;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:clamp(1rem,3vw,2.6rem);
   padding:clamp(1.6rem,3.4vw,2.6rem) clamp(18px,4vw,48px);border-top:1px solid var(--line-w);
-  text-decoration:none;color:var(--w);overflow:hidden;isolation:isolate}
+  text-decoration:none;color:var(--w);overflow:hidden;isolation:isolate;
+  opacity:0;transform:translateX(-28px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
+.svc-row.in{opacity:1;transform:none}
 .svc-row:last-of-type{border-bottom:1px solid var(--line-w)}
 .svc-row::before{content:'';position:absolute;inset:0;background:var(--acid);z-index:-1;
   transform:scaleY(0);transform-origin:bottom;transition:transform .45s var(--ease)}
@@ -445,6 +460,21 @@ section{position:relative}
   border:2px solid var(--blk);background:var(--w);transition:.3s}
 .stackrow span:hover{background:var(--blk);color:var(--acid);transform:translateY(-3px)}
 
+/* ══════════ POSTLAR ══════════ */
+.posts-sec{background:var(--blk)}
+.postgrid{display:grid;gap:1.4rem;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));margin-top:2.4rem}
+.pstcard{background:var(--cream);color:var(--blk);border:3px solid var(--blk);border-radius:18px;overflow:hidden;
+  text-align:left;display:flex;flex-direction:column;cursor:pointer;font-family:inherit;padding:0;
+  transition:transform .4s var(--ease),box-shadow .4s}
+.pstcard:hover{transform:translateY(-8px) rotate(-.5deg);box-shadow:0 30px 60px rgba(217,255,63,.14)}
+.pst-img{height:170px;background-size:cover;background-position:center;border-bottom:3px solid var(--blk)}
+.pst-body{padding:1.4rem 1.5rem 1.6rem}
+.pst-body small{font-family:var(--mono);font-size:.64rem;letter-spacing:.18em;opacity:.55;text-transform:uppercase}
+.pst-body h3{font-family:var(--anton);font-size:1.45rem;text-transform:uppercase;margin:.55rem 0 .45rem;line-height:1.08}
+.pst-body p{font-size:.92rem;opacity:.75}
+.pst-more{display:inline-block;margin-top:.9rem;font-family:var(--mono);font-size:.7rem;letter-spacing:.16em;
+  text-transform:uppercase;font-weight:700;color:var(--blue)}
+
 /* ══════════ FAQ ══════════ */
 .faq-sec{background:var(--blk)}
 .faq{max-width:860px;margin:2.4rem auto 0}
@@ -544,13 +574,19 @@ footer{background:var(--blk);color:var(--w);padding:clamp(60px,8vw,110px) clamp(
 .hidden{display:none!important}
 body.menu-open,body.modal-open{overflow:hidden}
 
+/* Dinamik kartalar uchun stagger fade. Stylesheet OXIRIDA turadi — kaskadda
+   pcard/mcard/pstcard'ning o'z transition'laridan ustun kelishi uchun;
+   transform/box-shadow ro'yxatga kiritilgan — hover animatsiyalari buzilmasin. */
+.gi{opacity:0;transition:opacity .8s var(--ease),transform .45s var(--ease),box-shadow .45s}
+.gi.in{opacity:1}
+
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
-  .rv,.split .ch{opacity:1;transform:none}
+  .rv,.split .ch,.svc-row,.gi{opacity:1;transform:none}
   #loader{display:none}
 }
 </style>
-<noscript><style>#loader{display:none}.rv{opacity:1;transform:none}.split .ch{transform:none}</style></noscript>
+<noscript><style>#loader{display:none}.rv,.svc-row,.gi{opacity:1;transform:none}.split .ch{transform:none}</style></noscript>
 </head>
 <body>
 
@@ -578,7 +614,7 @@ body.menu-open,body.modal-open{overflow:hidden}
     <a href="#xizmat"><small>01</small><span>Xizmatlar</span></a>
     <a href="#muddat"><small>02</small><span>Muddat</span></a>
     <a href="#jarayon"><small>03</small><span>Jarayon</span></a>
-    <a href="#case"><small>04</small><span>Case</span></a>
+    <a href="#case"><small>04</small><span>Loyihalar</span></a>
     <a href="#narx"><small>05</small><span>Narxlar</span></a>
     <a href="#jamoa"><small>06</small><span>Jamoa</span></a>
     <a href="#aloqa"><small>07</small><span>Aloqa</span></a>
@@ -593,7 +629,8 @@ body.menu-open,body.modal-open{overflow:hidden}
 <div id="menu" aria-hidden="true">
   <a class="m-link" href="#xizmat"><small>01</small>Xizmatlar</a>
   <a class="m-link" href="#jarayon"><small>02</small>Jarayon</a>
-  <a class="m-link" href="#case"><small>03</small>Case-study</a>
+  <a class="m-link" href="#case"><small>03</small>Loyihalar</a>
+  <a class="m-link js-postlink" href="#postlar" style="display:none"><small>✦</small>Postlar</a>
   <a class="m-link" href="#narx"><small>04</small>Narxlar</a>
   <a class="m-link" href="#jamoa"><small>05</small>Jamoa</a>
   <a class="m-link" href="#aloqa"><small>06</small>Aloqa</a>
@@ -763,7 +800,7 @@ body.menu-open,body.modal-open{overflow:hidden}
 <!-- CASE -->
 <section class="case-sec pad" id="case">
   <div class="wrap">
-    <div class="tag-line rv" style="color:var(--acid)">Case-study — 04</div>
+    <div class="tag-line rv" style="color:var(--acid)">Loyihalar — 04</div>
     <h2 class="h-xl rv">Ishlar <em style="color:var(--acid)">amalda</em></h2>
     <div class="filters rv" id="filters"></div>
     <div class="cgrid" id="cases"></div>
@@ -806,6 +843,15 @@ body.menu-open,body.modal-open{overflow:hidden}
     <h2 class="h-xl rv">Kimlar <em style="color:var(--coral)">ishlaydi</em></h2>
     <div class="tgrid" id="team"></div>
     <div class="stackrow rv" id="stackList"></div>
+  </div>
+</section>
+
+<!-- POSTLAR (postlar bo'lsa ko'rinadi) -->
+<section class="posts-sec pad" id="postlar" hidden>
+  <div class="wrap">
+    <div class="tag-line rv in" style="color:var(--acid)">Yangiliklar</div>
+    <h2 class="h-xl rv in">So'nggi <em style="color:var(--acid)">postlar</em></h2>
+    <div class="postgrid" id="postGrid"></div>
   </div>
 </section>
 
@@ -863,7 +909,7 @@ body.menu-open,body.modal-open{overflow:hidden}
         <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
     </div>
     <nav class="f-nav rv" aria-label="Footer">
-      <a href="#xizmat">→ Xizmatlar</a><a href="#jarayon">→ Jarayon</a><a href="#case">→ Case-study</a>
+      <a href="#xizmat">→ Xizmatlar</a><a href="#jarayon">→ Jarayon</a><a href="#case">→ Loyihalar</a>
       <a href="#narx">→ Narxlar</a><a href="#jamoa">→ Jamoa</a><a href="#faq">→ FAQ</a>
     </nav>
   </div>
@@ -944,6 +990,45 @@ const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;"
 const initial=n=>(n||"?").trim().charAt(0).toUpperCase();
 const CHK='<svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg>';
 const reduced=matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+/* ══════════ POSTLAR — bo'lsa bo'lim ochiladi ══════════ */
+let POSTS=[];
+const pDate=iso=>{try{return new Date(iso).toLocaleDateString('uz-UZ',{day:'2-digit',month:'2-digit',year:'numeric'})}catch(e){return''}};
+(async()=>{
+  try{
+    const r=await fetch(API+'/api/posts');
+    if(!r.ok)return;
+    POSTS=await r.json();
+    if(!POSTS.length)return;
+    renderPosts();
+    document.getElementById('postlar').hidden=false;
+    document.querySelectorAll('.js-postlink').forEach(a=>a.style.display='');
+  }catch(e){/* postlar bo'lmasa bo'lim ko'rinmaydi */}
+})();
+function renderPosts(){
+  document.getElementById('postGrid').innerHTML=POSTS.map((p,i)=>{
+    const ex=p.body.length>150?p.body.slice(0,150)+'…':p.body;
+    return `<button class="pstcard" onclick="openPost(${i})">
+      ${p.image?`<div class="pst-img" style="background-image:url('${esc(p.image)}')"></div>`:''}
+      <div class="pst-body">
+        <small>${pDate(p.created_at)}</small>
+        <h3>${esc(p.title)}</h3>
+        <p>${esc(ex)}</p>
+        <span class="pst-more">O'qish →</span>
+      </div></button>`;
+  }).join('');
+  staggerIn([...document.getElementById('postGrid').children],'gi');
+}
+function openPost(i){
+  const p=POSTS[i];if(!p)return;
+  document.getElementById('caseModalBody').innerHTML=
+   `<small style="font-family:var(--mono);font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;opacity:.55">${pDate(p.created_at)}</small>
+    <h3 style="margin-top:.5rem">${esc(p.title)}</h3>
+    ${p.image?`<img src="${esc(p.image)}" alt="" loading="lazy" style="width:100%;border-radius:12px;border:2.5px solid var(--blk);margin:.9rem 0 .2rem">`:''}
+    <p style="white-space:pre-wrap;margin-top:.9rem">${esc(p.body)}</p>`;
+  document.getElementById('caseModal').classList.add('show');
+  document.body.classList.add('modal-open');
+}
 
 /* ══════════ PRELOADER ══════════ */
 (function(){
@@ -1035,10 +1120,16 @@ addEventListener('scroll',()=>{
   document.getElementById('prog').style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight)*100)+'%';
   _vel=scrollY-_lastY;_lastY=scrollY;
 },{passive:true});
+/* skew faqat qiymat sezilarli o'zgargandagina yoziladi — mobilda har kadrda
+   style yozish animatsiyalarni tormozlaydi */
+var _bands=document.querySelectorAll('.mq-band'),_lastSkew=0;
 if(!reduced)(function skewLoop(){
   _vel*=.9;
   const s=Math.max(-6,Math.min(6,_vel*.28));
-  document.querySelectorAll('.mq-band').forEach(b=>b.style.setProperty('--skx',s.toFixed(2)+'deg'));
+  if(Math.abs(s-_lastSkew)>.08){
+    _lastSkew=s;
+    _bands.forEach(b=>b.style.setProperty('--skx',s.toFixed(2)+'deg'));
+  }
   requestAnimationFrame(skewLoop);
 })();
 
@@ -1099,8 +1190,33 @@ document.querySelectorAll('#menu a').forEach(a=>a.addEventListener('click',()=>{
 })();
 
 /* ══════════ REVEAL ══════════ */
-var _io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');_io.unobserve(e.target);}}),{threshold:.12});
+/* threshold past (.05) — baland elementlar kichik mobil ekranda ham ishonchli trigger bo'lsin */
+var _io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');_io.unobserve(e.target);}}),{threshold:.05});
 document.querySelectorAll('.rv').forEach(el=>{if(!el.closest('.hero'))_io.observe(el);});
+/* xavfsizlik: qandaydir sabab bilan IO ishlamay qolsa, ko'rinib turgan .rv'lar ochilsin */
+addEventListener('load',()=>setTimeout(()=>{
+  document.querySelectorAll('.rv:not(.in)').forEach(el=>{
+    const r=el.getBoundingClientRect();
+    if(r.top<innerHeight&&r.bottom>0)el.classList.add('in');
+  });
+},900));
+
+/* ══════════ STAGGER (svc qatorlari + dinamik kartalar) ══════════ */
+var _gio=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting){
+    const el=e.target;el.classList.add('in');_gio.unobserve(el);
+    setTimeout(()=>{el.style.transitionDelay='';},1000); // hover kechikmasin
+  }
+}),{threshold:.06});
+function staggerIn(els,cls){
+  els.forEach((el,i)=>{
+    if(reduced){el.classList.add('in');return;}
+    if(cls)el.classList.add(cls);
+    el.style.transitionDelay=Math.min(i*90,540)+'ms';
+    _gio.observe(el);
+  });
+}
+staggerIn([...document.querySelectorAll('.svc-row')]);
 
 /* ══════════ COUNT-UP ══════════ */
 var _cio=new IntersectionObserver(es=>es.forEach(e=>{
@@ -1232,6 +1348,7 @@ function renderPackages(){
         <div class="pcta"><a href="#aloqa" class="btn ${p.popular?'btn-acid':'btn-blk'}" style="width:100%;justify-content:center">Tanlash →</a></div>
       </article>`);
   });
+  staggerIn([...box.children],'gi');
 }
 function renderTeam(){
   const box=document.getElementById('team');box.innerHTML='';
@@ -1241,6 +1358,7 @@ function renderTeam(){
      `<div class="mcard"><div class="mp" ${bg}>${m.photo?'':initial(m.name)}</div>
         <b>${esc(m.name)}</b><div class="rl">${esc(m.role)}</div></div>`);
   });
+  staggerIn([...box.children],'gi');
 }
 function renderTestimonials(){
   const box=document.getElementById('tmTrack');box.innerHTML='';

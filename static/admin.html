@@ -57,6 +57,10 @@ a{color:inherit;text-decoration:none}
 .sidebar nav a:hover{color:var(--w);background:rgba(255,255,255,.05)}
 .sidebar nav a.active{color:var(--acid);border-left-color:var(--acid);background:rgba(217,255,63,.06)}
 .sidebar nav a svg{width:20px;height:20px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.nav-label{padding:1.1rem 1.5rem .35rem;font-family:var(--mono);font-size:.6rem;letter-spacing:.22em;
+  text-transform:uppercase;color:rgba(255,255,255,.3)}
+.nav-badge{margin-left:auto;background:var(--coral);color:var(--w);font-family:var(--mono);
+  font-size:.68rem;font-weight:700;padding:.1rem .5rem;border-radius:999px}
 .sidebar .logout{padding:1.2rem 1.5rem;border-top:1px solid rgba(255,255,255,.1)}
 .sidebar .logout button{color:rgba(255,255,255,.6);font-weight:600;font-size:.85rem;
   display:flex;align-items:center;gap:.5rem;transition:.15s}
@@ -111,6 +115,14 @@ tr:hover td{background:rgba(217,255,63,.08)}
 .badge-auto{background:#dcfce7;color:#166534}
 .badge-ai{background:#fef3c7;color:#92400e}
 .badge-default{background:var(--cream);color:var(--blk)}
+.badge-new{background:#fef3c7;color:#92400e}
+.badge-replied{background:#dcfce7;color:#166534}
+.tg-dot{font-size:.95rem;line-height:1}
+/* status filter tugmalari */
+.seg{display:flex;gap:.4rem;flex-wrap:wrap}
+.seg button{padding:.45rem .95rem;border-radius:999px;border:2px solid var(--blk);background:var(--w);
+  font-size:.8rem;font-weight:700;transition:.15s}
+.seg button.on{background:var(--blk);color:var(--acid)}
 .td-actions{white-space:nowrap}
 .td-actions button{width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;
   justify-content:center;transition:.15s}
@@ -231,11 +243,34 @@ tr:hover td{background:rgba(217,255,63,.08)}
       </a>
       <a href="#" data-page="leads">
         <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        Arizalar
+        Arizalar <span class="nav-badge" id="navNewLeads" style="display:none">0</span>
       </a>
-      <a href="#" data-page="content">
-        <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
-        Kontent
+      <div class="nav-label">Landing sahifa</div>
+      <a href="#" data-page="cases">
+        <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        Loyihalar
+      </a>
+      <a href="#" data-page="packages">
+        <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        Paketlar
+      </a>
+      <a href="#" data-page="team">
+        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Jamoa
+      </a>
+      <a href="#" data-page="testimonials">
+        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Fikrlar
+      </a>
+      <div class="nav-label">Kontent</div>
+      <a href="#" data-page="posts">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Postlar
+      </a>
+      <div class="nav-label">Tizim</div>
+      <a href="#" data-page="telegram">
+        <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Telegram bot
       </a>
       <a href="#" data-page="settings">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -274,6 +309,8 @@ const API = '';
 let TOKEN = localStorage.getItem('promtchi_token') || '';
 let DATA = null;
 let LEADS = [];
+let POSTS = [];
+let TG = null; // {has_token, bot_token_masked, chat_id, active}
 let CONTENT_VERSION = '—';
 let currentPage = 'dashboard';
 
@@ -377,8 +414,15 @@ $('logoutBtn').onclick = logout;
 async function showApp() {
   $('loginPage').style.display = 'none';
   $('appPage').style.display = '';
-  await Promise.all([loadContent(), loadLeads()]);
+  await Promise.all([loadContent(), loadLeads(), loadPosts(), loadTelegram()]);
   navigate(currentPage);
+}
+
+function updateNavBadge() {
+  const n = LEADS.filter(l => (l.status || 'new') === 'new').length;
+  const b = $('navNewLeads');
+  b.textContent = n;
+  b.style.display = n ? '' : 'none';
 }
 
 async function loadContent() {
@@ -394,7 +438,21 @@ async function loadContent() {
 async function loadLeads() {
   try {
     const r = await apiFetch('/api/admin/leads');
-    if (r.ok) LEADS = await r.json();
+    if (r.ok) { LEADS = await r.json(); updateNavBadge(); }
+  } catch (e) { /* silent */ }
+}
+
+async function loadPosts() {
+  try {
+    const r = await apiFetch('/api/admin/posts');
+    if (r.ok) POSTS = await r.json();
+  } catch (e) { /* silent */ }
+}
+
+async function loadTelegram() {
+  try {
+    const r = await apiFetch('/api/admin/telegram');
+    if (r.ok) TG = await r.json();
   } catch (e) { /* silent */ }
 }
 
@@ -405,7 +463,17 @@ function navigate(page) {
     a.classList.toggle('active', a.dataset.page === page);
   });
   closeMobileMenu();
-  const renderers = { dashboard: renderDashboard, leads: renderLeads, content: renderContent, settings: renderSettings };
+  const renderers = {
+    dashboard: renderDashboard,
+    leads: renderLeads,
+    cases: () => renderContentPage('cases', 'Loyihalar'),
+    packages: () => renderContentPage('packages', 'Paketlar'),
+    team: () => renderContentPage('team', 'Jamoa'),
+    testimonials: () => renderContentPage('testimonials', 'Fikrlar'),
+    posts: renderPosts,
+    telegram: renderTelegram,
+    settings: renderSettings
+  };
   (renderers[page] || renderDashboard)();
 }
 
@@ -419,43 +487,57 @@ $('overlay').onclick = closeMobileMenu;
 function closeMobileMenu() { $('sidebar').classList.remove('open'); $('overlay').classList.remove('show'); }
 
 /* ═══ DASHBOARD ═══ */
+function statusBadge(l) {
+  return (l.status || 'new') === 'replied'
+    ? '<span class="badge badge-replied">Javob berilgan</span>'
+    : '<span class="badge badge-new">Yangi</span>';
+}
+function tgDot(l) {
+  return l.tg_sent
+    ? '<span class="tg-dot" title="Telegramga xabar yuborilgan">✈️</span>'
+    : '<span class="tg-dot" title="Telegramga xabar yuborilmagan" style="opacity:.25">✈️</span>';
+}
+
 function renderDashboard() {
   const totalLeads = LEADS.length;
+  const newLeads = LEADS.filter(l => (l.status || 'new') === 'new').length;
   const todayLeads = LEADS.filter(l => {
     const d = new Date(l.created_at);
     const now = new Date();
     return d.toDateString() === now.toDateString();
   }).length;
-  const weekLeads = LEADS.filter(l => {
-    const d = new Date(l.created_at);
-    return Date.now() - d.getTime() < 7 * 86400000;
-  }).length;
   const totalCases = DATA ? DATA.cases.length : 0;
+  const totalPosts = POSTS.length;
 
   const recentLeads = LEADS.slice(0, 5);
+  const tgState = TG && TG.active
+    ? '<span style="color:var(--green)">● Ulangan</span>'
+    : '<span style="color:var(--coral)">● Sozlanmagan</span>';
 
   $('mainContent').innerHTML = `
-    <div class="main-header"><h2>Dashboard</h2></div>
+    <div class="main-header"><h2>Dashboard</h2>
+      <div class="actions" style="font-size:.85rem;font-weight:600">Telegram: ${tgState}</div>
+    </div>
     <div class="stats">
       <div class="stat-card accent">
-        <div class="label">Jami arizalar</div>
-        <div class="value">${totalLeads}</div>
-        <div class="sub">Barcha vaqt davomida</div>
-      </div>
-      <div class="stat-card">
-        <div class="label">Bugun</div>
-        <div class="value">${todayLeads}</div>
+        <div class="label">Javob kutmoqda</div>
+        <div class="value">${newLeads}</div>
         <div class="sub">Yangi arizalar</div>
       </div>
       <div class="stat-card">
-        <div class="label">Shu hafta</div>
-        <div class="value">${weekLeads}</div>
-        <div class="sub">Oxirgi 7 kun</div>
+        <div class="label">Jami arizalar</div>
+        <div class="value">${totalLeads}</div>
+        <div class="sub">Bugun: +${todayLeads}</div>
       </div>
-      <div class="stat-card dark">
-        <div class="label">Case-study</div>
+      <div class="stat-card">
+        <div class="label">Loyihalar</div>
         <div class="value">${totalCases}</div>
         <div class="sub">Portfolioda</div>
+      </div>
+      <div class="stat-card dark">
+        <div class="label">Postlar</div>
+        <div class="value">${totalPosts}</div>
+        <div class="sub">${POSTS.filter(p => p.published).length} tasi saytda</div>
       </div>
     </div>
 
@@ -465,16 +547,17 @@ function renderDashboard() {
         <button class="btn btn-outline btn-sm" onclick="navigate('leads')">Barchasini ko'rish →</button>
       </div>
       <table>
-        <thead><tr><th>Ism</th><th>Telefon</th><th>Turi</th><th>Vaqt</th></tr></thead>
+        <thead><tr><th>Ism</th><th>Telefon</th><th>Holat</th><th>TG</th><th>Vaqt</th></tr></thead>
         <tbody>
           ${recentLeads.length ? recentLeads.map(l => `
             <tr>
               <td><b>${esc(l.name)}</b></td>
               <td>${esc(l.phone) || '—'}</td>
-              <td>${l.project_type ? `<span class="badge badge-default">${esc(l.project_type)}</span>` : '—'}</td>
+              <td>${statusBadge(l)}</td>
+              <td>${tgDot(l)}</td>
               <td style="white-space:nowrap;font-size:.8rem;opacity:.7">${timeAgo(l.created_at)}</td>
             </tr>
-          `).join('') : '<tr><td colspan="4" class="empty-state">Hali arizalar yo\'q</td></tr>'}
+          `).join('') : '<tr><td colspan="5" class="empty-state">Hali arizalar yo\'q</td></tr>'}
         </tbody>
       </table>
     </div>
@@ -483,8 +566,10 @@ function renderDashboard() {
 
 /* ═══ LEADS ═══ */
 let leadsSearch = '';
+let leadsFilter = 'all'; // all | new | replied
 function renderLeads() {
   const filtered = LEADS.filter(l => {
+    if (leadsFilter !== 'all' && (l.status || 'new') !== leadsFilter) return false;
     if (!leadsSearch) return true;
     const q = leadsSearch.toLowerCase();
     return (l.name || '').toLowerCase().includes(q) ||
@@ -492,6 +577,8 @@ function renderLeads() {
       (l.project_type || '').toLowerCase().includes(q) ||
       (l.message || '').toLowerCase().includes(q);
   });
+  const segBtn = (val, label) =>
+    `<button class="${leadsFilter === val ? 'on' : ''}" onclick="leadsFilter='${val}';renderLeads()">${label}</button>`;
 
   $('mainContent').innerHTML = `
     <div class="main-header">
@@ -503,6 +590,11 @@ function renderLeads() {
     <div class="table-wrap">
       <div class="table-bar">
         <div class="left">
+          <div class="seg">
+            ${segBtn('all', 'Hammasi')}
+            ${segBtn('new', 'Yangi (' + LEADS.filter(l => (l.status || 'new') === 'new').length + ')')}
+            ${segBtn('replied', 'Javob berilgan')}
+          </div>
           <div class="search-box">
             <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" placeholder="Qidirish..." id="leadsSearchInput" value="${esc(leadsSearch)}">
@@ -511,17 +603,24 @@ function renderLeads() {
         </div>
       </div>
       <table>
-        <thead><tr><th>#</th><th>Ism</th><th>Telefon</th><th>Loyiha turi</th><th>Xabar</th><th>Sana</th><th></th></tr></thead>
+        <thead><tr><th>#</th><th>Ism</th><th>Telefon</th><th>Turi</th><th>Xabar</th><th>Holat</th><th>TG</th><th>Sana</th><th></th></tr></thead>
         <tbody>
-          ${filtered.length ? filtered.map((l, i) => `
+          ${filtered.length ? filtered.map(l => `
             <tr>
-              <td style="font-family:var(--mono);font-size:.78rem;opacity:.5">${i + 1}</td>
+              <td style="font-family:var(--mono);font-size:.78rem;opacity:.5">${l.id}</td>
               <td><b>${esc(l.name)}</b></td>
               <td>${esc(l.phone) || '—'}</td>
               <td>${l.project_type ? `<span class="badge badge-default">${esc(l.project_type)}</span>` : '—'}</td>
-              <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.message) || '—'}</td>
+              <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.message) || '—'}</td>
+              <td>${statusBadge(l)}</td>
+              <td>${tgDot(l)}</td>
               <td style="white-space:nowrap;font-size:.8rem">${formatDate(l.created_at)}</td>
               <td class="td-actions">
+                ${(l.status || 'new') === 'new'
+                  ? `<button onclick="markLead(${l.id},'replied')" title="Javob berildi deb belgilash" style="color:var(--green)">
+                      <svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`
+                  : `<button onclick="markLead(${l.id},'new')" title="Yangi deb belgilash">
+                      <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" stroke-linecap="round"/><path d="M3 3v5h5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`}
                 <button onclick="viewLead(${l.id})" title="Ko'rish">
                   <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
@@ -530,9 +629,9 @@ function renderLeads() {
                 </button>
               </td>
             </tr>
-          `).join('') : `<tr><td colspan="7" class="empty-state">
+          `).join('') : `<tr><td colspan="9" class="empty-state">
             <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-            <p>Hali arizalar yo'q</p>
+            <p>Arizalar topilmadi</p>
           </td></tr>`}
         </tbody>
       </table>
@@ -546,18 +645,44 @@ function renderLeads() {
   }
 }
 
+async function markLead(id, status, norender) {
+  try {
+    const r = await apiFetch('/api/admin/leads/' + id, {
+      method: 'PATCH',
+      body: JSON.stringify({ status })
+    });
+    if (r.ok) {
+      const l = LEADS.find(x => x.id === id);
+      if (l) l.status = status;
+      updateNavBadge();
+      toast(status === 'replied' ? "Javob berilgan deb belgilandi ✓" : "Yangi deb belgilandi");
+      if (!norender) { if (currentPage === 'leads') renderLeads(); else renderDashboard(); }
+    } else toast('Xatolik', 'error');
+  } catch (e) { toast('Xatolik yuz berdi', 'error'); }
+}
+async function markLeadThenView(id, status) {
+  await markLead(id, status, true);
+  viewLead(id);
+}
+
 function viewLead(id) {
   const l = LEADS.find(x => x.id === id);
   if (!l) return;
+  const isNew = (l.status || 'new') === 'new';
   $('mainContent').innerHTML = `
     <div class="main-header">
       <h2>Ariza #${l.id}</h2>
       <div class="actions">
         <button class="btn btn-outline btn-sm" onclick="renderLeads()">← Orqaga</button>
+        ${isNew
+          ? `<button class="btn btn-acid btn-sm" onclick="markLeadThenView(${l.id},'replied')">✓ Javob berildi</button>`
+          : `<button class="btn btn-outline btn-sm" onclick="markLeadThenView(${l.id},'new')">↺ Yangi deb belgilash</button>`}
         <button class="btn btn-coral btn-sm" onclick="deleteLead(${l.id})">O'chirish</button>
       </div>
     </div>
     <div class="lead-detail">
+      <div class="ld-row"><div class="ld-label">Holat</div><div class="ld-val">${statusBadge(l)}</div></div>
+      <div class="ld-row"><div class="ld-label">Telegram</div><div class="ld-val">${l.tg_sent ? "✈️ Guruhga xabar yuborilgan" : "✈️ Xabar yuborilmagan (bot sozlanmagan yoki xato)"}</div></div>
       <div class="ld-row"><div class="ld-label">Ism</div><div class="ld-val"><b>${esc(l.name)}</b></div></div>
       <div class="ld-row"><div class="ld-label">Telefon</div><div class="ld-val">${esc(l.phone) || '—'}</div></div>
       <div class="ld-row"><div class="ld-label">Loyiha turi</div><div class="ld-val">${esc(l.project_type) || '—'}</div></div>
@@ -604,39 +729,32 @@ function saveContent() {
   }, 600);
 }
 
-function renderContent() {
-  const TABS = [
-    ['cases', 'Case-study', DATA ? DATA.cases.length : 0],
-    ['packages', 'Paketlar', DATA ? DATA.packages.length : 0],
-    ['team', 'Jamoa', DATA ? DATA.team.length : 0],
-    ['testimonials', 'Fikrlar', DATA ? DATA.testimonials.length : 0]
-  ];
+const SECTION_TITLES = { cases: 'Loyihalar', packages: 'Paketlar', team: 'Jamoa', testimonials: 'Fikrlar' };
+function rerenderSection() { renderContentPage(contentTab, SECTION_TITLES[contentTab] || 'Kontent'); }
 
+const SECTION_HINTS = {
+  cases: "Landing'dagi \"Loyihalar\" bo'limi — portfolio. O'zgartirishlar 0.6s ichida avtomatik saqlanadi va saytda darhol ko'rinadi.",
+  packages: "Landing'dagi \"Narxlar\" bo'limi paketlari. Avtomatik saqlanadi.",
+  team: "Landing'dagi \"Jamoa\" bo'limi. Avtomatik saqlanadi.",
+  testimonials: "Landing'dagi \"Mijozlar fikri\" bo'limi. Avtomatik saqlanadi."
+};
+
+function renderContentPage(tab, title) {
+  contentTab = tab;
+  const count = DATA ? DATA[tab].length : 0;
   $('mainContent').innerHTML = `
     <div class="main-header">
-      <h2>Kontent</h2>
+      <h2>${title} <span style="font-family:var(--mono);font-size:1rem;opacity:.4">(${count})</span></h2>
       <div class="actions">
         <button class="btn btn-outline btn-sm" onclick="exportContent()">⤓ Export</button>
         <button class="btn btn-outline btn-sm" onclick="document.getElementById('importFile').click()">⤒ Import</button>
-        <button class="btn btn-coral btn-sm" onclick="resetContent()">↺ Reset</button>
         <input type="file" id="importFile" accept="application/json" style="display:none">
       </div>
     </div>
-    <div class="editor-tabs" id="editorTabs"></div>
+    <p style="font-size:.86rem;opacity:.6;margin:-1.2rem 0 1.3rem">${SECTION_HINTS[tab] || ''}</p>
     <div class="card-list" id="editorCards"></div>
   `;
-
-  const tabsEl = $('editorTabs');
-  TABS.forEach(([key, label, count]) => {
-    const btn = document.createElement('button');
-    btn.textContent = `${label} (${count})`;
-    if (key === contentTab) btn.className = 'on';
-    btn.onclick = () => { contentTab = key; renderContent(); };
-    tabsEl.appendChild(btn);
-  });
-
   renderContentCards();
-
   $('importFile').onchange = importContent;
 }
 
@@ -721,7 +839,7 @@ function renderContentCards() {
     btn.onclick = async () => {
       const idx = +btn.dataset.idx;
       const ok = await confirm("O'chirish", `#${idx + 1} elementni o'chirishni xohlaysizmi?`, "Ha, o'chirish");
-      if (ok) { DATA[contentTab].splice(idx, 1); saveContent(); renderContent(); }
+      if (ok) { DATA[contentTab].splice(idx, 1); saveContent(); rerenderSection(); }
     };
   });
 
@@ -766,7 +884,7 @@ function addItem() {
   };
   DATA[contentTab].push(JSON.parse(JSON.stringify(templates[contentTab])));
   saveContent();
-  renderContent();
+  rerenderSection();
   const cards = document.querySelectorAll('.edit-card');
   if (cards.length) cards[cards.length - 1].scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
@@ -790,7 +908,7 @@ function importContent(e) {
       if (parsed.packages && parsed.team && parsed.testimonials && parsed.cases) {
         DATA = parsed;
         saveContent();
-        renderContent();
+        rerenderSection();
         toast('Import muvaffaqiyatli');
       } else {
         toast("Noto'g'ri fayl formati", 'error');
@@ -807,9 +925,188 @@ async function resetContent() {
   try {
     await apiFetch('/api/admin/content/reset', { method: 'POST' });
     await loadContent();
-    renderContent();
+    if (SECTION_TITLES[currentPage]) rerenderSection(); else renderSettings();
     toast("Kontent qaytarildi");
   } catch (e) { toast('Xatolik', 'error'); }
+}
+
+/* ═══ POSTLAR ═══ */
+const _postTimers = {};
+function renderPosts() {
+  $('mainContent').innerHTML = `
+    <div class="main-header">
+      <h2>Postlar <span style="font-family:var(--mono);font-size:1rem;opacity:.4">(${POSTS.length})</span></h2>
+      <div class="actions">
+        <button class="btn btn-acid btn-sm" onclick="addPost()">+ Yangi post</button>
+      </div>
+    </div>
+    <p style="font-size:.86rem;opacity:.6;margin:-1.2rem 0 1.3rem">
+      Postlar landing'dagi "Yangiliklar" bo'limida chiqadi. "Saytda ko'rinsin" o'chirilgan post faqat shu yerda saqlanadi.
+      O'zgartirishlar avtomatik saqlanadi.</p>
+    <div class="card-list" id="postCards">
+      ${POSTS.length ? '' : '<div class="empty-state"><p>Hali postlar yo\'q — birinchisini qo\'shing!</p></div>'}
+    </div>
+  `;
+  const box = $('postCards');
+  POSTS.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'edit-card';
+    card.innerHTML = `
+      <div class="card-hd">
+        <span class="num">#${p.id} · ${formatDate(p.created_at)}</span>
+        <button class="del-btn" onclick="deletePost(${p.id})" title="O'chirish">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </div>
+      <div class="field"><label>Sarlavha</label>
+        <input data-pid="${p.id}" data-key="title" value="${esc(p.title)}" maxlength="200"></div>
+      <div class="field"><label>Rasm URL (ixtiyoriy)</label>
+        <input data-pid="${p.id}" data-key="image" value="${esc(p.image)}" maxlength="1000" placeholder="https://..."></div>
+      <div class="field"><label>Matn</label>
+        <textarea data-pid="${p.id}" data-key="body" style="min-height:110px">${esc(p.body)}</textarea></div>
+      <div class="field-check">
+        <input type="checkbox" id="pub_${p.id}" ${p.published ? 'checked' : ''}>
+        <span>Saytda ko'rinsin</span>
+      </div>
+    `;
+    box.appendChild(card);
+  });
+
+  box.querySelectorAll('input[data-pid], textarea[data-pid]').forEach(el => {
+    el.oninput = () => {
+      const p = POSTS.find(x => x.id === +el.dataset.pid);
+      if (!p) return;
+      p[el.dataset.key] = el.value;
+      savePostDebounced(p);
+    };
+  });
+  box.querySelectorAll('input[type=checkbox][id^="pub_"]').forEach(el => {
+    el.onchange = () => {
+      const p = POSTS.find(x => x.id === +el.id.split('_')[1]);
+      if (!p) return;
+      p.published = el.checked;
+      savePost(p);
+    };
+  });
+}
+
+function savePostDebounced(p) {
+  clearTimeout(_postTimers[p.id]);
+  _postTimers[p.id] = setTimeout(() => savePost(p), 600);
+}
+
+async function savePost(p) {
+  if (!p.title.trim()) return; // sarlavhasiz saqlamaymiz (backend rad etadi)
+  try {
+    const r = await apiFetch('/api/admin/posts/' + p.id, {
+      method: 'PUT',
+      body: JSON.stringify({ title: p.title, body: p.body, image: p.image, published: p.published })
+    });
+    if (r.ok) toast('Saqlandi ✓');
+    else toast('Saqlashda xatolik', 'error');
+  } catch (e) { toast('Saqlashda xatolik', 'error'); }
+}
+
+async function addPost() {
+  try {
+    const r = await apiFetch('/api/admin/posts', {
+      method: 'POST',
+      body: JSON.stringify({ title: 'Yangi post', body: '', image: '', published: false })
+    });
+    if (r.ok) {
+      POSTS.unshift(await r.json());
+      renderPosts();
+      toast("Post qo'shildi — sarlavha va matnni yozing");
+      const inp = document.querySelector('#postCards input[data-key="title"]');
+      if (inp) { inp.focus(); inp.select(); }
+    } else toast('Xatolik', 'error');
+  } catch (e) { toast('Xatolik yuz berdi', 'error'); }
+}
+
+async function deletePost(id) {
+  const ok = await confirm("O'chirish", "Bu postni o'chirishni xohlaysizmi?", "Ha, o'chirish");
+  if (!ok) return;
+  try {
+    const r = await apiFetch('/api/admin/posts/' + id, { method: 'DELETE' });
+    if (r.ok) {
+      POSTS = POSTS.filter(p => p.id !== id);
+      renderPosts();
+      toast("Post o'chirildi");
+    }
+  } catch (e) { toast('Xatolik yuz berdi', 'error'); }
+}
+
+/* ═══ TELEGRAM ═══ */
+function renderTelegram() {
+  const st = TG || { has_token: false, bot_token_masked: '', chat_id: '', active: false };
+  $('mainContent').innerHTML = `
+    <div class="main-header"><h2>Telegram bot</h2></div>
+    <div class="edit-card" style="max-width:560px">
+      <div class="card-hd"><span class="num">HOLAT</span>
+        <span style="font-weight:700;font-size:.9rem;color:${st.active ? 'var(--green)' : 'var(--coral)'}">
+          ${st.active ? '● Ulangan — arizalar guruhga tushadi' : '● Sozlanmagan'}</span>
+      </div>
+      <div class="field">
+        <label>Bot token ${st.has_token ? `(joriy: <span style="text-transform:none">${esc(st.bot_token_masked)}</span>)` : ''}</label>
+        <input id="tgToken" type="text" placeholder="${st.has_token ? "O'zgartirish uchun yangi token kiriting" : '123456789:ABC-DEF...'}" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Guruh / kanal chat ID</label>
+        <input id="tgChat" type="text" value="${esc(st.chat_id)}" placeholder="-1001234567890" autocomplete="off">
+      </div>
+      <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1.1rem">
+        <button class="btn btn-blk btn-sm" id="tgSaveBtn" onclick="saveTelegram()">Saqlash</button>
+        <button class="btn btn-acid btn-sm" id="tgTestBtn" onclick="testTelegram()">Test xabar yuborish</button>
+        <button class="btn btn-coral btn-sm" onclick="clearTelegram()">Botni o'chirish</button>
+      </div>
+    </div>
+    <div class="edit-card" style="max-width:560px;margin-top:1rem">
+      <div class="card-hd"><span class="num">QO'LLANMA</span></div>
+      <ol style="font-size:.88rem;opacity:.75;padding-left:1.2rem;display:grid;gap:.4rem">
+        <li>Telegram'da <b>@BotFather</b> ga yozib yangi bot yarating — token beradi.</li>
+        <li>Botni ariza tushadigan guruhga qo'shing (xabar yozish huquqi bilan).</li>
+        <li>Guruh chat ID'sini olish: guruhga <b>@getidsbot</b> ni qo'shib ko'ring yoki
+            guruhga xabar yozib <span style="font-family:var(--mono);font-size:.8rem">api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</span> ni oching.</li>
+        <li>Token va chat ID'ni yuqoriga kiritib <b>Saqlash</b> → <b>Test xabar</b> bosing.</li>
+      </ol>
+    </div>
+  `;
+}
+
+async function saveTelegram() {
+  const btn = $('tgSaveBtn'); btn.disabled = true;
+  const tokenVal = $('tgToken').value.trim();
+  const body = { chat_id: $('tgChat').value.trim() };
+  if (tokenVal) body.bot_token = tokenVal; // bo'sh qoldirilsa — eski token saqlanadi
+  try {
+    const r = await apiFetch('/api/admin/telegram', { method: 'PUT', body: JSON.stringify(body) });
+    if (r.ok) { TG = await r.json(); renderTelegram(); toast('Saqlandi ✓'); }
+    else toast('Saqlashda xatolik', 'error');
+  } catch (e) { toast('Xatolik yuz berdi', 'error'); }
+  finally { btn.disabled = false; }
+}
+
+async function testTelegram() {
+  const btn = $('tgTestBtn'); btn.disabled = true; btn.textContent = 'Yuborilmoqda...';
+  try {
+    const r = await apiFetch('/api/admin/telegram/test', { method: 'POST' });
+    const data = await r.json().catch(() => ({}));
+    if (r.ok) toast('Test xabar yuborildi — guruhni tekshiring ✓');
+    else toast(data.detail || 'Test muvaffaqiyatsiz', 'error');
+  } catch (e) { toast('Xatolik yuz berdi', 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'Test xabar yuborish'; }
+}
+
+async function clearTelegram() {
+  const ok = await confirm("Botni o'chirish", "Token va chat ID o'chiriladi — arizalar Telegramga yuborilmaydi. Davom etasizmi?", "Ha, o'chirish");
+  if (!ok) return;
+  try {
+    const r = await apiFetch('/api/admin/telegram', {
+      method: 'PUT',
+      body: JSON.stringify({ bot_token: '', chat_id: '' })
+    });
+    if (r.ok) { TG = await r.json(); renderTelegram(); toast("Bot sozlamalari o'chirildi"); }
+  } catch (e) { toast('Xatolik yuz berdi', 'error'); }
 }
 
 /* ═══ SETTINGS ═══ */
@@ -836,10 +1133,18 @@ function renderSettings() {
       <div class="field">
         <label>Kontent bo'limlari</label>
         <div style="padding:.7rem 0;font-size:.88rem">
-          Cases: ${DATA ? DATA.cases.length : 0} ·
-          Packages: ${DATA ? DATA.packages.length : 0} ·
-          Team: ${DATA ? DATA.team.length : 0} ·
-          Testimonials: ${DATA ? DATA.testimonials.length : 0}
+          Loyihalar: ${DATA ? DATA.cases.length : 0} ·
+          Paketlar: ${DATA ? DATA.packages.length : 0} ·
+          Jamoa: ${DATA ? DATA.team.length : 0} ·
+          Fikrlar: ${DATA ? DATA.testimonials.length : 0} ·
+          Postlar: ${POSTS.length}
+        </div>
+      </div>
+      <div class="field">
+        <label>Telegram bot</label>
+        <div style="padding:.7rem 0;font-weight:600;color:${TG && TG.active ? 'var(--green)' : 'var(--coral)'}">
+          ${TG && TG.active ? '● Ulangan' : '● Sozlanmagan'}
+          <button class="btn btn-outline btn-sm" style="margin-left:.8rem" onclick="navigate('telegram')">Boshqarish →</button>
         </div>
       </div>
     </div>
