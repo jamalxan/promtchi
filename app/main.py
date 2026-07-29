@@ -100,8 +100,17 @@ reviews_cache = _ContentCache()
 # GZip middleware'ning har safar qayta siqishi 10k+ RPS'da CPU'ni yeydi.
 # Bir marta o'qib, bir marta siqib xotirada saqlaymiz; fayl o'zgarsa
 # (mtime bo'yicha) avtomatik yangilanadi.
+#
+# canonical/OG teglar doim haqiqiy domenga (CANONICAL_HOST) ishora qiladi —
+# lekin sayt IP orqali yoki boshqa host bilan ochilsa, qidiruv tizimlari
+# uni domendan alohida sahifa deb indekslamasligi uchun <meta robots noindex>
+# qo'shilgan ikkinchi variant ham oldindan tayyorlab qo'yiladi (har so'rovda
+# HTML qayta ishlanmasin — faqat Host header bo'yicha tayyor bayt tanlanadi).
 class _PageCache:
-    __slots__ = ("path", "mtime", "raw", "gz", "etag")
+    __slots__ = (
+        "path", "mtime", "raw", "gz", "etag",
+        "raw_noindex", "gz_noindex", "etag_noindex",
+    )
 
     def __init__(self, path: Path):
         self.path = path
@@ -109,6 +118,9 @@ class _PageCache:
         self.raw: bytes = b""
         self.gz: bytes = b""
         self.etag: str = ""
+        self.raw_noindex: bytes = b""
+        self.gz_noindex: bytes = b""
+        self.etag_noindex: str = ""
 
     def load(self) -> bool:
         """Fayl mavjud bo'lsa keshni yangilaydi (o'zgargan bo'lsa) va True qaytaradi."""
@@ -121,6 +133,16 @@ class _PageCache:
             self.raw = data
             self.gz = gzip.compress(data, compresslevel=8)
             self.etag = '"%s"' % hashlib.sha256(data).hexdigest()[:32]
+
+            noindex = data.replace(
+                b"</head>",
+                b'<meta name="robots" content="noindex,nofollow">\n</head>',
+                1,
+            )
+            self.raw_noindex = noindex
+            self.gz_noindex = gzip.compress(noindex, compresslevel=8)
+            self.etag_noindex = '"%s"' % hashlib.sha256(noindex).hexdigest()[:32]
+
             self.mtime = st.st_mtime_ns
         return True
 
@@ -772,20 +794,30 @@ async def index(request: Request):
     if not index_cache.load():
         raise HTTPException(404, "static/index.html topilmadi")
 
+    # IP yoki boshqa host orqali kirilsa — noindex variant (canonical/OG teglar
+    # baribir haqiqiy domenga ishora qiladi, faqat qidiruv tizimlari bu nusxani
+    # alohida sahifa deb indekslamasin).
+    host = (request.headers.get("host") or "").split(":")[0].lower()
+    canonical = settings.CANONICAL_HOST.lower()
+    is_canonical = not canonical or host in (canonical, f"www.{canonical}")
+
+    etag = index_cache.etag if is_canonical else index_cache.etag_noindex
     headers = {
-        "ETag": index_cache.etag,
+        "ETag": etag,
         "Cache-Control": _PAGE_CACHE,
-        "Vary": "Accept-Encoding",
+        "Vary": "Accept-Encoding, Host",
     }
-    if request.headers.get("if-none-match") == index_cache.etag:
+    if request.headers.get("if-none-match") == etag:
         return Response(status_code=304, headers=headers)
     if request.method == "HEAD":  # HEAD'da body yuborilmaydi (monitoring uchun)
         return Response(status_code=200, media_type="text/html", headers=headers)
 
     if "gzip" in request.headers.get("accept-encoding", ""):
         headers["Content-Encoding"] = "gzip"
-        return Response(index_cache.gz, media_type="text/html", headers=headers)
-    return Response(index_cache.raw, media_type="text/html", headers=headers)
+        body = index_cache.gz if is_canonical else index_cache.gz_noindex
+        return Response(body, media_type="text/html", headers=headers)
+    body = index_cache.raw if is_canonical else index_cache.raw_noindex
+    return Response(body, media_type="text/html", headers=headers)
 
 
 @app.get("/admin", include_in_schema=False)
