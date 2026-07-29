@@ -861,7 +861,8 @@ function renderContentCards() {
           ${makeField('Ism', 'name', i, item.name)}
           ${makeField('Rol', 'role', i, item.role)}
         </div>
-        ${makeField('Rasm URL', 'photo', i, item.photo)}`;
+        ${makeRoleTypeField(i, item.role_type)}
+        ${makeMediaField('Rasm', 'photo', i, item.photo)}`;
     } else if (contentTab === 'testimonials') {
       fields = `
         ${makeField('Matn', 'text', i, item.text, true)}
@@ -922,6 +923,16 @@ function renderContentCards() {
       renderContentCards();
     };
   });
+
+  box.querySelectorAll('.field select').forEach(el => {
+    el.onchange = () => {
+      const idx = +el.dataset.idx;
+      DATA[contentTab][idx][el.dataset.key] = el.value;
+      saveContent();
+    };
+  });
+
+  bindMediaFields(box);
 }
 
 function makeField(label, key, idx, value, isTextarea) {
@@ -932,11 +943,83 @@ function makeField(label, key, idx, value, isTextarea) {
   return `<div class="field"><label for="${id}">${label}</label><input id="${id}" data-idx="${idx}" data-key="${key}" value="${esc(value || '')}"></div>`;
 }
 
+/* founder/co-founder — Jamoa bo'limida alohida yuqori qatorda chiqadi */
+function makeRoleTypeField(idx, value) {
+  const id = `f_role_type_${idx}`;
+  const v = value || 'member';
+  const opt = (val, label) => `<option value="${val}" ${v === val ? 'selected' : ''}>${label}</option>`;
+  return `<div class="field"><label for="${id}">Turi</label>
+    <select id="${id}" data-idx="${idx}" data-key="role_type">
+      ${opt('member', "A'zo")}${opt('co_founder', 'Co-Founder')}${opt('founder', 'Founder')}
+    </select></div>`;
+}
+
+/* rasm URL maydoni + serverga to'g'ridan-to'g'ri yuklash tugmasi (/api/admin/upload) */
+function makeMediaField(label, key, idx, value) {
+  const id = `f_${key}_${idx}`;
+  const has = !!value;
+  return `<div class="field"><label for="${id}">${label}</label>
+    <div class="media-field" data-idx="${idx}" data-key="${key}">
+      <div class="media-prev" style="${has ? `background-image:url('${esc(value)}')` : ''}">${has ? '' : "Rasm yo'q"}</div>
+      <div class="media-ctl">
+        <input class="url-input" id="${id}" data-idx="${idx}" data-key="${key}" value="${esc(value || '')}" placeholder="https://... yoki yuklang">
+        <div class="row">
+          <button type="button" class="up-btn" data-act="upload">⤒ Yuklash</button>
+          <button type="button" class="up-btn up-clear" data-act="clear">✕ Tozalash</button>
+        </div>
+        <div class="up-hint">JPG / PNG / WEBP · maksimum 5 MB</div>
+      </div>
+    </div></div>`;
+}
+
+async function uploadMediaFile(file, idx, key) {
+  const fd = new FormData();
+  fd.append('file', file);
+  const headers = {};
+  if (TOKEN) headers['Authorization'] = 'Bearer ' + TOKEN;
+  const r = await fetch(API + '/api/admin/upload', { method: 'POST', headers, body: fd });
+  if (r.status === 401) { logout(); return; }
+  if (!r.ok) {
+    const d = await r.json().catch(() => ({}));
+    toast(d.detail || 'Yuklashda xatolik', 'error');
+    return;
+  }
+  const data = await r.json();
+  DATA[contentTab][idx][key] = data.url;
+  saveContent();
+  rerenderSection();
+  toast('Yuklandi ✓');
+}
+
+function bindMediaFields(box) {
+  box.querySelectorAll('.media-field').forEach(mf => {
+    const idx = +mf.dataset.idx, key = mf.dataset.key;
+    const upBtn = mf.querySelector('[data-act="upload"]');
+    const clearBtn = mf.querySelector('[data-act="clear"]');
+    upBtn.onclick = () => {
+      const inp = document.createElement('input');
+      inp.type = 'file'; inp.accept = 'image/*';
+      inp.onchange = async () => {
+        const f = inp.files[0]; if (!f) return;
+        upBtn.classList.add('busy'); upBtn.textContent = 'Yuklanmoqda...';
+        try { await uploadMediaFile(f, idx, key); }
+        finally { upBtn.classList.remove('busy'); upBtn.textContent = '⤒ Yuklash'; }
+      };
+      inp.click();
+    };
+    clearBtn.onclick = () => {
+      DATA[contentTab][idx][key] = '';
+      saveContent();
+      rerenderSection();
+    };
+  });
+}
+
 function addItem() {
   const templates = {
     cases: { title: 'Yangi loyiha', cat: 'Web & ilova', client: '', short: '', problem: '', solution: '', result: '', tech: '', duration: '', image: '' },
     packages: { name: 'Yangi paket', price: '0$', popular: false, features: ['Xususiyat'] },
-    team: { name: "Yangi a'zo", role: 'Rol', photo: '' },
+    team: { name: "Yangi a'zo", role: 'Rol', photo: '', role_type: 'member' },
     testimonials: { text: 'Fikr matni', name: 'Ism', role: 'Rol', photo: '' }
   };
   DATA[contentTab].push(JSON.parse(JSON.stringify(templates[contentTab])));

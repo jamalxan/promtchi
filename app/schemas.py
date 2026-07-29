@@ -1,7 +1,24 @@
 """Pydantic sxemalar — frontend DATA tuzilmasiga birebir mos validatsiya."""
+import re
 from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
+
+# Frontend rasm/avatar maydonlarini style="...url('${esc(v)}')" ichiga qo'yadi.
+# esc() faqat HTML uchun xavfsiz — HTML atributi brauzerda dekod qilingach,
+# ' yoki ) saqlangan bo'lsa CSS qiymatidan chiqib ketish (CSS injection)
+# mumkin bo'ladi. Shu sabab bunday maydonlarni saqlashdan oldin qat'iy
+# formatga (oddiy http(s) havola yoki /static/uploads/ fayli) cheklaymiz.
+_SAFE_MEDIA_URL = re.compile(r"^(https?://[^\s'\"()<>]+|/static/uploads/[A-Za-z0-9._-]+)$")
+
+
+def _validate_media_url(v: str) -> str:
+    v = (v or "").strip()
+    if v and not _SAFE_MEDIA_URL.match(v):
+        raise ValueError(
+            "Rasm manzili noto'g'ri — faqat http(s):// havola yoki yuklangan fayl bo'lishi kerak"
+        )
+    return v
 
 
 class PackageIn(BaseModel):
@@ -15,6 +32,10 @@ class TeamIn(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     role: str = Field(min_length=1, max_length=80)
     photo: str = Field(default="", max_length=1000)
+    # founder/co_founder — Jamoa bo'limida alohida yuqori qatorda chiqadi
+    role_type: Literal["founder", "co_founder", "member"] = "member"
+
+    _v_photo = field_validator("photo")(_validate_media_url)
 
 
 class TestimonialIn(BaseModel):
@@ -22,6 +43,8 @@ class TestimonialIn(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     role: str = Field(default="", max_length=120)
     photo: str = Field(default="", max_length=1000)
+
+    _v_photo = field_validator("photo")(_validate_media_url)
 
 
 class CaseIn(BaseModel):
@@ -43,6 +66,8 @@ class CaseIn(BaseModel):
     image: str = Field(default="", max_length=1000)
     video: str = Field(default="", max_length=1000)
     link: str = Field(default="", max_length=500)  # jonli loyiha havolasi
+
+    _v_image = field_validator("image")(_validate_media_url)
 
 
 class ContactIn(BaseModel):
@@ -110,6 +135,8 @@ class PostIn(BaseModel):
     image: str = Field(default="", max_length=1000)
     video: str = Field(default="", max_length=1000)
     published: bool = True
+
+    _v_image = field_validator("image")(_validate_media_url)
 
 
 class ReviewIn(BaseModel):
@@ -211,10 +238,10 @@ DEFAULT_CONTENT: dict = {
         {"name": "Instagram", "url": "https://instagram.com/promtchi", "icon": "instagram"},
     ],
     "team": [
-        {"name": "G'iyosiddin Tursunxo'jayev", "role": "Founder", "photo": ""},
-        {"name": "Jamolxon Yo'ldashaliyev", "role": "Co-Founder", "photo": ""},
-        {"name": "Abbos Setdarov", "role": "IT Specialist", "photo": ""},
-        {"name": "Samandar Orifjonov", "role": "IT Specialist", "photo": ""},
+        {"name": "G'iyosiddin Tursunxo'jayev", "role": "Founder", "photo": "", "role_type": "founder"},
+        {"name": "Jamolxon Yo'ldashaliyev", "role": "Co-Founder", "photo": "", "role_type": "co_founder"},
+        {"name": "Abbos Setdarov", "role": "IT Specialist", "photo": "", "role_type": "member"},
+        {"name": "Samandar Orifjonov", "role": "IT Specialist", "photo": "", "role_type": "member"},
     ],
     "testimonials": [
         {

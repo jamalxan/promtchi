@@ -460,7 +460,16 @@ section{position:relative}
 
 /* ══════════ JAMOA ══════════ */
 .team-sec{background:var(--cream);color:var(--blk)}
+/* rahbariyat (founder/co-founder) — markazga tekislangan, kattaroq, tekis qator */
+.tgrid-lead{display:flex;justify-content:center;flex-wrap:wrap;gap:clamp(1.4rem,4vw,3rem);margin-top:2.6rem}
+.tgrid-lead:empty{display:none}
+.tgrid-lead .mcard{width:min(300px,44vw);transform:none!important}
+.tgrid-lead .mcard:hover{transform:translateY(-7px)!important}
+/* jamoa a'zolari va rahbariyat orasidagi ajratuvchi — ikkalasi ham bo'lgandagina ko'rinadi (JS boshqaradi) */
+.team-divider{border-top:1px solid rgba(11,11,14,.14);margin-top:2.6rem;display:none}
+.team-divider.show{display:block}
 .tgrid{display:grid;gap:1.4rem;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-top:2.6rem}
+.tgrid:empty{margin-top:0}
 .mcard{background:var(--w);border:3px solid var(--blk);border-radius:16px;padding:1.6rem 1.3rem 1.4rem;text-align:center;
   transition:transform .4s var(--ease)}
 .mcard:nth-child(odd){transform:rotate(-1.4deg)}
@@ -469,8 +478,11 @@ section{position:relative}
 .mcard .mp{width:100%;aspect-ratio:1;border-radius:11px;border:2.5px solid var(--blk);margin-bottom:1rem;
   display:grid;place-items:center;font-family:var(--anton);font-size:2.6rem;color:var(--w);
   background:linear-gradient(150deg,var(--blue),#8fb6ff);background-size:cover;background-position:center}
+.tgrid-lead .mcard .mp{font-size:3.2rem}
 .mcard b{font-family:var(--anton);text-transform:uppercase;font-size:1.02rem;letter-spacing:.02em}
 .mcard .rl{font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--coral);margin-top:.35rem}
+@media(max-width:640px){.tgrid-lead{flex-direction:column;align-items:center}.tgrid-lead .mcard{width:100%;max-width:320px}
+  .tgrid{grid-template-columns:repeat(2,1fr)}}
 .stackrow{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center;margin-top:2.8rem}
 .stackrow span{font-family:var(--mono);font-size:.8rem;padding:.62rem 1.15rem;border-radius:999px;
   border:2px solid var(--blk);background:var(--w);transition:.3s}
@@ -915,6 +927,8 @@ body.menu-open,body.modal-open{overflow:hidden}
   <div class="wrap">
     <div class="tag-line rv" style="color:var(--coral)">Jamoa — 07</div>
     <h2 class="h-xl rv">Kimlar <em style="color:var(--coral)">ishlaydi</em></h2>
+    <div class="tgrid-lead" id="teamLead"></div>
+    <div class="team-divider" id="teamDivider"></div>
     <div class="tgrid" id="team"></div>
     <div class="stackrow rv" id="stackList"></div>
   </div>
@@ -1065,6 +1079,14 @@ let DATA=JSON.parse(JSON.stringify(DEFAULTS));
 })();
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const initial=n=>(n||"?").trim().charAt(0).toUpperCase();
+/* eski (role_type'siz) kontent uchun — "Rol" matnidan taxmin qilamiz */
+function roleTypeOf(m){
+  if(m.role_type)return m.role_type;
+  const r=(m.role||'').toLowerCase();
+  if(/co[\s-]?founder/.test(r))return'co_founder';
+  if(/founder/.test(r))return'founder';
+  return'member';
+}
 const CHK='<svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg>';
 const reduced=matchMedia('(prefers-reduced-motion:reduce)').matches;
 
@@ -1398,6 +1420,16 @@ function staggerIn(els,cls){
     el.style.transitionDelay=Math.min(i*90,540)+'ms';
     _gio.observe(el);
   });
+  /* xavfsizlik: kontent API'dan kech kelib qayta render bo'lganda ba'zi
+     brauzerlarda IO darhol ishga tushmasligi mumkin — ko'rinib turgan
+     kartalar majburan ochiladi, shuning uchun opacity:0'da qolib ketmaydi */
+  if(!reduced)setTimeout(()=>{
+    els.forEach(el=>{
+      if(el.classList.contains('in'))return;
+      const r=el.getBoundingClientRect();
+      if(r.top<innerHeight&&r.bottom>0)el.classList.add('in');
+    });
+  },900);
 }
 staggerIn([...document.querySelectorAll('.svc-row')]);
 
@@ -1555,15 +1587,19 @@ function renderPackages(){
   });
   staggerIn([...box.children],'gi');
 }
+function mcardHtml(m){
+  const bg=m.photo?`style="background-image:url('${esc(m.photo)}')"`:'';
+  return `<div class="mcard"><div class="mp" ${bg}>${m.photo?'':initial(m.name)}</div>
+    <b>${esc(m.name)}</b><div class="rl">${esc(m.role)}</div></div>`;
+}
 function renderTeam(){
-  const box=document.getElementById('team');box.innerHTML='';
-  DATA.team.forEach(m=>{
-    const bg=m.photo?`style="background-image:url('${esc(m.photo)}')"`:'';
-    box.insertAdjacentHTML('beforeend',
-     `<div class="mcard"><div class="mp" ${bg}>${m.photo?'':initial(m.name)}</div>
-        <b>${esc(m.name)}</b><div class="rl">${esc(m.role)}</div></div>`);
-  });
-  staggerIn([...box.children],'gi');
+  const leadBox=document.getElementById('teamLead'),box=document.getElementById('team'),div=document.getElementById('teamDivider');
+  const leads=DATA.team.filter(m=>roleTypeOf(m)!=='member');
+  const members=DATA.team.filter(m=>roleTypeOf(m)==='member');
+  leadBox.innerHTML=leads.map(mcardHtml).join('');
+  box.innerHTML=members.map(mcardHtml).join('');
+  div.classList.toggle('show',leads.length>0&&members.length>0);
+  staggerIn([...leadBox.children,...box.children],'gi');
 }
 function renderTestimonials(){
   const box=document.getElementById('tmTrack');
