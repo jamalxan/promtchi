@@ -50,8 +50,11 @@ class Settings:
     # SQLite yozuv qulfi uchun kutish vaqti (ms)
     SQLITE_BUSY_TIMEOUT_MS: int = _int("SQLITE_BUSY_TIMEOUT_MS", 15000)
 
-    # Admin paneli paroli
+    # Admin paneli paroli — ADMIN_PASSWORD_HASH bo'lsa u ustunlik qiladi (bcrypt hash,
+    # `python -m app.config hash "parol"` bilan yaratiladi). ADMIN_PASSWORD faqat eski
+    # (hash qilinmagan) sozlash uchun qoldirilgan — production'da tavsiya etilmaydi.
     ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", DEFAULT_ADMIN_PASSWORD)
+    ADMIN_PASSWORD_HASH: str = os.getenv("ADMIN_PASSWORD_HASH", "")
 
     # JWT
     JWT_SECRET: str = os.getenv("JWT_SECRET", DEFAULT_JWT_SECRET)
@@ -127,10 +130,19 @@ class Settings:
             )
         elif len(self.JWT_SECRET) < 32:
             p.append("JWT_SECRET juda qisqa (32+ belgi bo'lsin).")
-        if self.ADMIN_PASSWORD == DEFAULT_ADMIN_PASSWORD:
-            p.append("ADMIN_PASSWORD default qiymatda — o'zgartiring.")
-        elif len(self.ADMIN_PASSWORD) < 12:
-            p.append("ADMIN_PASSWORD 12 belgidan qisqa — brute-force'ga zaif.")
+        if not self.ADMIN_PASSWORD_HASH:
+            if self.ADMIN_PASSWORD == DEFAULT_ADMIN_PASSWORD:
+                p.append(
+                    "ADMIN_PASSWORD_HASH sozlanmagan va ADMIN_PASSWORD default qiymatda — "
+                    "o'zgartiring:  python -m app.config hash \"yangi-parol\""
+                )
+            elif len(self.ADMIN_PASSWORD) < 12:
+                p.append("ADMIN_PASSWORD 12 belgidan qisqa — brute-force'ga zaif.")
+            if self.is_production:
+                p.append(
+                    "ADMIN_PASSWORD hash qilinmagan holda ishlatilmoqda — production'da "
+                    "ADMIN_PASSWORD_HASH ishlating:  python -m app.config hash \"parolingiz\""
+                )
         if self.is_production and "*" in self.CORS_ORIGINS:
             p.append("CORS_ORIGINS='*' — production'da aniq domen yozing.")
         if self.is_production and self.is_sqlite:
@@ -161,3 +173,17 @@ settings = Settings()
 
 def generate_secret() -> str:
     return secrets.token_hex(32)
+
+
+def hash_password(password: str) -> str:
+    import bcrypt
+
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+
+if __name__ == "__main__":
+    # python -m app.config hash "yangi-parol"  -> .env ga qo'yiladigan ADMIN_PASSWORD_HASH
+    if len(sys.argv) == 3 and sys.argv[1] == "hash":
+        print(f"ADMIN_PASSWORD_HASH={hash_password(sys.argv[2])}")
+    else:
+        print('Foydalanish: python -m app.config hash "parolingiz"')
