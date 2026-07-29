@@ -21,6 +21,8 @@ CSP = "; ".join([
     "object-src 'none'",
     "frame-ancestors 'none'",
     "img-src 'self' data: blob: https:",
+    "media-src 'self' data: blob: https:",  # yuklangan videolar
+    "frame-src https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' data: https://fonts.gstatic.com",
     "script-src 'self' 'unsafe-inline'",
@@ -77,10 +79,13 @@ class BodyLimitMiddleware:
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
+        # Fayl yuklash yo'li uchun kattaroq limit (rasm/video)
+        limit = (settings.MAX_UPLOAD_BYTES
+                 if scope["path"] == "/api/admin/upload" else settings.MAX_BODY_BYTES)
         cl = Headers(scope=scope).get("content-length")
         if cl:
             try:
-                if int(cl) > settings.MAX_BODY_BYTES:
+                if int(cl) > limit:
                     resp = JSONResponse({"detail": "So'rov hajmi juda katta"}, status_code=413)
                     return await resp(scope, receive, send)
             except ValueError:
@@ -97,6 +102,17 @@ lead_limiter = TokenBucket(
     settings.LEAD_RATE_LIMIT, settings.LEAD_RATE_WINDOW_SECONDS, settings.RATE_LIMIT_MAX_KEYS
 )
 lead_gap = MinInterval(settings.LEAD_MIN_INTERVAL_SECONDS, settings.RATE_LIMIT_MAX_KEYS)
+
+
+review_limiter = TokenBucket(5, 3600, settings.RATE_LIMIT_MAX_KEYS)
+
+
+def check_review_limits(ip: str) -> tuple[bool, int, str]:
+    """Fikr yozish limiti — soatiga 5 ta urinish (kod brute-force'iga qarshi)."""
+    ok, retry = review_limiter.hit(ip)
+    if not ok:
+        return False, retry, "Juda ko'p urinish — birozdan so'ng qayta urining"
+    return True, 0, ""
 
 
 def check_lead_limits(ip: str) -> tuple[bool, int, str]:

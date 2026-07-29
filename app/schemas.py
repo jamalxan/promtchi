@@ -25,6 +25,12 @@ class TestimonialIn(BaseModel):
 
 
 class CaseIn(BaseModel):
+    """Loyiha + uning case-study tafsilotlari (bitta yozuvda).
+
+    video — yuklangan fayl yo'li yoki YouTube/Vimeo havolasi; loyiha
+    modalida rasm o'rniga/rasmdan keyin ko'rsatiladi.
+    """
+
     title: str = Field(min_length=1, max_length=140)
     cat: str = Field(min_length=1, max_length=60)
     client: str = Field(default="", max_length=140)
@@ -35,15 +41,40 @@ class CaseIn(BaseModel):
     result: str = Field(default="", max_length=2000)
     tech: str = Field(default="", max_length=400)
     image: str = Field(default="", max_length=1000)
+    video: str = Field(default="", max_length=1000)
+    link: str = Field(default="", max_length=500)  # jonli loyiha havolasi
+
+
+class ContactIn(BaseModel):
+    """Aloqa havolasi — "Bog'lanish" bo'limida chiqadi."""
+
+    label: str = Field(min_length=1, max_length=60)      # Telegram, Email, Telefon…
+    value: str = Field(default="", max_length=160)       # @promtchi, hello@…
+    url: str = Field(min_length=1, max_length=500)       # https://t.me/…, mailto:…
+    icon: str = Field(default="link", max_length=24)     # ikonka kaliti
+
+
+class SocialIn(BaseModel):
+    """Footer'dagi ijtimoiy tarmoq havolasi."""
+
+    name: str = Field(min_length=1, max_length=40)       # ko'rinadigan nom
+    url: str = Field(min_length=1, max_length=500)
+    icon: str = Field(default="link", max_length=24)     # telegram/instagram/…
 
 
 class ContentDoc(BaseModel):
-    """To'liq kontent hujjati — PUT /api/admin/content shu shaklni kutadi."""
+    """To'liq kontent hujjati — PUT /api/admin/content shu shaklni kutadi.
+
+    contacts/socials ixtiyoriy: eski mijozlar (yoki eski saqlangan hujjat)
+    ularsiz yuborsa ham qabul qilinadi.
+    """
 
     packages: list[PackageIn] = Field(max_length=12)
     team: list[TeamIn] = Field(max_length=30)
     testimonials: list[TestimonialIn] = Field(max_length=50)
     cases: list[CaseIn] = Field(max_length=100)
+    contacts: list[ContactIn] = Field(default_factory=list, max_length=12)
+    socials: list[SocialIn] = Field(default_factory=list, max_length=12)
 
 
 class LoginIn(BaseModel):
@@ -72,12 +103,37 @@ class LeadStatusIn(BaseModel):
 
 
 class PostIn(BaseModel):
-    """Blog/yangilik posti."""
+    """Blog/yangilik posti. video — yuklangan fayl yoki YouTube havolasi."""
 
     title: str = Field(min_length=1, max_length=200)
     body: str = Field(default="", max_length=20000)
     image: str = Field(default="", max_length=1000)
+    video: str = Field(default="", max_length=1000)
     published: bool = True
+
+
+class ReviewIn(BaseModel):
+    """Mijoz yozadigan fikr. `code` — admin bergan bir martalik kod."""
+
+    code: str = Field(min_length=3, max_length=32)
+    name: str = Field(min_length=1, max_length=120)
+    role: str = Field(default="", max_length=120)
+    text: str = Field(min_length=10, max_length=1200)
+    rating: int = Field(default=5, ge=1, le=5)
+
+    @field_validator("name", "text")
+    @classmethod
+    def _not_blank(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("Bo'sh bo'lishi mumkin emas")
+        return v
+
+
+class ReviewCodeIn(BaseModel):
+    """Yangi kod yaratish — mijoz nomi ixtiyoriy izoh."""
+
+    client: str = Field(default="", max_length=160)
 
 
 class TelegramSettingsIn(BaseModel):
@@ -144,6 +200,15 @@ DEFAULT_CONTENT: dict = {
                 "90 kunlik texnik yordam",
             ],
         },
+    ],
+    "contacts": [
+        {"label": "Telegram", "value": "@promtchi", "url": "https://t.me/promtchi", "icon": "telegram"},
+        {"label": "Email", "value": "hello@promtchi.uz", "url": "mailto:hello@promtchi.uz", "icon": "email"},
+        {"label": "Telefon", "value": "+998 90 000 00 00", "url": "tel:+998900000000", "icon": "phone"},
+    ],
+    "socials": [
+        {"name": "Telegram", "url": "https://t.me/promtchi", "icon": "telegram"},
+        {"name": "Instagram", "url": "https://instagram.com/promtchi", "icon": "instagram"},
     ],
     "team": [
         {"name": "G'iyosiddin Tursunxo'jayev", "role": "Founder", "photo": ""},

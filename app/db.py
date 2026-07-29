@@ -121,6 +121,7 @@ class Post(Base):
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     body: Mapped[str] = mapped_column(Text, default="")
     image: Mapped[str] = mapped_column(String(1000), default="")
+    video: Mapped[str] = mapped_column(String(1000), default="")
     published: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -140,7 +141,73 @@ class Post(Base):
             "title": self.title,
             "body": self.body,
             "image": self.image,
+            "video": self.video,
             "published": bool(self.published),
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class Review(Base):
+    """Mijoz fikri — FOYDALANUVCHI yozadi, admin tahrirlay OLMAYDI.
+
+    Admin faqat moderatsiya qiladi: tasdiqlash (approved) yoki o'chirish.
+    Matnni o'zgartirish imkoni ataylab yo'q — fikr mijozning o'z so'zi.
+    Yozish uchun mijozga berilgan bir martalik kod (ReviewCode) talab qilinadi,
+    shuning uchun faqat haqiqiy mijozlar fikr qoldira oladi.
+    """
+
+    __tablename__ = "reviews"
+    __table_args__ = (Index("ix_reviews_created_at", "created_at"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    role: Mapped[str] = mapped_column(String(120), default="")
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    rating: Mapped[int] = mapped_column(Integer, default=5, nullable=False)
+    approved: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    code: Mapped[str] = mapped_column(String(32), default="")
+    ip: Mapped[str] = mapped_column(String(64), default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    def as_dict(self, admin: bool = False) -> dict:
+        d = {
+            "id": self.id,
+            "name": self.name,
+            "role": self.role,
+            "text": self.text,
+            "rating": self.rating,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+        if admin:
+            d["approved"] = bool(self.approved)
+            d["code"] = self.code
+        return d
+
+
+class ReviewCode(Base):
+    """Fikr yozish uchun bir martalik kod — admin mijozga beradi."""
+
+    __tablename__ = "review_codes"
+
+    code: Mapped[str] = mapped_column(String(32), primary_key=True)
+    client: Mapped[str] = mapped_column(String(160), default="")
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    def as_dict(self) -> dict:
+        return {
+            "code": self.code,
+            "client": self.client,
+            "used": self.used_at is not None,
+            "used_at": self.used_at.isoformat() if self.used_at else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
@@ -162,6 +229,7 @@ class Setting(Base):
 _MIGRATIONS = [
     "ALTER TABLE leads ADD COLUMN status VARCHAR(16) NOT NULL DEFAULT 'new'",
     "ALTER TABLE leads ADD COLUMN tg_sent BOOLEAN NOT NULL DEFAULT 0",
+    "ALTER TABLE posts ADD COLUMN video VARCHAR(1000) DEFAULT ''",
 ]
 
 

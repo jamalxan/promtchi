@@ -68,6 +68,10 @@ class Settings:
     # Xabarnoma navbati — burst paytida serverni bo'g'ib qo'ymasligi uchun
     TELEGRAM_QUEUE_SIZE: int = _int("TELEGRAM_QUEUE_SIZE", 5000)
     TELEGRAM_WORKERS: int = _int("TELEGRAM_WORKERS", 2)
+    # Bot buyruqlari/tugmalarini tinglash (long polling). Bir necha uvicorn
+    # worker ishlatilsa FAQAT bittasida yoqilgan bo'lsin — Telegram bir vaqtda
+    # bitta getUpdates'ga ruxsat beradi (aks holda 409 Conflict).
+    TELEGRAM_POLLING: bool = _bool("TELEGRAM_POLLING", True)
 
     # CORS (vergul bilan ajratilgan originlar yoki *)
     CORS_ORIGINS: list = [
@@ -98,6 +102,8 @@ class Settings:
     # ── Xavfsizlik ───────────────────────────────────────────────────────────
     ENABLE_DOCS: bool = _bool("ENABLE_DOCS", ENV != "production")
     MAX_BODY_BYTES: int = _int("MAX_BODY_BYTES", 256 * 1024)
+    # Fayl yuklash (rasm/video) — alohida, kattaroq limit
+    MAX_UPLOAD_BYTES: int = _int("MAX_UPLOAD_BYTES", 30 * 1024 * 1024)
     HSTS_SECONDS: int = _int("HSTS_SECONDS", 31536000)
 
     # ── Kesh ─────────────────────────────────────────────────────────────────

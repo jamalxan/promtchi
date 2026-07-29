@@ -168,6 +168,30 @@ tr:hover td{background:rgba(217,255,63,.08)}
 .add-btn:hover{border-color:var(--blue);color:var(--blue);background:rgba(43,43,255,.03)}
 .add-btn svg{width:20px;height:20px;stroke:currentColor;stroke-width:2.5;fill:none}
 
+/* ═══ MEDIA YUKLASH ═══ */
+.media-field{display:flex;gap:.7rem;align-items:flex-start;margin-top:.7rem}
+.media-prev{width:88px;height:88px;flex:none;border-radius:10px;border:2px solid rgba(11,11,14,.15);
+  background:var(--cream) center/cover no-repeat;display:grid;place-items:center;overflow:hidden;
+  font-size:.62rem;text-align:center;color:rgba(11,11,14,.4);font-family:var(--mono);padding:.3rem}
+.media-prev video{width:100%;height:100%;object-fit:cover}
+.media-ctl{flex:1;min-width:0}
+.media-ctl .row{display:flex;gap:.4rem;margin-top:.4rem;flex-wrap:wrap}
+.up-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.5rem .9rem;border-radius:8px;
+  border:2px solid var(--blk);background:var(--w);font-size:.8rem;font-weight:700;transition:.15s}
+.up-btn:hover{background:var(--blk);color:var(--acid)}
+.up-btn.busy{opacity:.55;pointer-events:none}
+.up-clear{border-color:var(--coral);color:var(--coral)}
+.up-clear:hover{background:var(--coral);color:var(--w)}
+.up-hint{font-size:.72rem;opacity:.5;margin-top:.35rem;font-family:var(--mono)}
+
+/* ═══ ALOQA / SOCIAL ═══ */
+.icon-pick{display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.4rem}
+.icon-pick button{width:38px;height:38px;border-radius:9px;border:2px solid rgba(11,11,14,.15);
+  background:var(--w);display:grid;place-items:center;transition:.15s}
+.icon-pick button svg{width:18px;height:18px;fill:currentColor}
+.icon-pick button.on{border-color:var(--blue);background:var(--blue);color:var(--w)}
+.icon-pick button:hover{border-color:var(--blk)}
+
 /* ═══ TOAST ═══ */
 .toast{position:fixed;bottom:24px;right:24px;background:var(--blk);color:var(--w);
   padding:.85rem 1.4rem;border-radius:10px;font-weight:600;font-size:.88rem;z-index:9999;
@@ -258,9 +282,9 @@ tr:hover td{background:rgba(217,255,63,.08)}
         <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         Jamoa
       </a>
-      <a href="#" data-page="testimonials">
+      <a href="#" data-page="reviews">
         <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        Fikrlar
+        Fikrlar <span class="nav-badge" id="navNewRev" style="display:none">0</span>
       </a>
       <div class="nav-label">Kontent</div>
       <a href="#" data-page="posts">
@@ -310,7 +334,9 @@ let TOKEN = localStorage.getItem('promtchi_token') || '';
 let DATA = null;
 let LEADS = [];
 let POSTS = [];
-let TG = null; // {has_token, bot_token_masked, chat_id, active}
+let REVIEWS = [];
+let RCODES = [];
+let TG = null; // {has_token, bot_token_masked, chat_id, active, subscribers, ...}
 let CONTENT_VERSION = '—';
 let currentPage = 'dashboard';
 
@@ -414,7 +440,7 @@ $('logoutBtn').onclick = logout;
 async function showApp() {
   $('loginPage').style.display = 'none';
   $('appPage').style.display = '';
-  await Promise.all([loadContent(), loadLeads(), loadPosts(), loadTelegram()]);
+  await Promise.all([loadContent(), loadLeads(), loadPosts(), loadTelegram(), loadReviews()]);
   navigate(currentPage);
 }
 
@@ -423,6 +449,9 @@ function updateNavBadge() {
   const b = $('navNewLeads');
   b.textContent = n;
   b.style.display = n ? '' : 'none';
+  const p = REVIEWS.filter(r => !r.approved).length;
+  const rb = $('navNewRev');
+  if (rb) { rb.textContent = p; rb.style.display = p ? '' : 'none'; }
 }
 
 async function loadContent() {
@@ -456,6 +485,16 @@ async function loadTelegram() {
   } catch (e) { /* silent */ }
 }
 
+async function loadReviews() {
+  try {
+    const [r1, r2] = await Promise.all([
+      apiFetch('/api/admin/reviews'), apiFetch('/api/admin/review-codes')]);
+    if (r1.ok) REVIEWS = await r1.json();
+    if (r2.ok) RCODES = await r2.json();
+    updateNavBadge();
+  } catch (e) { /* silent */ }
+}
+
 /* ═══ NAVIGATION ═══ */
 function navigate(page) {
   currentPage = page;
@@ -469,7 +508,7 @@ function navigate(page) {
     cases: () => renderContentPage('cases', 'Loyihalar'),
     packages: () => renderContentPage('packages', 'Paketlar'),
     team: () => renderContentPage('team', 'Jamoa'),
-    testimonials: () => renderContentPage('testimonials', 'Fikrlar'),
+    reviews: renderReviews,
     posts: renderPosts,
     telegram: renderTelegram,
     settings: renderSettings
@@ -535,9 +574,9 @@ function renderDashboard() {
         <div class="sub">Portfolioda</div>
       </div>
       <div class="stat-card dark">
-        <div class="label">Postlar</div>
-        <div class="value">${totalPosts}</div>
-        <div class="sub">${POSTS.filter(p => p.published).length} tasi saytda</div>
+        <div class="label">Fikrlar</div>
+        <div class="value">${REVIEWS.filter(r => r.approved).length}</div>
+        <div class="sub">${REVIEWS.filter(r => !r.approved).length} ta tasdiq kutmoqda · ${totalPosts} post</div>
       </div>
     </div>
 
@@ -729,7 +768,7 @@ function saveContent() {
   }, 600);
 }
 
-const SECTION_TITLES = { cases: 'Loyihalar', packages: 'Paketlar', team: 'Jamoa', testimonials: 'Fikrlar' };
+const SECTION_TITLES = { cases: 'Loyihalar', packages: 'Paketlar', team: 'Jamoa' };
 function rerenderSection() { renderContentPage(contentTab, SECTION_TITLES[contentTab] || 'Kontent'); }
 
 const SECTION_HINTS = {
@@ -930,6 +969,140 @@ async function resetContent() {
   } catch (e) { toast('Xatolik', 'error'); }
 }
 
+/* ═══ FIKRLAR (moderatsiya — matn TAHRIRLANMAYDI) ═══ */
+function renderReviews() {
+  const pending = REVIEWS.filter(r => !r.approved);
+  const approved = REVIEWS.filter(r => r.approved);
+  const unused = RCODES.filter(c => !c.used);
+
+  const revCard = r => `
+    <div class="edit-card">
+      <div class="card-hd">
+        <span class="num">#${r.id} · ${formatDate(r.created_at)} · ${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
+        <div style="display:flex;gap:.4rem">
+          ${r.approved
+            ? `<button class="btn btn-outline btn-sm" onclick="approveReview(${r.id},false)">Yashirish</button>`
+            : `<button class="btn btn-acid btn-sm" onclick="approveReview(${r.id},true)">✓ Tasdiqlash</button>`}
+          <button class="del-btn" onclick="deleteReview(${r.id})" title="O'chirish">
+            <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </div>
+      </div>
+      <div style="font-size:.95rem;line-height:1.55;white-space:pre-wrap;background:var(--cream);
+                  border:2px solid rgba(11,11,14,.12);border-radius:10px;padding:.9rem 1rem">${esc(r.text)}</div>
+      <div style="margin-top:.7rem;font-size:.88rem">
+        <b>${esc(r.name)}</b>${r.role ? ` · <span style="opacity:.65">${esc(r.role)}</span>` : ''}
+        <span style="opacity:.4;font-family:var(--mono);font-size:.75rem;margin-left:.5rem">kod: ${esc(r.code || '—')}</span>
+      </div>
+    </div>`;
+
+  $('mainContent').innerHTML = `
+    <div class="main-header">
+      <h2>Fikrlar <span style="font-family:var(--mono);font-size:1rem;opacity:.4">(${REVIEWS.length})</span></h2>
+      <div class="actions">
+        <button class="btn btn-acid btn-sm" onclick="createCode()">+ Mijoz kodi yaratish</button>
+        <button class="btn btn-outline btn-sm" onclick="refreshReviews()">↻ Yangilash</button>
+      </div>
+    </div>
+    <p style="font-size:.86rem;opacity:.6;margin:-1.2rem 0 1.3rem">
+      Fikrlarni <b>mijozlar o'zlari yozadi</b> — matn tahrirlanmaydi (bu ularning so'zi).
+      Siz faqat tasdiqlaysiz yoki o'chirasiz. Yozish uchun mijozga bir martalik kod bering.</p>
+
+    <div class="edit-card" style="margin-bottom:1.4rem">
+      <div class="card-hd"><span class="num">MIJOZ KODLARI</span>
+        <span style="font-size:.82rem;opacity:.6">${unused.length} ta ishlatilmagan</span></div>
+      ${RCODES.length ? `<table style="margin-top:.4rem">
+        <thead><tr><th>Kod</th><th>Mijoz</th><th>Holat</th><th></th></tr></thead>
+        <tbody>${RCODES.map(c => `
+          <tr>
+            <td><b style="font-family:var(--mono);font-size:.95rem">${esc(c.code)}</b></td>
+            <td>${esc(c.client) || '—'}</td>
+            <td>${c.used
+              ? `<span class="badge badge-replied">Ishlatilgan</span>`
+              : `<span class="badge badge-new">Bo'sh</span>`}</td>
+            <td class="td-actions">
+              ${c.used ? '' : `<button onclick="copyCode('${esc(c.code)}')" title="Nusxa olish">
+                <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>`}
+              <button onclick="deleteCode('${esc(c.code)}')" title="O'chirish">
+                <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+            </td>
+          </tr>`).join('')}</tbody></table>`
+        : '<p style="opacity:.5;font-size:.88rem;padding:.6rem 0">Hali kod yaratilmagan. Mijozga fikr yozdirish uchun kod yarating.</p>'}
+    </div>
+
+    ${pending.length ? `<h3 style="font-family:var(--anton);text-transform:uppercase;font-size:1.15rem;margin:.4rem 0 .8rem">
+      Tasdiq kutmoqda (${pending.length})</h3><div class="card-list">${pending.map(revCard).join('')}</div>` : ''}
+
+    <h3 style="font-family:var(--anton);text-transform:uppercase;font-size:1.15rem;margin:1.6rem 0 .8rem">
+      Saytda ko'rinayotgan (${approved.length})</h3>
+    <div class="card-list">${approved.length ? approved.map(revCard).join('')
+      : '<div class="empty-state"><p>Hali tasdiqlangan fikr yo\'q</p></div>'}</div>
+  `;
+}
+
+async function createCode() {
+  const client = prompt("Mijoz nomi (ixtiyoriy — kimga berilayotgani esda qolishi uchun):", "");
+  if (client === null) return;
+  try {
+    const r = await apiFetch('/api/admin/review-codes', {
+      method: 'POST', body: JSON.stringify({ client: client.trim() })
+    });
+    if (r.ok) {
+      const c = await r.json();
+      RCODES.unshift(c);
+      renderReviews();
+      copyCode(c.code);
+      toast(`Kod yaratildi: ${c.code} (nusxalandi)`);
+    } else toast('Xatolik', 'error');
+  } catch (e) { toast('Xatolik yuz berdi', 'error'); }
+}
+
+function copyCode(code) {
+  if (navigator.clipboard) navigator.clipboard.writeText(code).then(
+    () => toast(`Nusxalandi: ${code}`), () => toast(`Kod: ${code}`));
+  else toast(`Kod: ${code}`);
+}
+
+async function deleteCode(code) {
+  const ok = await confirm("Kodni o'chirish", `${code} kodini o'chirasizmi?`, "Ha, o'chirish");
+  if (!ok) return;
+  try {
+    const r = await apiFetch('/api/admin/review-codes/' + encodeURIComponent(code), { method: 'DELETE' });
+    if (r.ok) { RCODES = RCODES.filter(c => c.code !== code); renderReviews(); toast("Kod o'chirildi"); }
+  } catch (e) { toast('Xatolik', 'error'); }
+}
+
+async function approveReview(id, approved) {
+  try {
+    const r = await apiFetch(`/api/admin/reviews/${id}/approve?approved=${approved}`, { method: 'POST' });
+    if (r.ok) {
+      const rev = REVIEWS.find(x => x.id === id);
+      if (rev) rev.approved = approved;
+      updateNavBadge();
+      renderReviews();
+      toast(approved ? 'Tasdiqlandi — saytda ko\'rinadi ✓' : 'Saytdan yashirildi');
+    } else toast('Xatolik', 'error');
+  } catch (e) { toast('Xatolik yuz berdi', 'error'); }
+}
+
+async function deleteReview(id) {
+  const ok = await confirm("O'chirish", "Bu fikrni butunlay o'chirasizmi?", "Ha, o'chirish");
+  if (!ok) return;
+  try {
+    const r = await apiFetch('/api/admin/reviews/' + id, { method: 'DELETE' });
+    if (r.ok) {
+      REVIEWS = REVIEWS.filter(x => x.id !== id);
+      updateNavBadge(); renderReviews(); toast("Fikr o'chirildi");
+    }
+  } catch (e) { toast('Xatolik', 'error'); }
+}
+
+async function refreshReviews() {
+  await loadReviews();
+  renderReviews();
+  toast('Yangilandi');
+}
+
 /* ═══ POSTLAR ═══ */
 const _postTimers = {};
 function renderPosts() {
@@ -1038,20 +1211,39 @@ async function deletePost(id) {
 
 /* ═══ TELEGRAM ═══ */
 function renderTelegram() {
-  const st = TG || { has_token: false, bot_token_masked: '', chat_id: '', active: false };
+  const st = TG || { has_token: false, bot_token_masked: '', chat_id: '', active: false, subscribers: [], targets: 0 };
+  const subs = st.subscribers || [];
+  const link = st.bot_username ? `https://t.me/${st.bot_username}` : '';
+
   $('mainContent').innerHTML = `
-    <div class="main-header"><h2>Telegram bot</h2></div>
-    <div class="edit-card" style="max-width:560px">
+    <div class="main-header"><h2>Telegram bot</h2>
+      <div class="actions">
+        <button class="btn btn-outline btn-sm" onclick="refreshTelegram()">↻ Yangilash</button>
+      </div>
+    </div>
+
+    <div class="edit-card" style="max-width:620px">
       <div class="card-hd"><span class="num">HOLAT</span>
         <span style="font-weight:700;font-size:.9rem;color:${st.active ? 'var(--green)' : 'var(--coral)'}">
-          ${st.active ? '● Ulangan — arizalar guruhga tushadi' : '● Sozlanmagan'}</span>
+          ${st.active ? `● Ishlayapti — ${st.targets} ta chatga yuboriladi` : (st.has_token ? '● Chat ulanmagan' : '● Token yo\'q')}</span>
       </div>
+      ${st.has_token && !st.active ? `
+        <div style="background:#fef3c7;color:#92400e;border-radius:10px;padding:.9rem 1rem;font-size:.88rem;margin-bottom:.6rem">
+          <b>Bot ishlayapti, lekin hech qanday chat ulanmagan.</b><br>
+          Quyidagilardan birini qiling — chat ID'ni qo'lda kiritish SHART EMAS:
+          <ul style="margin:.5rem 0 0 1.1rem">
+            <li>Botni guruhingizga qo'shing → o'zi ro'yxatga oladi</li>
+            <li>${link ? `<a href="${link}" target="_blank" rel="noopener" style="color:#92400e;text-decoration:underline"><b>Botga o'ting</b></a>` : 'Botga o\'ting'} va <b>/start</b> bosing</li>
+          </ul>
+        </div>` : ''}
+      ${st.last_error ? `<div style="background:#fee2e2;color:#991b1b;border-radius:10px;padding:.7rem .9rem;font-size:.83rem;margin-bottom:.6rem">
+        Oxirgi xato: ${esc(st.last_error)}</div>` : ''}
       <div class="field">
-        <label>Bot token ${st.has_token ? `(joriy: <span style="text-transform:none">${esc(st.bot_token_masked)}</span>)` : ''}</label>
+        <label>Bot token ${st.has_token ? `(joriy: <span style="text-transform:none">${esc(st.bot_token_masked)}</span>${st.bot_username ? ` — @${esc(st.bot_username)}` : ''})` : ''}</label>
         <input id="tgToken" type="text" placeholder="${st.has_token ? "O'zgartirish uchun yangi token kiriting" : '123456789:ABC-DEF...'}" autocomplete="off">
       </div>
       <div class="field">
-        <label>Guruh / kanal chat ID</label>
+        <label>Asosiy guruh chat ID (ixtiyoriy — bot o'zi ham ulanadi)</label>
         <input id="tgChat" type="text" value="${esc(st.chat_id)}" placeholder="-1001234567890" autocomplete="off">
       </div>
       <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1.1rem">
@@ -1060,17 +1252,47 @@ function renderTelegram() {
         <button class="btn btn-coral btn-sm" onclick="clearTelegram()">Botni o'chirish</button>
       </div>
     </div>
-    <div class="edit-card" style="max-width:560px;margin-top:1rem">
-      <div class="card-hd"><span class="num">QO'LLANMA</span></div>
-      <ol style="font-size:.88rem;opacity:.75;padding-left:1.2rem;display:grid;gap:.4rem">
-        <li>Telegram'da <b>@BotFather</b> ga yozib yangi bot yarating — token beradi.</li>
-        <li>Botni ariza tushadigan guruhga qo'shing (xabar yozish huquqi bilan).</li>
-        <li>Guruh chat ID'sini olish: guruhga <b>@getidsbot</b> ni qo'shib ko'ring yoki
-            guruhga xabar yozib <span style="font-family:var(--mono);font-size:.8rem">api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</span> ni oching.</li>
-        <li>Token va chat ID'ni yuqoriga kiritib <b>Saqlash</b> → <b>Test xabar</b> bosing.</li>
-      </ol>
+
+    <div class="edit-card" style="max-width:620px;margin-top:1rem">
+      <div class="card-hd"><span class="num">ULANGAN CHATLAR (${subs.length})</span></div>
+      ${subs.length ? `<table style="margin-top:.4rem">
+        <thead><tr><th>Chat ID</th><th>Turi</th><th></th></tr></thead>
+        <tbody>${subs.map(s => `<tr>
+          <td style="font-family:var(--mono);font-size:.88rem">${s}</td>
+          <td>${String(s).startsWith('-') ? 'Guruh / kanal' : 'Shaxsiy'}</td>
+          <td class="td-actions"><button onclick="removeSub(${s})" title="Chiqarish">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>
+        </tr>`).join('')}</tbody></table>`
+        : '<p style="opacity:.5;font-size:.88rem;padding:.6rem 0">Hali hech kim ulanmagan — botga /start yozing yoki guruhga qo\'shing.</p>'}
+    </div>
+
+    <div class="edit-card" style="max-width:620px;margin-top:1rem">
+      <div class="card-hd"><span class="num">BOT NIMA QILA OLADI</span></div>
+      <ul style="font-size:.88rem;opacity:.8;padding-left:1.1rem;display:grid;gap:.45rem">
+        <li>Har bir yangi ariza guruhga va ulangan barcha chatlarga tushadi</li>
+        <li>Xabardagi <b>"✅ Javob berildi"</b> tugmasi bilan arizani to'g'ridan-to'g'ri
+            Telegramdan belgilash mumkin — admin panelda ham darhol ko'rinadi</li>
+        <li><b>/arizalar</b> — oxirgi 10 ta ariza, <b>/yangi</b> — javob kutayotganlari</li>
+        <li><b>/stop</b> — xabarnomalarni o'chirish, <b>/start</b> — qayta yoqish</li>
+        <li>Yangi mijoz fikri kelganda ham xabar beradi</li>
+      </ul>
     </div>
   `;
+}
+
+async function refreshTelegram() {
+  await loadTelegram();
+  renderTelegram();
+  toast('Yangilandi');
+}
+
+async function removeSub(chatId) {
+  const ok = await confirm("Chiqarish", `${chatId} chat xabarnoma olishni to'xtatadi. Davom etasizmi?`, "Ha, chiqarish");
+  if (!ok) return;
+  try {
+    const r = await apiFetch('/api/admin/telegram/subscribers/' + chatId, { method: 'DELETE' });
+    if (r.ok) { TG = await r.json(); renderTelegram(); toast('Chiqarildi'); }
+  } catch (e) { toast('Xatolik', 'error'); }
 }
 
 async function saveTelegram() {
@@ -1091,7 +1313,7 @@ async function testTelegram() {
   try {
     const r = await apiFetch('/api/admin/telegram/test', { method: 'POST' });
     const data = await r.json().catch(() => ({}));
-    if (r.ok) toast('Test xabar yuborildi — guruhni tekshiring ✓');
+    if (r.ok) toast(`Test xabar ${data.sent} ta chatga yuborildi ✓`);
     else toast(data.detail || 'Test muvaffaqiyatsiz', 'error');
   } catch (e) { toast('Xatolik yuz berdi', 'error'); }
   finally { btn.disabled = false; btn.textContent = 'Test xabar yuborish'; }
@@ -1136,7 +1358,7 @@ function renderSettings() {
           Loyihalar: ${DATA ? DATA.cases.length : 0} ·
           Paketlar: ${DATA ? DATA.packages.length : 0} ·
           Jamoa: ${DATA ? DATA.team.length : 0} ·
-          Fikrlar: ${DATA ? DATA.testimonials.length : 0} ·
+          Fikrlar: ${REVIEWS.filter(r => r.approved).length}/${REVIEWS.length} ·
           Postlar: ${POSTS.length}
         </div>
       </div>

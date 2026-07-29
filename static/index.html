@@ -441,6 +441,19 @@ section{position:relative}
 .tcard .tav{width:44px;height:44px;border-radius:11px;background:var(--blue);color:var(--w);display:grid;
   place-items:center;font-family:var(--anton);font-size:1.1rem;border:2.5px solid var(--blk);background-size:cover;background-position:center}
 .tcard b{display:block;font-size:.92rem}.tcard small{opacity:.6;font-size:.8rem}
+.tcard .stars{color:var(--coral);font-size:.9rem;letter-spacing:.1em;margin-top:.5rem}
+/* fikr qoldirish */
+.rev-cta{display:flex;justify-content:center;margin-top:2.4rem;padding:0 clamp(18px,4vw,48px)}
+.rev-cta button{display:inline-flex;align-items:center;gap:.6rem;padding:.9rem 1.7rem;border-radius:999px;
+  background:transparent;color:var(--w);border:2px solid var(--line-w);font-weight:700;font-size:.92rem;
+  transition:.3s var(--ease)}
+.rev-cta button:hover{border-color:var(--acid);color:var(--acid);transform:translateY(-3px)}
+#revForm .field{margin-bottom:1rem}
+#revForm label{display:block;margin-bottom:.4rem}
+#revForm .rate{display:flex;gap:.35rem;font-size:1.7rem;line-height:1;cursor:pointer;user-select:none}
+#revForm .rate span{filter:grayscale(1);opacity:.4;transition:.15s}
+#revForm .rate span.on{filter:none;opacity:1;transform:scale(1.08)}
+.rev-note{font-size:.84rem;opacity:.7;margin-bottom:1.2rem;line-height:1.5}
 
 /* ══════════ JAMOA ══════════ */
 .team-sec{background:var(--cream);color:var(--blk)}
@@ -467,7 +480,13 @@ section{position:relative}
   text-align:left;display:flex;flex-direction:column;cursor:pointer;font-family:inherit;padding:0;
   transition:transform .4s var(--ease),box-shadow .4s}
 .pstcard:hover{transform:translateY(-8px) rotate(-.5deg);box-shadow:0 30px 60px rgba(217,255,63,.14)}
-.pst-img{height:170px;background-size:cover;background-position:center;border-bottom:3px solid var(--blk)}
+.pst-img{height:170px;background-size:cover;background-position:center;border-bottom:3px solid var(--blk);
+  position:relative;display:grid;place-items:center}
+.pst-noimg{background:var(--blue)}
+.pst-play{width:52px;height:52px;border-radius:50%;background:rgba(11,11,14,.72);color:var(--acid);
+  display:grid;place-items:center;font-size:1.1rem;padding-left:3px;border:2px solid var(--acid);
+  transition:transform .3s var(--ease)}
+.pstcard:hover .pst-play{transform:scale(1.14)}
 .pst-body{padding:1.4rem 1.5rem 1.6rem}
 .pst-body small{font-family:var(--mono);font-size:.64rem;letter-spacing:.18em;opacity:.55;text-transform:uppercase}
 .pst-body h3{font-family:var(--anton);font-size:1.45rem;text-transform:uppercase;margin:.55rem 0 .45rem;line-height:1.08}
@@ -509,6 +528,17 @@ textarea{min-height:120px;resize:vertical}
 .con-a small{font-family:var(--mono);font-weight:400;font-size:.74rem;letter-spacing:.1em;opacity:.65}
 .con-a:hover{transform:translate(3px,-3px);background:var(--cream)}
 .con-a svg{width:18px;height:18px;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.con-a .ci{width:34px;height:34px;border-radius:10px;background:var(--blk);color:var(--acid);display:grid;
+  place-items:center;flex:none;margin-right:.2rem}
+.con-a .ci svg{width:17px;height:17px;fill:currentColor;stroke:none}
+.con-a .cwrap{display:flex;align-items:center;gap:.8rem;min-width:0}
+.con-a .ctxt{min-width:0;overflow:hidden}
+.con-a .ctxt small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* media (video/rasm) — post va loyiha modallarida */
+.media-box{position:relative;width:100%;border-radius:12px;overflow:hidden;border:2.5px solid var(--blk);
+  margin:.9rem 0;background:var(--blk);aspect-ratio:16/9}
+.media-box video,.media-box iframe,.media-box img{width:100%;height:100%;display:block;border:0;object-fit:cover}
 
 /* ══════════ FOOTER ══════════ */
 footer{background:var(--blk);color:var(--w);padding:clamp(60px,8vw,110px) clamp(18px,4vw,48px) 0;overflow:hidden}
@@ -518,6 +548,19 @@ footer{background:var(--blk);color:var(--w);padding:clamp(60px,8vw,110px) clamp(
 .f-nav{display:grid;gap:.5rem;font-family:var(--mono);font-size:.84rem;letter-spacing:.1em}
 .f-nav a{color:rgba(252,251,247,.6);text-decoration:none;transition:color .25s}
 .f-nav a:hover{color:var(--acid)}
+/* ijtimoiy tarmoqlar — admin qo'shgan havolalar soniga moslashadi */
+.f-social{display:flex;gap:.7rem;flex-wrap:wrap;max-width:1360px;margin:2.6rem auto 0;justify-content:flex-start}
+.f-social:empty{display:none}
+.f-social a{display:inline-flex;align-items:center;gap:.5rem;padding:.62rem 1.1rem;border-radius:999px;
+  border:1.5px solid var(--line-w);color:rgba(252,251,247,.75);text-decoration:none;
+  font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;
+  transition:transform .3s var(--ease),background .3s,color .3s,border-color .3s}
+.f-social a:hover{background:var(--acid);color:var(--blk);border-color:var(--acid);transform:translateY(-3px)}
+.f-social a:active{transform:scale(.96)}
+.f-social svg{width:16px;height:16px;fill:currentColor;flex:none}
+@media(max-width:600px){.f-social{justify-content:center}.f-social a span{display:none}
+  .f-social a{padding:.72rem;border-radius:50%}}
+
 .f-meta{display:flex;justify-content:space-between;gap:1.5rem;flex-wrap:wrap;max-width:1360px;margin:3rem auto 0;
   font-family:var(--mono);font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(252,251,247,.45)}
 .f-word{font-family:var(--anton);font-size:clamp(4.6rem,17.6vw,16rem);line-height:.78;text-transform:uppercase;
@@ -834,7 +877,35 @@ body.menu-open,body.modal-open{overflow:hidden}
     <h2 class="h-xl rv" style="margin-bottom:2.4rem">Ular biz bilan <em style="color:var(--coral)">ishladi</em></h2>
   </div>
   <div class="tm-track" id="tmTrack"></div>
+  <div class="rev-cta">
+    <button type="button" onclick="openReview()">✍️ Fikr qoldirish (mijozlar uchun)</button>
+  </div>
 </section>
+
+<!-- FIKR QOLDIRISH MODALI -->
+<div class="modal" id="revModal"><div class="mbox">
+  <button class="close-x" onclick="closeReview()" aria-label="Yopish">✕</button>
+  <h3>Fikringizni yozing</h3>
+  <p class="rev-note">Fikr qoldirish faqat mijozlarimiz uchun — loyiha yakunlangach sizga
+    maxsus kod beriladi. Kod yo'q bo'lsa, biz bilan Telegram orqali bog'laning.<br>
+    <b>Yozgan fikringiz o'zgartirilmaydi</b> — u sizning so'zingiz bo'lib qoladi.</p>
+  <form id="revForm">
+    <div class="field"><label for="rvCode">Mijoz kodi</label>
+      <input id="rvCode" type="text" placeholder="PR-XXXXXX" maxlength="32" required autocomplete="off"></div>
+    <div class="field"><label for="rvName">Ismingiz</label>
+      <input id="rvName" type="text" placeholder="Ism Familiya" maxlength="120" required></div>
+    <div class="field"><label for="rvRole">Lavozim / kompaniya (ixtiyoriy)</label>
+      <input id="rvRole" type="text" placeholder="Direktor, ABC MChJ" maxlength="120"></div>
+    <div class="field"><label>Baho</label>
+      <div class="rate" id="rvRate" role="radiogroup" aria-label="Baho">
+        <span data-v="1">⭐</span><span data-v="2">⭐</span><span data-v="3">⭐</span><span data-v="4">⭐</span><span data-v="5">⭐</span>
+      </div></div>
+    <div class="field"><label for="rvText">Fikringiz</label>
+      <textarea id="rvText" placeholder="Hamkorlik qanday kechdi?" minlength="10" maxlength="1200" required style="min-height:110px"></textarea></div>
+    <button class="btn btn-blk" id="rvSend" type="submit" style="width:100%;justify-content:center">Yuborish</button>
+    <div class="ok-msg" id="rvMsg" role="status" style="margin-top:.8rem"></div>
+  </form>
+</div></div>
 
 <!-- JAMOA -->
 <section class="team-sec pad" id="jamoa">
@@ -878,14 +949,7 @@ body.menu-open,body.modal-open{overflow:hidden}
       <div class="tag-line">Aloqa — 09</div>
       <h2 class="h-xl">Loyihani <em style="color:var(--blue)">boshlaymiz</em></h2>
       <p class="body-l" style="margin-top:.8rem;opacity:.8">G'oyangizni yozing — <b>24 soat ichida</b> bog'lanamiz.</p>
-      <div class="con-links">
-        <a class="con-a" href="https://t.me/promtchi" target="_blank" rel="noopener"><span>Telegram <small>@promtchi</small></span>
-          <svg viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></svg></a>
-        <a class="con-a" href="mailto:hello@promtchi.uz"><span>Email <small>hello@promtchi.uz</small></span>
-          <svg viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></svg></a>
-        <a class="con-a" href="tel:+998900000000"><span>Telefon <small>+998 90 000 00 00</small></span>
-          <svg viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></svg></a>
-      </div>
+      <div class="con-links" id="conLinks"></div>
     </div>
     <form class="cform rv" id="contactForm">
       <div><label for="fN">Ism</label><input id="fN" type="text" placeholder="Ismingiz" maxlength="120" autocomplete="name" required></div>
@@ -913,6 +977,7 @@ body.menu-open,body.modal-open{overflow:hidden}
       <a href="#narx">→ Narxlar</a><a href="#jamoa">→ Jamoa</a><a href="#faq">→ FAQ</a>
     </nav>
   </div>
+  <div class="f-social" id="fSocial"></div>
   <div class="f-meta">
     <span>© 2026 promtchi®</span><span id="fClock">Toshkent — 00:00</span><span>Barcha huquqlar himoyalangan</span>
   </div>
@@ -929,6 +994,15 @@ body.menu-open,body.modal-open{overflow:hidden}
 <script>
 /* ══════════ DATA ══════════ */
 const DEFAULTS={
+  contacts:[
+    {label:"Telegram",value:"@promtchi",url:"https://t.me/promtchi",icon:"telegram"},
+    {label:"Email",value:"hello@promtchi.uz",url:"mailto:hello@promtchi.uz",icon:"email"},
+    {label:"Telefon",value:"+998 90 000 00 00",url:"tel:+998900000000",icon:"phone"}
+  ],
+  socials:[
+    {name:"Telegram",url:"https://t.me/promtchi",icon:"telegram"},
+    {name:"Instagram",url:"https://instagram.com/promtchi",icon:"instagram"}
+  ],
   packages:[
     {name:"Boshlang'ich",price:"300$ dan",popular:false,features:[
       "Landing sahifa","Oddiy Telegram bot","Avto javob beruvchi","Umumiy kichik loyihalar","14 kunlik texnik yordam"]},
@@ -991,6 +1065,107 @@ const initial=n=>(n||"?").trim().charAt(0).toUpperCase();
 const CHK='<svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg>';
 const reduced=matchMedia('(prefers-reduced-motion:reduce)').matches;
 
+/* ══════════ IKONKALAR ══════════ */
+const ICONS={
+  telegram:'<svg viewBox="0 0 24 24"><path d="M21.9 4.3 18.9 19c-.2 1-.8 1.3-1.7.8l-4.6-3.4-2.2 2.1c-.3.3-.5.5-1 .5l.3-4.7L18.4 6c.4-.3-.1-.5-.6-.2L7.2 12.5l-4.6-1.4c-1-.3-1-1 .2-1.5l18-6.9c.8-.3 1.5.2 1.1 1.6z"/></svg>',
+  instagram:'<svg viewBox="0 0 24 24"><path d="M12 2.2c3.2 0 3.6 0 4.9.1 1.2.1 1.8.2 2.2.4.6.2 1 .5 1.4.9.4.4.7.8.9 1.4.2.4.4 1 .4 2.2.1 1.3.1 1.7.1 4.9s0 3.6-.1 4.9c-.1 1.2-.2 1.8-.4 2.2-.2.6-.5 1-.9 1.4-.4.4-.8.7-1.4.9-.4.2-1 .4-2.2.4-1.3.1-1.7.1-4.9.1s-3.6 0-4.9-.1c-1.2-.1-1.8-.2-2.2-.4-.6-.2-1-.5-1.4-.9-.4-.4-.7-.8-.9-1.4-.2-.4-.4-1-.4-2.2C2.2 15.6 2.2 15.2 2.2 12s0-3.6.1-4.9c.1-1.2.2-1.8.4-2.2.2-.6.5-1 .9-1.4.4-.4.8-.7 1.4-.9.4-.2 1-.4 2.2-.4C8.4 2.2 8.8 2.2 12 2.2zm0 3.2A6.6 6.6 0 1 0 18.6 12 6.6 6.6 0 0 0 12 5.4zm0 10.9A4.3 4.3 0 1 1 16.3 12 4.3 4.3 0 0 1 12 16.3zm6.9-11.1a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5z"/></svg>',
+  facebook:'<svg viewBox="0 0 24 24"><path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.4 2.9h-2.3v7A10 10 0 0 0 22 12z"/></svg>',
+  youtube:'<svg viewBox="0 0 24 24"><path d="M23 12s0-3.2-.4-4.7a3 3 0 0 0-2.1-2.1C18.9 4.8 12 4.8 12 4.8s-6.9 0-8.5.4a3 3 0 0 0-2.1 2.1C1 8.8 1 12 1 12s0 3.2.4 4.7a3 3 0 0 0 2.1 2.1c1.6.4 8.5.4 8.5.4s6.9 0 8.5-.4a3 3 0 0 0 2.1-2.1C23 15.2 23 12 23 12zM9.8 15.3V8.7l5.7 3.3z"/></svg>',
+  twitter:'<svg viewBox="0 0 24 24"><path d="M18.2 2.3h3.4l-7.4 8.5L23 21.7h-6.8l-5.3-7-6.1 7H1.4l7.9-9.1L1 2.3h7l4.8 6.4zm-1.2 17.3h1.9L7.1 4.3H5z"/></svg>',
+  linkedin:'<svg viewBox="0 0 24 24"><path d="M20.4 20.4h-3.6v-5.6c0-1.3 0-3-1.9-3s-2.1 1.4-2.1 2.9v5.7H9.3V9h3.4v1.6h.1a3.8 3.8 0 0 1 3.4-1.9c3.6 0 4.3 2.4 4.3 5.5zM5.3 7.4a2.1 2.1 0 1 1 2.1-2.1 2.1 2.1 0 0 1-2.1 2.1zM7.1 20.4H3.5V9h3.6zM22.2 0H1.8A1.8 1.8 0 0 0 0 1.8v20.4A1.8 1.8 0 0 0 1.8 24h20.4a1.8 1.8 0 0 0 1.8-1.8V1.8A1.8 1.8 0 0 0 22.2 0z"/></svg>',
+  tiktok:'<svg viewBox="0 0 24 24"><path d="M20 8.3a6.8 6.8 0 0 1-4.2-1.4v6.9a5.9 5.9 0 1 1-5.1-5.8v3a2.9 2.9 0 1 0 2.1 2.8V2h2.9a4 4 0 0 0 4.3 3.5z"/></svg>',
+  github:'<svg viewBox="0 0 24 24"><path d="M12 .5A11.5 11.5 0 0 0 8.4 23c.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.1.1 1.7 1.2 1.7 1.2 1 1.7 2.7 1.2 3.4.9a2.5 2.5 0 0 1 .7-1.5c-2.6-.3-5.3-1.3-5.3-5.8a4.5 4.5 0 0 1 1.2-3.1 4.2 4.2 0 0 1 .1-3.1s1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2a4.2 4.2 0 0 1 .1 3.1 4.5 4.5 0 0 1 1.2 3.1c0 4.5-2.7 5.5-5.3 5.8a2.8 2.8 0 0 1 .8 2.2v3.3c0 .3.2.7.8.6A11.5 11.5 0 0 0 12 .5z"/></svg>',
+  email:'<svg viewBox="0 0 24 24"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4.2-8 5-8-5V6l8 5 8-5z"/></svg>',
+  phone:'<svg viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2a11.4 11.4 0 0 0 3.6.6 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .6 3.6c.1.3 0 .7-.2 1z"/></svg>',
+  website:'<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm7.9 9h-3.1a15.6 15.6 0 0 0-1.2-5.3A8 8 0 0 1 19.9 11zM12 4.1c.8 1.1 1.6 3.2 1.8 6.9h-3.6c.2-3.7 1-5.8 1.8-6.9zM4.1 11a8 8 0 0 1 4.3-5.3A15.6 15.6 0 0 0 7.2 11zm0 2h3.1a15.6 15.6 0 0 0 1.2 5.3A8 8 0 0 1 4.1 13zM12 19.9c-.8-1.1-1.6-3.2-1.8-6.9h3.6c-.2 3.7-1 5.8-1.8 6.9zm3.6-1.6a15.6 15.6 0 0 0 1.2-5.3h3.1a8 8 0 0 1-4.3 5.3z"/></svg>',
+  link:'<svg viewBox="0 0 24 24"><path d="M3.9 12a5 5 0 0 1 5-5h4v1.9h-4a3.1 3.1 0 0 0 0 6.2h4V17h-4a5 5 0 0 1-5-5zm5.1 1h6v-2H9zm6.1-6h-4v1.9h4a3.1 3.1 0 0 1 0 6.2h-4V17h4a5 5 0 0 0 0-10z"/></svg>'
+};
+const icon=k=>ICONS[k]||ICONS.link;
+
+/* ══════════ MEDIA (video / rasm) ══════════ */
+function ytId(u){
+  const m=String(u).match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
+  return m?m[1]:null;
+}
+function mediaHtml(video,image,poster){
+  if(video){
+    const id=ytId(video);
+    if(id)return `<div class="media-box"><iframe src="https://www.youtube-nocookie.com/embed/${id}" title="Video"
+      allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`;
+    if(/vimeo\.com\/(\d+)/.test(video)){
+      const vid=video.match(/vimeo\.com\/(\d+)/)[1];
+      return `<div class="media-box"><iframe src="https://player.vimeo.com/video/${vid}" title="Video" allowfullscreen loading="lazy"></iframe></div>`;
+    }
+    return `<div class="media-box"><video controls preload="metadata" playsinline${poster||image?` poster="${esc(poster||image)}"`:''}>
+      <source src="${esc(video)}"></video></div>`;
+  }
+  if(image)return `<div class="media-box"><img src="${esc(image)}" alt="" loading="lazy"></div>`;
+  return '';
+}
+
+/* ══════════ MIJOZLAR FIKRI ══════════ */
+let REVIEWS=[];
+(async()=>{
+  try{
+    const r=await fetch(API+'/api/reviews');
+    if(!r.ok)return;
+    REVIEWS=await r.json();
+    if(REVIEWS.length)renderTestimonials();
+  }catch(e){/* fikrlar olinmasa kontentdagilar ko'rinadi */}
+})();
+
+function openReview(){
+  document.getElementById('revModal').classList.add('show');
+  document.body.classList.add('modal-open');
+  setTimeout(()=>document.getElementById('rvCode').focus(),100);
+}
+function closeReview(){
+  document.getElementById('revModal').classList.remove('show');
+  document.body.classList.remove('modal-open');
+}
+/* yulduzli baho */
+let rvRating=5;
+(function(){
+  const box=document.getElementById('rvRate');
+  const paint=v=>[...box.children].forEach(s=>s.classList.toggle('on',+s.dataset.v<=v));
+  paint(5);
+  box.addEventListener('click',e=>{
+    const s=e.target.closest('span');if(!s)return;
+    rvRating=+s.dataset.v;paint(rvRating);
+  });
+})();
+
+document.getElementById('revForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const msg=document.getElementById('rvMsg'),btn=document.getElementById('rvSend');
+  if(btn.disabled)return;
+  const body={
+    code:document.getElementById('rvCode').value.trim(),
+    name:document.getElementById('rvName').value.trim(),
+    role:document.getElementById('rvRole').value.trim(),
+    text:document.getElementById('rvText').value.trim(),
+    rating:rvRating
+  };
+  if(body.text.length<10){msg.textContent='Fikringiz juda qisqa (kamida 10 belgi)';return;}
+  btn.disabled=true;btn.style.opacity='.6';msg.textContent='Yuborilmoqda...';
+  try{
+    const r=await fetch(API+'/api/reviews',{method:'POST',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(r.ok){
+      msg.textContent="Rahmat! Fikringiz qabul qilindi ✓";
+      e.target.reset();rvRating=5;
+      setTimeout(closeReview,2200);
+    }else{
+      const d=await r.json().catch(()=>({}));
+      msg.textContent=d.detail||"Yuborilmadi — kodni tekshiring";
+    }
+  }catch(err){msg.textContent="Server bilan aloqa yo'q";}
+  finally{btn.disabled=false;btn.style.opacity='';}
+});
+document.getElementById('revModal').addEventListener('click',e=>{
+  if(e.target===document.getElementById('revModal'))closeReview();
+});
+
 /* ══════════ POSTLAR — bo'lsa bo'lim ochiladi ══════════ */
 let POSTS=[];
 const pDate=iso=>{try{return new Date(iso).toLocaleDateString('uz-UZ',{day:'2-digit',month:'2-digit',year:'numeric'})}catch(e){return''}};
@@ -1008,8 +1183,13 @@ const pDate=iso=>{try{return new Date(iso).toLocaleDateString('uz-UZ',{day:'2-di
 function renderPosts(){
   document.getElementById('postGrid').innerHTML=POSTS.map((p,i)=>{
     const ex=p.body.length>150?p.body.slice(0,150)+'…':p.body;
+    /* videoli postda YouTube preview yoki video belgisi ko'rsatiladi */
+    const yt=p.video?ytId(p.video):null;
+    const cover=p.image||(yt?`https://i.ytimg.com/vi/${yt}/hqdefault.jpg`:'');
+    const badge=p.video?'<span class="pst-play">▶</span>':'';
     return `<button class="pstcard" onclick="openPost(${i})">
-      ${p.image?`<div class="pst-img" style="background-image:url('${esc(p.image)}')"></div>`:''}
+      ${cover?`<div class="pst-img" style="background-image:url('${esc(cover)}')">${badge}</div>`
+             :(p.video?`<div class="pst-img pst-noimg">${badge}</div>`:'')}
       <div class="pst-body">
         <small>${pDate(p.created_at)}</small>
         <h3>${esc(p.title)}</h3>
@@ -1024,7 +1204,7 @@ function openPost(i){
   document.getElementById('caseModalBody').innerHTML=
    `<small style="font-family:var(--mono);font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;opacity:.55">${pDate(p.created_at)}</small>
     <h3 style="margin-top:.5rem">${esc(p.title)}</h3>
-    ${p.image?`<img src="${esc(p.image)}" alt="" loading="lazy" style="width:100%;border-radius:12px;border:2.5px solid var(--blk);margin:.9rem 0 .2rem">`:''}
+    ${mediaHtml(p.video,p.image)}
     <p style="white-space:pre-wrap;margin-top:.9rem">${esc(p.body)}</p>`;
   document.getElementById('caseModal').classList.add('show');
   document.body.classList.add('modal-open');
@@ -1283,11 +1463,15 @@ function renderCases(filter){
   DATA.cases.filter(c=>!filter||filter==="Hammasi"||c.cat===filter).forEach(c=>{
     const idx=DATA.cases.indexOf(c);
     const [cls,art]=coverArt(c.cat);
-    const cover=c.image?`style="background-image:url('${esc(c.image)}')"`:'';
-    const covIn=c.image?'':art;
+    /* video bo'lsa YouTube posteri muqova sifatida ishlatiladi */
+    const yt=c.video?ytId(c.video):null;
+    const cov=c.image||(yt?`https://i.ytimg.com/vi/${yt}/hqdefault.jpg`:'');
+    const cover=cov?`style="background-image:url('${esc(cov)}')"`:'';
+    const covIn=cov?(c.video?'<span class="pst-play">▶</span>':'')
+                   :(c.video?'<span class="pst-play">▶</span>':art);
     box.insertAdjacentHTML('beforeend',
      `<button class="ccard" onclick="openCase(${idx})">
-        <div class="ccover ${c.image?'':cls}" ${cover}>${covIn}</div>
+        <div class="ccover ${cov?'':cls}" ${cover}>${covIn}</div>
         <div class="cbody">
           <span class="ctag">${esc(c.cat)}</span>
           <h3>${esc(c.title)}</h3>
@@ -1311,16 +1495,22 @@ function renderFilters(){
 }
 function openCase(i){
   const c=DATA.cases[i];if(!c)return;
+  const row=(lab,val)=>val?`<div class="mrow"><div class="lab">[ ${lab} ]</div><p>${esc(val)}</p></div>`:'';
   document.getElementById('caseModalBody').innerHTML=
    `<span class="ctag" style="background:var(--blk);color:var(--w);padding:.32rem .7rem;border-radius:6px;font-family:var(--mono);font-size:.64rem;letter-spacing:.18em;text-transform:uppercase">${esc(c.cat)}</span>
     <h3 style="margin-top:.8rem">${esc(c.title)}</h3>
     <p style="opacity:.7">${esc(c.short)}</p>
-    <div class="mrow"><div class="lab">[ Muammo ]</div><p>${esc(c.problem)}</p></div>
-    <div class="mrow"><div class="lab">[ Yechim ]</div><p>${esc(c.solution)}</p></div>
-    <div class="mrow"><div class="lab">[ Natija ]</div><p>${esc(c.result)}</p></div>
-    <div class="mrow"><div class="lab">[ Texnologiyalar ]</div><p>${esc(c.tech)}</p></div>
-    <div class="mrow"><div class="lab">[ Muddat ]</div><p>${esc(c.duration)}</p></div>
-    <a href="#aloqa" class="btn btn-blk" onclick="closeCase()" style="margin-top:.5rem">Shunga o'xshash loyiha kerakmi? →</a>`;
+    ${mediaHtml(c.video,c.image)}
+    ${row('Mijoz',c.client)}
+    ${row('Muammo',c.problem)}
+    ${row('Yechim',c.solution)}
+    ${row('Natija',c.result)}
+    ${row('Texnologiyalar',c.tech)}
+    ${row('Muddat',c.duration)}
+    <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.6rem">
+      ${c.link?`<a href="${esc(c.link)}" target="_blank" rel="noopener" class="btn btn-acid">Loyihani ko'rish ↗</a>`:''}
+      <a href="#aloqa" class="btn btn-blk" onclick="closeCase()">Shunga o'xshash loyiha kerakmi? →</a>
+    </div>`;
   document.getElementById('caseModal').classList.add('show');
   document.body.classList.add('modal-open');
 }
@@ -1328,7 +1518,7 @@ function closeCase(){document.getElementById('caseModal').classList.remove('show
 /* Escape — modal va menyuni yopadi */
 addEventListener('keydown',e=>{
   if(e.key!=='Escape')return;
-  closeCase();
+  closeCase();closeReview();
   if(document.body.classList.contains('menu-open')){
     document.body.classList.remove('menu-open');
     document.querySelector('#menuBtn span:first-child').textContent='Menyu';
@@ -1361,19 +1551,44 @@ function renderTeam(){
   staggerIn([...box.children],'gi');
 }
 function renderTestimonials(){
-  const box=document.getElementById('tmTrack');box.innerHTML='';
-  const cards=DATA.testimonials.map(t=>{
+  const box=document.getElementById('tmTrack');
+  /* Mijozlar yozgan fikrlar birinchi; ular yo'q bo'lsa kontentdagilar ko'rinadi */
+  const items=REVIEWS.length
+    ? REVIEWS.map(r=>({text:r.text,name:r.name,role:r.role,photo:'',rating:r.rating}))
+    : DATA.testimonials.map(t=>({...t,rating:0}));
+  const cards=items.map(t=>{
     const bg=t.photo?`style="background-image:url('${esc(t.photo)}')"`:'';
-    return `<div class="tcard"><div class="qm">"</div><p>${esc(t.text)}</p>
+    const stars=t.rating?`<div class="stars">${'★'.repeat(t.rating)}${'☆'.repeat(5-t.rating)}</div>`:'';
+    return `<div class="tcard"><div class="qm">"</div><p>${esc(t.text)}</p>${stars}
       <div class="twho"><span class="tav" ${bg}>${t.photo?'':initial(t.name)}</span>
         <span><b>${esc(t.name)}</b><small>${esc(t.role)}</small></span></div></div>`;
   }).join('');
-  box.innerHTML=cards+cards+cards;
+  /* marquee uzluksiz bo'lishi uchun kamida 6 ta karta kerak */
+  const rep=items.length<3?4:3;
+  box.innerHTML=cards.repeat(rep);
 }
 function renderStack(){
   document.getElementById('stackList').innerHTML=STACK.map(s=>`<span>${s}</span>`).join('');
 }
-function renderAll(){renderFilters();renderCases();renderPackages();renderTeam();renderTestimonials();renderStack();}
+/* aloqa havolalari — admin panelda boshqariladi */
+function renderContacts(){
+  const list=(DATA.contacts&&DATA.contacts.length)?DATA.contacts:DEFAULTS.contacts;
+  document.getElementById('conLinks').innerHTML=list.map(c=>{
+    const ext=/^https?:/i.test(c.url)?' target="_blank" rel="noopener"':'';
+    return `<a class="con-a" href="${esc(c.url)}"${ext}>
+      <span class="cwrap"><span class="ci">${icon(c.icon)}</span>
+      <span class="ctxt">${esc(c.label)}${c.value?` <small>${esc(c.value)}</small>`:''}</span></span>
+      <svg viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></svg></a>`;
+  }).join('');
+}
+/* footer ijtimoiy tarmoqlari — soniga qarab moslashadi */
+function renderSocials(){
+  const list=(DATA.socials&&DATA.socials.length)?DATA.socials:(DEFAULTS.socials||[]);
+  document.getElementById('fSocial').innerHTML=list.map(s=>
+    `<a href="${esc(s.url)}" target="_blank" rel="noopener" aria-label="${esc(s.name)}" title="${esc(s.name)}">
+      ${icon(s.icon)}<span>${esc(s.name)}</span></a>`).join('');
+}
+function renderAll(){renderFilters();renderCases();renderPackages();renderTeam();renderTestimonials();renderStack();renderContacts();renderSocials();}
 renderAll();
 
 /* ══════════ FAQ ══════════ */

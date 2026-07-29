@@ -20,14 +20,18 @@ Hujjatlar: /docs (faqat ENABLE_DOCS=true bo'lganda)
 import asyncio
 import gzip
 import hashlib
-import html
 import json
 import logging
+import secrets
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
+from html import escape
 from pathlib import Path
 
 import httpx
-from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
+from fastapi import (
+    Depends, FastAPI, File, HTTPException, Query, Request, Response, UploadFile,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse
@@ -38,18 +42,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .auth import check_password, create_token, require_admin
 from .config import settings
 from .db import (
-    Base, Content, Lead, Post, SessionLocal, Setting, engine, get_session,
-    run_migrations,
+    Base, Content, Lead, Post, Review, ReviewCode, SessionLocal, Setting, engine,
+    get_session, run_migrations,
 )
 from .schemas import (
     DEFAULT_CONTENT, ContentDoc, LeadIn, LeadStatusIn, LoginIn, PostIn,
-    TelegramSettingsIn,
+    ReviewCodeIn, ReviewIn, TelegramSettingsIn,
 )
+from .telegram import bot
 from .security import (
     BodyLimitMiddleware,
     RateLimitMiddleware,
     SecurityHeadersMiddleware,
     check_lead_limits,
+    check_review_limits,
     login_limiter,
 )
 
@@ -83,8 +89,10 @@ class _ContentCache:
 
 
 content_cache = _ContentCache()
-# Postlar keshi — CRUD'da clear() qilinadi, keyingi GET'da DB'dan qayta yuklanadi
+# Postlar va fikrlar keshi — CRUD'da clear() qilinadi, keyingi GET'da DB'dan
+# qayta yuklanadi. Public o'qishlar shu tufayli DB'ga umuman tegmaydi.
 posts_cache = _ContentCache()
+reviews_cache = _ContentCache()
 
 
 # ══════════ SAHIFA KESHI ══════════
@@ -120,100 +128,16 @@ class _PageCache:
 index_cache = _PageCache(STATIC_DIR / "index.html")
 
 # ══════════ TELEGRAM ══════════
-# Sozlamalar DB'da (settings jadvali) saqlanadi va admin paneldan
-# boshqariladi; .env qiymatlari faqat boshlang'ich default bo'lib xizmat qiladi.
-class _TgConfig:
-    __slots__ = ("token", "chat_id")
-
-    def __init__(self):
-        self.token: str = ""
-        self.chat_id: str = ""
-
-    @property
-    def ready(self) -> bool:
-        return bool(self.token and self.chat_id)
-
-    def masked_token(self) -> str:
-        t = self.token
-        if not t:
-            return ""
-        return t[:8] + "…" + t[-4:] if len(t) > 16 else "•" * len(t)
-
-
-tg_conf = _TgConfig()
-
-# Xabarnomalar uchun navbat — burst paytida 1000 ta parallel
-# HTTP so'rov ochilmasligi uchun.
-tg_queue: asyncio.Queue | None = None
+# Bot mantiqi app/telegram.py da. Sozlamalar DB'da (settings jadvali) saqlanadi
+# va admin paneldan boshqariladi; .env qiymatlari boshlang'ich default.
+# Bot guruhga qo'shilganda yoki /start bosilganda chatni o'zi ro'yxatga oladi.
 http_client: httpx.AsyncClient | None = None
 _bg_tasks: set[asyncio.Task] = set()
 
 
-async def _tg_worker(worker_id: int) -> None:
-    assert tg_queue is not None
-    while True:
-        lead_id, body = await tg_queue.get()
-        try:
-            if http_client is not None and tg_conf.ready:
-                url = f"https://api.telegram.org/bot{tg_conf.token}/sendMessage"
-                r = await http_client.post(url, json=body)
-                if r.status_code == 200 and lead_id:
-                    # Xabarnoma yetib bordi — arizada belgilab qo'yamiz
-                    async with SessionLocal() as s:
-                        await s.execute(
-                            update(Lead).where(Lead.id == lead_id).values(tg_sent=True)
-                        )
-                        await s.commit()
-                elif r.status_code != 200:
-                    log.warning(
-                        "Telegram %s qaytardi (worker %s): %s",
-                        r.status_code, worker_id, r.text[:200],
-                    )
-        except Exception as e:  # xabarnoma yiqilsa ham ariza saqlangan
-            log.warning("Telegram xabarnoma yuborilmadi (worker %s): %s", worker_id, e)
-        finally:
-            tg_queue.task_done()
-        # Telegram sekundiga ~30 xabar qabul qiladi
-        await asyncio.sleep(1 / 15)
-
-
-def _queue_telegram(lead: Lead) -> None:
-    """Navbatga qo'yamiz. Navbat to'lgan bo'lsa jim tashlab yuboramiz."""
-    if tg_queue is None or not tg_conf.ready:
-        return
-    e = html.escape  # lead matni HTML parse_mode ichiga tushadi — escape shart
-    text = (
-        "🔥 <b>Yangi ariza — promtchi.uz</b>\n\n"
-        f"🆔 <b>Ariza:</b> #{lead.id}\n"
-        f"👤 <b>Ism:</b> {e(lead.name)}\n"
-        f"📞 <b>Aloqa:</b> {e(lead.phone or '—')}\n"
-        f"📦 <b>Loyiha:</b> {e(lead.project_type or '—')}\n"
-        f"💬 <b>Xabar:</b> {e(lead.message or '—')}"
-    )
-    try:
-        tg_queue.put_nowait((
-            lead.id,
-            {"chat_id": tg_conf.chat_id, "text": text, "parse_mode": "HTML"},
-        ))
-    except asyncio.QueueFull:
-        log.warning("Telegram navbati to'la — xabarnoma tashlandi (ariza saqlandi)")
-
-
-async def _load_tg_conf(conn) -> None:
-    """DB'dagi sozlamalarni o'qiydi; yo'q bo'lsa .env default'lari ishlatiladi."""
-    res = await conn.execute(
-        select(Setting.key, Setting.value).where(
-            Setting.key.in_(["tg_bot_token", "tg_chat_id"])
-        )
-    )
-    stored = dict(res.all())
-    tg_conf.token = stored.get("tg_bot_token", settings.TELEGRAM_BOT_TOKEN).strip()
-    tg_conf.chat_id = stored.get("tg_chat_id", settings.TELEGRAM_CHAT_ID).strip()
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global tg_queue, http_client
+    global http_client
 
     settings.validate()
 
@@ -232,7 +156,6 @@ async def lifespan(app: FastAPI):
             content_cache.set(DEFAULT_CONTENT, 1)
         else:
             content_cache.set(row[0], row[1])
-        await _load_tg_conf(conn)
 
     index_cache.load()  # birinchi so'rov gzip narxini to'lamasin
 
@@ -240,16 +163,29 @@ async def lifespan(app: FastAPI):
         timeout=httpx.Timeout(10.0, connect=5.0),
         limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
     )
-    tg_queue = asyncio.Queue(maxsize=settings.TELEGRAM_QUEUE_SIZE)
+
+    # ── Telegram bot ──
+    bot.token = settings.TELEGRAM_BOT_TOKEN.strip()
+    bot.group_chat_id = settings.TELEGRAM_CHAT_ID.strip()
+    async with SessionLocal() as s:
+        await bot.load_settings(s)  # DB qiymatlari .env ustidan yozadi
+    bot.client = http_client
+    bot.polling_enabled = settings.TELEGRAM_POLLING
+    bot.queue = asyncio.Queue(maxsize=settings.TELEGRAM_QUEUE_SIZE)
     for i in range(max(1, settings.TELEGRAM_WORKERS)):
-        t = asyncio.create_task(_tg_worker(i))
+        t = asyncio.create_task(bot.worker(i))
+        _bg_tasks.add(t)
+        t.add_done_callback(_bg_tasks.discard)
+    if settings.TELEGRAM_POLLING:
+        t = asyncio.create_task(bot.poll_loop())
         _bg_tasks.add(t)
         t.add_done_callback(_bg_tasks.discard)
 
     log.info(
-        "promtchi API tayyor — env=%s db=%s pool=%s+%s trust_proxy=%s",
+        "promtchi API tayyor — env=%s db=%s pool=%s+%s trust_proxy=%s tg=%s(%s chat)",
         settings.ENV, "sqlite" if settings.is_sqlite else "postgres",
         settings.DB_POOL_SIZE, settings.DB_MAX_OVERFLOW, settings.TRUST_PROXY,
+        "on" if bot.token else "off", len(bot.targets),
     )
     yield
 
@@ -358,7 +294,7 @@ async def create_lead(
     )
     session.add(lead)
     await session.commit()
-    _queue_telegram(lead)
+    bot.queue_lead(lead)  # guruh + obuna bo'lgan adminlarga (navbat orqali)
     return {"ok": True, "id": lead.id}
 
 
@@ -444,6 +380,7 @@ async def set_lead_status(
     if res.rowcount == 0:
         raise HTTPException(404, "Ariza topilmadi")
     await session.commit()
+    await bot.notify_lead_status(lead_id, payload.status)
     return {"ok": True, "status": payload.status}
 
 
@@ -480,6 +417,7 @@ async def create_post(
         title=payload.title.strip(),
         body=payload.body.strip(),
         image=payload.image.strip(),
+        video=payload.video.strip(),
         published=payload.published,
     )
     session.add(post)
@@ -501,6 +439,7 @@ async def update_post(
     post.title = payload.title.strip()
     post.body = payload.body.strip()
     post.image = payload.image.strip()
+    post.video = payload.video.strip()
     post.published = payload.published
     await session.commit()
     posts_cache.clear()
@@ -521,18 +460,29 @@ async def delete_post(
 
 # ══════════ ADMIN: TELEGRAM ══════════
 
-def _tg_state() -> dict:
+async def _tg_state() -> dict:
+    """Bot holati + bot username (havola yasash uchun)."""
+    username = ""
+    if bot.token:
+        me = await bot.call("getMe")
+        if me.get("ok"):
+            username = me["result"].get("username", "")
     return {
-        "has_token": bool(tg_conf.token),
-        "bot_token_masked": tg_conf.masked_token(),
-        "chat_id": tg_conf.chat_id,
-        "active": tg_conf.ready,
+        "has_token": bool(bot.token),
+        "bot_token_masked": bot.masked_token(),
+        "bot_username": username,
+        "chat_id": bot.group_chat_id,
+        "subscribers": sorted(bot.subscribers),
+        "targets": len(bot.targets),
+        "polling": bot.polling_enabled,
+        "active": bot.ready,
+        "last_error": bot.last_error,
     }
 
 
 @app.get("/api/admin/telegram")
 async def get_telegram(_: str = Depends(require_admin)):
-    return _tg_state()
+    return await _tg_state()
 
 
 @app.put("/api/admin/telegram")
@@ -546,34 +496,264 @@ async def put_telegram(
     bot_token=None — token o'zgartirilmaydi; "" — o'chiriladi.
     """
     if payload.bot_token is not None:
-        tg_conf.token = payload.bot_token.strip()
-        await session.merge(Setting(key="tg_bot_token", value=tg_conf.token))
-    tg_conf.chat_id = payload.chat_id.strip()
-    await session.merge(Setting(key="tg_chat_id", value=tg_conf.chat_id))
+        bot.token = payload.bot_token.strip()
+        bot.last_error = ""
+        bot.polling_enabled = settings.TELEGRAM_POLLING  # yangi token -> qayta urinamiz
+        await session.merge(Setting(key="tg_bot_token", value=bot.token))
+        await bot.ensure_no_webhook()
+    bot.group_chat_id = payload.chat_id.strip()
+    await session.merge(Setting(key="tg_chat_id", value=bot.group_chat_id))
     await session.commit()
-    return _tg_state()
+    return await _tg_state()
+
+
+@app.delete("/api/admin/telegram/subscribers/{chat_id}")
+async def remove_subscriber(chat_id: int, _: str = Depends(require_admin)):
+    """Obunachini ro'yxatdan chiqarish (chat endi xabarnoma olmaydi)."""
+    await bot.remove_subscriber(chat_id)
+    return await _tg_state()
 
 
 @app.post("/api/admin/telegram/test")
 async def test_telegram(_: str = Depends(require_admin)):
-    """Bot sozlamalarini jonli tekshirish — guruhga test xabar yuboradi."""
-    if not tg_conf.ready:
-        raise HTTPException(400, "Bot token va chat ID kiritilmagan")
-    if http_client is None:
-        raise HTTPException(503, "HTTP klient tayyor emas")
-    try:
-        r = await http_client.post(
-            f"https://api.telegram.org/bot{tg_conf.token}/sendMessage",
-            json={
-                "chat_id": tg_conf.chat_id,
-                "text": "✅ promtchi admin — test xabar. Bot to'g'ri sozlangan!",
-            },
+    """Jonli tekshirish — barcha ulangan chatlarga test xabar yuboradi."""
+    if not bot.token:
+        raise HTTPException(400, "Bot token kiritilmagan")
+    me = await bot.call("getMe")
+    if not me.get("ok"):
+        raise HTTPException(400, f"Token noto'g'ri: {me.get('description', '')}")
+    if not bot.targets:
+        raise HTTPException(
+            400,
+            f"Hech qanday chat ulanmagan. Botni (@{me['result'].get('username','')}) "
+            "guruhga qo'shing yoki unga /start yozing.",
         )
-        data = r.json()
+    sent, errors = 0, []
+    for chat in bot.targets:
+        data = await bot.call("sendMessage", {
+            "chat_id": chat,
+            "text": "✅ <b>promtchi</b> — test xabar. Bot to'g'ri sozlangan!",
+            "parse_mode": "HTML",
+        })
+        if data.get("ok"):
+            sent += 1
+        else:
+            errors.append(f"{chat}: {data.get('description')}")
+    if not sent:
+        raise HTTPException(400, "Yuborilmadi — " + "; ".join(errors))
+    return {"ok": True, "sent": sent, "errors": errors}
+
+
+# ══════════ FAYL YUKLASH (rasm / video) ══════════
+
+UPLOAD_DIR = STATIC_DIR / "uploads"
+_ALLOWED_UPLOADS = {
+    # kengaytma -> (MIME, sehrli baytlar ro'yxati yoki None)
+    ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+    ".webp": "image/webp", ".gif": "image/gif", ".svg": "image/svg+xml",
+    ".mp4": "video/mp4", ".webm": "video/webm", ".mov": "video/quicktime",
+}
+
+
+@app.post("/api/admin/upload")
+async def upload_file(
+    file: UploadFile = File(...),
+    _: str = Depends(require_admin),
+):
+    """Rasm yoki video yuklash. Qaytaradi: {url, kind, size}."""
+    name = (file.filename or "").strip()
+    ext = Path(name).suffix.lower()
+    if ext not in _ALLOWED_UPLOADS:
+        raise HTTPException(
+            400, f"Bu format qo'llab-quvvatlanmaydi ({ext or '?'}). "
+                 "Ruxsat: jpg, png, webp, gif, svg, mp4, webm, mov"
+        )
+
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    safe = secrets.token_hex(8) + ext
+    dest = UPLOAD_DIR / safe
+
+    size = 0
+    try:
+        with dest.open("wb") as out:
+            while chunk := await file.read(1 << 20):  # 1 MB bo'laklab
+                size += len(chunk)
+                if size > settings.MAX_UPLOAD_BYTES:
+                    out.close()
+                    dest.unlink(missing_ok=True)
+                    mb = settings.MAX_UPLOAD_BYTES // (1024 * 1024)
+                    raise HTTPException(413, f"Fayl juda katta (maksimum {mb} MB)")
+                out.write(chunk)
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(502, f"Telegram'ga ulanib bo'lmadi: {e}")
-    if not data.get("ok"):
-        raise HTTPException(400, f"Telegram xato: {data.get('description', 'noma`lum')}")
+        dest.unlink(missing_ok=True)
+        raise HTTPException(500, f"Fayl saqlanmadi: {e}")
+    finally:
+        await file.close()
+
+    if size == 0:
+        dest.unlink(missing_ok=True)
+        raise HTTPException(400, "Bo'sh fayl")
+
+    kind = "video" if _ALLOWED_UPLOADS[ext].startswith("video") else "image"
+    log.info("Fayl yuklandi: %s (%s, %.1f KB)", safe, kind, size / 1024)
+    return {"url": f"/static/uploads/{safe}", "kind": kind, "size": size}
+
+
+@app.delete("/api/admin/upload")
+async def delete_upload(url: str = Query(...), _: str = Depends(require_admin)):
+    """Yuklangan faylni o'chirish (faqat uploads papkasidan)."""
+    fname = Path(url).name
+    target = UPLOAD_DIR / fname
+    # Papkadan chiqib ketishga urinishni bloklaymiz
+    if target.parent.resolve() != UPLOAD_DIR.resolve():
+        raise HTTPException(400, "Noto'g'ri yo'l")
+    target.unlink(missing_ok=True)
+    return {"ok": True}
+
+
+# ══════════ FIKRLAR (mijozlar yozadi) ══════════
+
+@app.get("/api/reviews")
+async def list_reviews_public(request: Request):
+    """Tasdiqlangan fikrlar — public, keshlangan."""
+    if not reviews_cache.ready:
+        async with SessionLocal() as session:
+            res = await session.execute(
+                select(Review).where(Review.approved == True)  # noqa: E712
+                .order_by(Review.created_at.desc(), Review.id.desc()).limit(60)
+            )
+            reviews_cache.set([r.as_dict() for r in res.scalars().all()], 0)
+
+    headers = {
+        "ETag": reviews_cache.etag,
+        "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+    }
+    if request.headers.get("if-none-match") == reviews_cache.etag:
+        return Response(status_code=304, headers=headers)
+    return Response(
+        content=reviews_cache.body, media_type="application/json", headers=headers
+    )
+
+
+@app.post("/api/reviews", status_code=201)
+async def create_review(
+    payload: ReviewIn, request: Request, session: AsyncSession = Depends(get_session)
+):
+    """Mijoz fikri. Faqat admin bergan bir martalik kod bilan yoziladi."""
+    ip = getattr(request.state, "client_ip", "") or "unknown"
+    ok, retry, msg = check_review_limits(ip)
+    if not ok:
+        raise HTTPException(429, msg, headers={"Retry-After": str(retry)})
+
+    code = payload.code.strip().upper()
+    rc = await session.get(ReviewCode, code)
+    if rc is None:
+        raise HTTPException(403, "Kod noto'g'ri. Fikr qoldirish uchun kod bizdan olinadi.")
+    if rc.used_at is not None:
+        raise HTTPException(409, "Bu koddan allaqachon foydalanilgan.")
+
+    review = Review(
+        name=payload.name.strip(),
+        role=payload.role.strip(),
+        text=payload.text.strip(),
+        rating=payload.rating,
+        approved=False,  # admin ko'rib chiqadi (matnni o'zgartira olmaydi)
+        code=code,
+        ip=ip[:64],
+    )
+    session.add(review)
+    rc.used_at = datetime.now(timezone.utc)
+    await session.commit()
+
+    if bot.queue is not None and bot.ready:
+        bot.queue_text(
+            "⭐️ <b>Yangi fikr keldi</b>\n\n"
+            f"👤 {escape(review.name)}"
+            + (f" — {escape(review.role)}" if review.role else "")
+            + f"\n{'⭐️' * review.rating}\n\n💬 {escape(review.text)}\n\n"
+            "<i>Admin panelda tasdiqlang — shundan keyin saytda ko'rinadi.</i>"
+        )
+    return {"ok": True, "id": review.id, "pending": True}
+
+
+@app.get("/api/admin/reviews")
+async def list_reviews_admin(
+    _: str = Depends(require_admin), session: AsyncSession = Depends(get_session)
+):
+    res = await session.execute(
+        select(Review).order_by(Review.created_at.desc(), Review.id.desc())
+    )
+    return [r.as_dict(admin=True) for r in res.scalars().all()]
+
+
+@app.post("/api/admin/reviews/{review_id}/approve")
+async def approve_review(
+    review_id: int,
+    approved: bool = Query(True),
+    _: str = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    """Faqat ko'rinishni boshqaradi — fikr MATNI o'zgartirilmaydi."""
+    r = await session.get(Review, review_id)
+    if r is None:
+        raise HTTPException(404, "Fikr topilmadi")
+    r.approved = approved
+    await session.commit()
+    reviews_cache.clear()
+    return r.as_dict(admin=True)
+
+
+@app.delete("/api/admin/reviews/{review_id}")
+async def delete_review(
+    review_id: int,
+    _: str = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    await session.execute(delete(Review).where(Review.id == review_id))
+    await session.commit()
+    reviews_cache.clear()
+    return {"ok": True}
+
+
+@app.get("/api/admin/review-codes")
+async def list_review_codes(
+    _: str = Depends(require_admin), session: AsyncSession = Depends(get_session)
+):
+    res = await session.execute(
+        select(ReviewCode).order_by(ReviewCode.created_at.desc())
+    )
+    return [c.as_dict() for c in res.scalars().all()]
+
+
+@app.post("/api/admin/review-codes", status_code=201)
+async def create_review_code(
+    payload: ReviewCodeIn,
+    _: str = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    """Mijozga beriladigan bir martalik kod yaratadi."""
+    for _try in range(5):
+        code = "PR-" + secrets.token_hex(3).upper()
+        if await session.get(ReviewCode, code) is None:
+            break
+    else:
+        raise HTTPException(500, "Kod yaratilmadi, qayta urining")
+    rc = ReviewCode(code=code, client=payload.client.strip())
+    session.add(rc)
+    await session.commit()
+    return rc.as_dict()
+
+
+@app.delete("/api/admin/review-codes/{code}")
+async def delete_review_code(
+    code: str,
+    _: str = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    await session.execute(delete(ReviewCode).where(ReviewCode.code == code.upper()))
+    await session.commit()
     return {"ok": True}
 
 
