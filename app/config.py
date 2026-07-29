@@ -81,6 +81,11 @@ class Settings:
         o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",") if o.strip()
     ]
 
+    # Saytning haqiqiy domeni (canonical/OG teglarda ishlatiladi). Shu domendan
+    # boshqa Host bilan (masalan to'g'ridan-to'g'ri IP orqali) kirilsa, bosh
+    # sahifa <meta name="robots" content="noindex"> bilan qaytariladi.
+    CANONICAL_HOST: str = os.getenv("CANONICAL_HOST", "promtchi.uz")
+
     # ── Rate-limit ───────────────────────────────────────────────────────────
     # Bitta IP N daqiqada nechta ariza topshira oladi (burst'ga ruxsat beriladi,
     # shuning uchun bitta ofis/uyali tarmoqdagi bir necha odam bloklanmaydi).
