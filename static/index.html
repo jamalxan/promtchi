@@ -970,7 +970,7 @@ body.menu-open,body.modal-open{overflow:hidden}
     </div>
     <form class="cform rv" id="contactForm">
       <div><label for="fN">Ism</label><input id="fN" type="text" placeholder="Ismingiz" maxlength="120" autocomplete="name" required></div>
-      <div><label for="fT">Telefon / Telegram</label><input id="fT" type="text" placeholder="+998 __ ___ __ __" maxlength="120" autocomplete="tel"></div>
+      <div><label for="fT">Telefon / Telegram</label><input id="fT" type="tel" placeholder="+998 __ ___ __ __ yoki @username" maxlength="120" autocomplete="tel" required></div>
       <div><label for="fS">Loyiha turi</label>
         <select id="fS"><option>Web &amp; ilova</option><option>Avtomatlashtirish</option><option>AI yechim</option><option>CRM / ERP</option><option>Boshqa</option></select></div>
       <div><label for="fM">G'oyangiz</label><textarea id="fM" placeholder="Loyihangizni qisqacha yozing..." maxlength="4000"></textarea></div>
@@ -1656,8 +1656,15 @@ document.getElementById('contactForm').addEventListener('submit',async e=>{
   if(btn.disabled)return; // ikki marta bosishdan himoya
   const name=document.getElementById('fN').value.trim();
   if(!name){ok.textContent='Ismingizni kiriting';return;}
+  const phone=document.getElementById('fT').value.trim();
+  const phoneClean=phone.replace(/[\s\-()]/g,'');
+  if(!/^@[A-Za-z0-9_]{5,32}$/.test(phoneClean)&&!/^\+?\d{7,15}$/.test(phoneClean)){
+    ok.textContent="Telefon raqamini (+998...) yoki Telegram @username'ni to'g'ri kiriting";
+    document.getElementById('fT').focus();
+    return;
+  }
   const body={name:name,
-    phone:document.getElementById('fT').value.trim(),
+    phone:phone,
     project_type:document.getElementById('fS').value,
     message:document.getElementById('fM').value.trim()};
   btn.disabled=true;btn.style.opacity='.6';

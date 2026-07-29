@@ -106,9 +106,13 @@ class LoginIn(BaseModel):
     password: str = Field(min_length=1, max_length=200)
 
 
+_PHONE_RE = re.compile(r"^\+?\d{7,15}$")
+_TG_USERNAME_RE = re.compile(r"^@[A-Za-z0-9_]{5,32}$")
+
+
 class LeadIn(BaseModel):
     name: str = Field(min_length=1, max_length=120)
-    phone: str = Field(default="", max_length=120)
+    phone: str = Field(min_length=5, max_length=120)
     project_type: str = Field(default="", max_length=60)
     message: str = Field(default="", max_length=4000)
 
@@ -119,6 +123,19 @@ class LeadIn(BaseModel):
         if not v:  # faqat probeldan iborat ism o'tmasin
             raise ValueError("Ism bo'sh bo'lishi mumkin emas")
         return v
+
+    @field_validator("phone")
+    @classmethod
+    def _phone_valid(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("Telefon raqami yoki Telegram username kiritilishi shart")
+        cleaned = re.sub(r"[\s\-()]", "", v)
+        if _TG_USERNAME_RE.match(cleaned) or _PHONE_RE.match(cleaned):
+            return v
+        raise ValueError(
+            "Telefon raqamini (+998901234567) yoki Telegram @username'ni to'g'ri kiriting"
+        )
 
 
 class LeadStatusIn(BaseModel):
