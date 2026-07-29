@@ -668,15 +668,7 @@ body.menu-open,body.modal-open{overflow:hidden}
 <!-- NAV -->
 <header>
   <a class="brand" href="#top"><img src="/static/logo.png" alt="promtchi" width="34" height="34" decoding="async"><b>promtchi</b><sup>®</sup></a>
-  <nav class="topnav" aria-label="Asosiy navigatsiya">
-    <a href="#xizmat"><small>01</small><span>Xizmatlar</span></a>
-    <a href="#muddat"><small>02</small><span>Muddat</span></a>
-    <a href="#jarayon"><small>03</small><span>Jarayon</span></a>
-    <a href="#case"><small>04</small><span>Loyihalar</span></a>
-    <a href="#narx"><small>05</small><span>Narxlar</span></a>
-    <a href="#jamoa"><small>06</small><span>Jamoa</span></a>
-    <a href="#aloqa"><small>07</small><span>Aloqa</span></a>
-  </nav>
+  <nav class="topnav" id="topNav" aria-label="Asosiy navigatsiya"></nav>
   <div class="h-right">
     <span class="clock" id="clock">TAS 00:00:00</span>
     <button class="menu-btn" id="menuBtn" aria-label="Menyu"><span>Menyu</span><span class="mi"><i></i><i></i></span></button>
@@ -685,13 +677,7 @@ body.menu-open,body.modal-open{overflow:hidden}
 
 <!-- FULLSCREEN MENYU -->
 <div id="menu" aria-hidden="true">
-  <a class="m-link" href="#xizmat"><small>01</small>Xizmatlar</a>
-  <a class="m-link" href="#jarayon"><small>02</small>Jarayon</a>
-  <a class="m-link" href="#case"><small>03</small>Loyihalar</a>
-  <a class="m-link js-postlink" href="#postlar" style="display:none"><small>✦</small>Postlar</a>
-  <a class="m-link" href="#narx"><small>04</small>Narxlar</a>
-  <a class="m-link" href="#jamoa"><small>05</small>Jamoa</a>
-  <a class="m-link" href="#aloqa"><small>06</small>Aloqa</a>
+  <div id="menuLinks"></div>
   <div class="m-foot"><span>Telegram — @promtchi</span><span>hello@promtchi.uz</span><span>Toshkent, O'zbekiston</span></div>
 </div>
 
@@ -744,7 +730,7 @@ body.menu-open,body.modal-open{overflow:hidden}
 <!-- MANIFEST -->
 <section class="manifest pad">
   <div class="wrap mn-grid">
-    <div class="mn-idx rv">( Manifest — 01 )</div>
+    <div class="mn-idx rv">( Manifest )</div>
     <p class="mn-txt rv">
       Har bir <span class="hi">mahsulot</span>
       <span class="card-in ci1" title="Tezlik"><svg viewBox="0 0 24 24"><path d="M13 2L4 14h6l-1 8 9-12h-6z"/></svg></span>
@@ -946,7 +932,7 @@ body.menu-open,body.modal-open{overflow:hidden}
 <!-- FAQ -->
 <section class="faq-sec pad" id="faq">
   <div class="wrap">
-    <div class="tag-line rv" style="color:var(--acid)">FAQ — 08</div>
+    <div class="tag-line rv" style="color:var(--acid)">FAQ</div>
     <h2 class="h-xl rv">Savol — <em style="color:var(--acid)">javob</em></h2>
     <div class="faq">
       <div class="fitem rv"><button class="fq"><span>To'lov qanday amalga oshiriladi?</span><span class="fx"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></button>
@@ -989,10 +975,7 @@ body.menu-open,body.modal-open{overflow:hidden}
       <a href="#aloqa" class="btn btn-acid mag" style="margin-top:1.6rem">Bog'lanish
         <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
     </div>
-    <nav class="f-nav rv" aria-label="Footer">
-      <a href="#xizmat">→ Xizmatlar</a><a href="#jarayon">→ Jarayon</a><a href="#case">→ Loyihalar</a>
-      <a href="#narx">→ Narxlar</a><a href="#jamoa">→ Jamoa</a><a href="#faq">→ FAQ</a>
-    </nav>
+    <nav class="f-nav rv" id="fNav" aria-label="Footer"></nav>
   </div>
   <div class="f-social" id="fSocial"></div>
   <div class="f-meta">
@@ -1069,6 +1052,44 @@ const DEFAULTS={
 const STACK=["Python","FastAPI","Flutter","JavaScript","TypeScript","Go","C++"];
 const CATS=["Hammasi","Web & ilova","Avtomatlashtirish","AI yechimlar"];
 const API='';
+
+/* ══════════ NAVIGATSIYA — topnav/mobil menyu/footer/bo'lim raqamlari BITTA manbadan ══════════ */
+const NAV_SECTIONS=[
+  {id:'xizmat',label:'Xizmatlar'},
+  {id:'muddat',label:'Muddat'},
+  {id:'jarayon',label:'Jarayon'},
+  {id:'case',label:'Loyihalar'},
+  {id:'narx',label:'Narxlar'},
+  {id:'jamoa',label:'Jamoa'},
+  {id:'aloqa',label:'Aloqa'}
+];
+const pad2=n=>String(n).padStart(2,'0');
+function renderNav(){
+  document.getElementById('topNav').innerHTML=NAV_SECTIONS.map((s,i)=>
+    `<a href="#${s.id}"><small>${pad2(i+1)}</small><span>${s.label}</span></a>`).join('');
+
+  const mLinks=[];
+  NAV_SECTIONS.forEach((s,i)=>{
+    mLinks.push(`<a class="m-link" href="#${s.id}"><small>${pad2(i+1)}</small>${s.label}</a>`);
+    if(s.id==='case')mLinks.push('<a class="m-link js-postlink" href="#postlar" style="display:none"><small>✦</small>Postlar</a>');
+  });
+  mLinks.push('<a class="m-link" href="#faq"><small>✦</small>FAQ</a>');
+  document.getElementById('menuLinks').innerHTML=mLinks.join('');
+
+  const fLinks=[];
+  NAV_SECTIONS.forEach(s=>{
+    fLinks.push(`<a href="#${s.id}">→ ${s.label}</a>`);
+    if(s.id==='case')fLinks.push('<a href="#postlar" class="js-postlink" style="display:none">→ Postlar</a>');
+  });
+  fLinks.push('<a href="#faq">→ FAQ</a>');
+  document.getElementById('fNav').innerHTML=fLinks.join('');
+
+  NAV_SECTIONS.forEach((s,i)=>{
+    const tl=document.querySelector(`#${s.id} .tag-line`);
+    if(tl)tl.textContent=`${s.label} — ${pad2(i+1)}`;
+  });
+}
+renderNav();
 let DATA=JSON.parse(JSON.stringify(DEFAULTS));
 /* serverdan kontentni olib, qayta chizamiz */
 (async()=>{
