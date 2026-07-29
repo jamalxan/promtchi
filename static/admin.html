@@ -321,6 +321,9 @@ tr:hover td{background:rgba(217,255,63,.08)}
   <div class="confirm-box">
     <h4 id="confirmTitle">Tasdiqlash</h4>
     <p id="confirmText">Ishonchingiz komilmi?</p>
+    <div class="field" id="confirmWordWrap" style="display:none;text-align:left">
+      <input id="confirmWordInput" type="text" autocomplete="off" spellcheck="false">
+    </div>
     <div class="btns">
       <button class="btn btn-outline btn-sm" id="confirmNo">Bekor</button>
       <button class="btn btn-coral btn-sm" id="confirmYes">Ha, o'chirish</button>
@@ -352,16 +355,31 @@ function toast(msg, type = 'success') {
 }
 
 let _confirmCb = null;
-function confirm(title, text, yesLabel) {
+/* requireWord berilsa — Ha tugmasi input aynan shu so'zni yozgunicha o'chirilgan bo'ladi
+   (masalan kontentni reset qilishdan tasodifiy bosishning oldini olish uchun) */
+function confirm(title, text, yesLabel, requireWord) {
   return new Promise(resolve => {
     $('confirmTitle').textContent = title;
     $('confirmText').textContent = text;
     $('confirmYes').textContent = yesLabel || "Ha, o'chirish";
+    const wrap = $('confirmWordWrap'), input = $('confirmWordInput'), yes = $('confirmYes');
+    if (requireWord) {
+      wrap.style.display = '';
+      input.value = '';
+      input.placeholder = `Tasdiqlash uchun "${requireWord}" deb yozing`;
+      yes.disabled = true;
+      input.oninput = () => { yes.disabled = input.value.trim() !== requireWord; };
+      setTimeout(() => input.focus(), 50);
+    } else {
+      wrap.style.display = 'none';
+      yes.disabled = false;
+      input.oninput = null;
+    }
     $('confirmOverlay').classList.add('show');
     _confirmCb = resolve;
   });
 }
-$('confirmYes').onclick = () => { $('confirmOverlay').classList.remove('show'); if (_confirmCb) _confirmCb(true); };
+$('confirmYes').onclick = () => { if ($('confirmYes').disabled) return; $('confirmOverlay').classList.remove('show'); if (_confirmCb) _confirmCb(true); };
 $('confirmNo').onclick = () => { $('confirmOverlay').classList.remove('show'); if (_confirmCb) _confirmCb(false); };
 
 async function apiFetch(path, opts = {}) {
@@ -959,7 +977,11 @@ function importContent(e) {
 }
 
 async function resetContent() {
-  const ok = await confirm('Reset', "Barcha kontentni boshlang'ich holatga qaytarishni xohlaysizmi?", 'Ha, qaytarish');
+  const ok = await confirm(
+    'Reset',
+    "Barcha kontent (paketlar, jamoa, loyihalar, fikrlar) boshlang'ich holatga qaytariladi. Bu qaytarib bo'lmaydi.",
+    'Ha, qaytarish', 'RESET'
+  );
   if (!ok) return;
   try {
     await apiFetch('/api/admin/content/reset', { method: 'POST' });

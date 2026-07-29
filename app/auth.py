@@ -21,7 +21,14 @@ def create_token() -> str:
 
 
 def check_password(password: str) -> bool:
-    # timing-safe taqqoslash
+    if settings.ADMIN_PASSWORD_HASH:
+        import bcrypt
+
+        try:
+            return bcrypt.checkpw(password.encode(), settings.ADMIN_PASSWORD_HASH.encode())
+        except ValueError:
+            return False  # noto'g'ri formatdagi hash
+    # eski (hash qilinmagan) rejim — timing-safe taqqoslash
     return hmac.compare_digest(password.encode(), settings.ADMIN_PASSWORD.encode())
 
 
