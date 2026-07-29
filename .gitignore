@@ -8,6 +8,9 @@
 *.db-wal
 *.db-shm
 
+# Admin paneldan yuklangan fayllar (runtime, repo qismi emas)
+static/uploads/
+
 # Python
 __pycache__/
 *.pyc
