@@ -276,7 +276,7 @@ section{position:relative}
 .mn-grid{display:grid;grid-template-columns:auto 1fr;gap:clamp(1.6rem,5vw,5rem);align-items:start}
 @media(max-width:760px){.mn-grid{grid-template-columns:1fr}}
 
-/* ══════════ XIZMATLAR — hover list ══════════ */
+/* ══════════ XIZMATLAR — scroll bilan faollashadigan ro'yxat ══════════ */
 .svc{background:var(--blk)}
 .svc-row{position:relative;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:clamp(1rem,3vw,2.6rem);
   padding:clamp(1.6rem,3.4vw,2.6rem) clamp(18px,4vw,48px);border-top:1px solid var(--line-w);
@@ -284,18 +284,21 @@ section{position:relative}
   opacity:0;transform:translateX(-28px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
 .svc-row.in{opacity:1;transform:none}
 .svc-row:last-of-type{border-bottom:1px solid var(--line-w)}
+/* faol holat — scroll pozitsiyasiga qarab JS boshqaradi (is-active), kursorga bog'liq emas */
 .svc-row::before{content:'';position:absolute;inset:0;background:var(--acid);z-index:-1;
   transform:scaleY(0);transform-origin:bottom;transition:transform .45s var(--ease)}
-.svc-row:hover::before{transform:scaleY(1)}
-.svc-row:hover{color:var(--blk)}
+.svc-row.is-active::before{transform:scaleY(1)}
+.svc-row.is-active{color:var(--blk)}
 .svc-row .no{font-family:var(--mono);font-size:.82rem;letter-spacing:.2em;color:inherit;opacity:.55}
 .svc-row h3{font-family:var(--anton);font-size:clamp(1.9rem,5.4vw,4.2rem);text-transform:uppercase;line-height:1;
   transition:transform .4s var(--ease)}
-.svc-row:hover h3{transform:translateX(14px)}
+.svc-row.is-active h3{transform:translateX(14px)}
 .svc-row .sub{font-family:var(--mono);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;opacity:.6;margin-top:.4rem;display:block;font-weight:400}
 .svc-row .arr{width:52px;height:52px;border:1.6px solid currentColor;border-radius:50%;display:grid;place-items:center;transition:transform .4s var(--ease),background .3s}
 .svc-row .arr svg{width:19px;height:19px;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
-.svc-row:hover .arr{transform:rotate(-45deg);background:var(--blk);color:var(--acid);border-color:var(--blk)}
+.svc-row.is-active .arr{transform:rotate(-45deg);background:var(--blk);color:var(--acid);border-color:var(--blk)}
+/* hover — faqat yengil ko'tarilish, faol holatni bosib qo'ymaydi (mishka bo'lmagan touch qurilmalar uchun ham teng) */
+@media(hover:hover){.svc-row:hover{transform:translateY(-3px)}.svc-row.in:hover{transform:translateY(-3px)}}
 /* kursorga ergashuvchi preview — mini mockup'lar */
 .svc-prev{position:fixed;z-index:900;width:270px;aspect-ratio:4/3;border-radius:16px;pointer-events:none;
   overflow:hidden;transform:translate(-50%,-50%) scale(0);transition:transform .35s var(--ease);
@@ -1397,6 +1400,18 @@ function staggerIn(els,cls){
   });
 }
 staggerIn([...document.querySelectorAll('.svc-row')]);
+
+/* ══════════ XIZMATLAR — faol qator scroll bo'yicha (kursorga bog'liq emas, touch'da ham ishlaydi) ══════════ */
+(function(){
+  const rows=[...document.querySelectorAll('.svc-row')];
+  if(!rows.length)return;
+  function setActive(row){rows.forEach(r=>r.classList.toggle('is-active',r===row));}
+  setActive(rows[0]); // bo'limga kirilganda /01 default faol bo'lsin
+  const io=new IntersectionObserver(es=>{
+    es.forEach(e=>{if(e.isIntersecting)setActive(e.target);});
+  },{rootMargin:'-45% 0px -45% 0px',threshold:0});
+  rows.forEach(r=>io.observe(r));
+})();
 
 /* ══════════ COUNT-UP ══════════ */
 var _cio=new IntersectionObserver(es=>es.forEach(e=>{
