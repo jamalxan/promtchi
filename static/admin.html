@@ -282,6 +282,14 @@ tr:hover td{background:rgba(217,255,63,.08)}
         <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         Jamoa
       </a>
+      <a href="#" data-page="contacts">
+        <svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .6 2.9a2 2 0 0 1-.5 2.1L7.9 10a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.9.5 2.9.6a2 2 0 0 1 1.7 2z"/></svg>
+        Aloqa havolalari
+      </a>
+      <a href="#" data-page="socials">
+        <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.6" x2="15.4" y2="6.4"/><line x1="8.6" y1="13.4" x2="15.4" y2="17.6"/></svg>
+        Ijtimoiy tarmoqlar
+      </a>
       <a href="#" data-page="reviews">
         <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         Fikrlar <span class="nav-badge" id="navNewRev" style="display:none">0</span>
@@ -526,6 +534,8 @@ function navigate(page) {
     cases: () => renderContentPage('cases', 'Loyihalar'),
     packages: () => renderContentPage('packages', 'Paketlar'),
     team: () => renderContentPage('team', 'Jamoa'),
+    contacts: () => renderContentPage('contacts', 'Aloqa havolalari'),
+    socials: () => renderContentPage('socials', 'Ijtimoiy tarmoqlar'),
     reviews: renderReviews,
     posts: renderPosts,
     telegram: renderTelegram,
@@ -786,14 +796,19 @@ function saveContent() {
   }, 600);
 }
 
-const SECTION_TITLES = { cases: 'Loyihalar', packages: 'Paketlar', team: 'Jamoa' };
+const SECTION_TITLES = {
+  cases: 'Loyihalar', packages: 'Paketlar', team: 'Jamoa',
+  contacts: 'Aloqa havolalari', socials: 'Ijtimoiy tarmoqlar'
+};
 function rerenderSection() { renderContentPage(contentTab, SECTION_TITLES[contentTab] || 'Kontent'); }
 
 const SECTION_HINTS = {
   cases: "Landing'dagi \"Loyihalar\" bo'limi — portfolio. O'zgartirishlar 0.6s ichida avtomatik saqlanadi va saytda darhol ko'rinadi.",
   packages: "Landing'dagi \"Narxlar\" bo'limi paketlari. Avtomatik saqlanadi.",
   team: "Landing'dagi \"Jamoa\" bo'limi. Avtomatik saqlanadi.",
-  testimonials: "Landing'dagi \"Mijozlar fikri\" bo'limi. Avtomatik saqlanadi."
+  testimonials: "Landing'dagi \"Mijozlar fikri\" bo'limi. Avtomatik saqlanadi.",
+  contacts: "Landing'dagi \"Aloqa\" bo'limidagi havolalar (Telegram, Email, Telefon...). Bo'sh havola ko'rsatilmaydi.",
+  socials: "Footer pastidagi ijtimoiy tarmoq ikonkalari. Bo'sh yoki o'chirilgan havola ko'rsatilmaydi."
 };
 
 function renderContentPage(tab, title) {
@@ -871,6 +886,23 @@ function renderContentCards() {
           ${makeField('Rol', 'role', i, item.role)}
         </div>
         ${makeField('Avatar URL', 'photo', i, item.photo)}`;
+    } else if (contentTab === 'contacts') {
+      fields = `
+        <div class="field-row">
+          ${makeField('Nomi (label)', 'label', i, item.label)}
+          ${makeField("Qiymat (ko'rinadigan matn)", 'value', i, item.value)}
+        </div>
+        <div class="field-row">
+          ${makeField('Havola (url)', 'url', i, item.url)}
+          ${makeIconField(i, item.icon)}
+        </div>`;
+    } else if (contentTab === 'socials') {
+      fields = `
+        <div class="field-row">
+          ${makeField('Nomi', 'name', i, item.name)}
+          ${makeField('Havola (url)', 'url', i, item.url)}
+        </div>
+        ${makeIconField(i, item.icon)}`;
     }
 
     card.innerHTML = `
@@ -941,6 +973,17 @@ function makeField(label, key, idx, value, isTextarea) {
     return `<div class="field"><label for="${id}">${label}</label><textarea id="${id}" data-idx="${idx}" data-key="${key}">${esc(value || '')}</textarea></div>`;
   }
   return `<div class="field"><label for="${id}">${label}</label><input id="${id}" data-idx="${idx}" data-key="${key}" value="${esc(value || '')}"></div>`;
+}
+
+/* frontend'dagi ICONS ro'yxati bilan bir xil kalitlar (static/index.html) */
+const ICON_KEYS = ['telegram', 'instagram', 'facebook', 'youtube', 'twitter', 'linkedin', 'tiktok', 'github', 'email', 'phone', 'website', 'link'];
+function makeIconField(idx, value) {
+  const id = `f_icon_${idx}`;
+  const v = value || 'link';
+  return `<div class="field"><label for="${id}">Ikonka</label>
+    <select id="${id}" data-idx="${idx}" data-key="icon">
+      ${ICON_KEYS.map(k => `<option value="${k}" ${v === k ? 'selected' : ''}>${k}</option>`).join('')}
+    </select></div>`;
 }
 
 /* founder/co-founder — Jamoa bo'limida alohida yuqori qatorda chiqadi */
@@ -1020,7 +1063,9 @@ function addItem() {
     cases: { title: 'Yangi loyiha', cat: 'Web & ilova', client: '', short: '', problem: '', solution: '', result: '', tech: '', duration: '', image: '' },
     packages: { name: 'Yangi paket', price: '0$', popular: false, features: ['Xususiyat'] },
     team: { name: "Yangi a'zo", role: 'Rol', photo: '', role_type: 'member' },
-    testimonials: { text: 'Fikr matni', name: 'Ism', role: 'Rol', photo: '' }
+    testimonials: { text: 'Fikr matni', name: 'Ism', role: 'Rol', photo: '' },
+    contacts: { label: 'Telegram', value: '', url: '', icon: 'telegram' },
+    socials: { name: 'Telegram', url: '', icon: 'telegram' }
   };
   DATA[contentTab].push(JSON.parse(JSON.stringify(templates[contentTab])));
   saveContent();
