@@ -133,6 +133,14 @@ login_limiter = TokenBucket(
     settings.LOGIN_MAX_ATTEMPTS, settings.LOGIN_LOCKOUT_SECONDS, settings.RATE_LIMIT_MAX_KEYS
 )
 
+# Parol tiklash / email tasdiqlash — haqiqiy email yuborishni ishga tushiradi,
+# shuning uchun qattiqroq: soatiga 3 ta urinish (IP bo'yicha).
+pwreset_limiter = TokenBucket(3, 3600, settings.RATE_LIMIT_MAX_KEYS)
+
+
+def check_pwreset_limit(ip: str) -> tuple[bool, int]:
+    return pwreset_limiter.hit(ip)
+
 
 class RateLimitMiddleware:
     """Rate-limit — DB sessiyasi olinishidan OLDIN ishlaydi.

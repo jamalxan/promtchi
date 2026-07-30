@@ -239,12 +239,27 @@ tr:hover td{background:rgba(217,255,63,.08)}
 
 <!-- ═══ LOGIN ═══ -->
 <div class="login-wrap" id="loginPage">
-  <div class="login-card">
+  <div class="login-card" id="loginCard">
     <h1>promtchi<span style="color:var(--acid)">®</span></h1>
-    <p>Admin panelga kirish uchun parolni kiriting.</p>
-    <input type="password" id="loginPass" placeholder="Parol" autofocus>
+    <p>Admin panelga kirish uchun email va parolni kiriting.</p>
+    <input type="email" id="loginEmail" placeholder="Email" autocomplete="username" style="margin-bottom:.7rem" autofocus>
+    <input type="password" id="loginPass" placeholder="Parol" autocomplete="current-password">
     <button class="btn btn-blk" style="width:100%;margin-top:1rem" id="loginBtn">Kirish →</button>
+    <div style="text-align:center;margin-top:.9rem">
+      <a href="#" id="forgotLink" style="font-size:.84rem;opacity:.65;text-decoration:underline">Parolni unutdingizmi?</a>
+    </div>
     <div class="err" id="loginErr"></div>
+  </div>
+
+  <div class="login-card" id="forgotCard" style="display:none">
+    <h1 style="font-size:1.6rem">Parolni tiklash</h1>
+    <p>Ro'yxatdan o'tgan emailingizni kiriting — tiklash havolasi yuboriladi.</p>
+    <input type="email" id="forgotEmail" name="fp_email_field" placeholder="Email" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" autofocus>
+    <button class="btn btn-blk" style="width:100%;margin-top:1rem" id="forgotBtn">Havola yuborish</button>
+    <div style="text-align:center;margin-top:.9rem">
+      <a href="#" id="backToLoginLink" style="font-size:.84rem;opacity:.65;text-decoration:underline">← Kirishga qaytish</a>
+    </div>
+    <div class="err" id="forgotErr"></div>
   </div>
 </div>
 
@@ -348,6 +363,7 @@ let POSTS = [];
 let REVIEWS = [];
 let RCODES = [];
 let TG = null; // {has_token, bot_token_masked, chat_id, active, subscribers, ...}
+let ACCOUNT = null; // {email}
 let CONTENT_VERSION = '—';
 let currentPage = 'dashboard';
 
@@ -420,8 +436,9 @@ function timeAgo(iso) {
 
 /* ═══ AUTH ═══ */
 async function login() {
+  const email = $('loginEmail').value.trim();
   const pass = $('loginPass').value.trim();
-  if (!pass) { $('loginErr').textContent = 'Parolni kiriting'; return; }
+  if (!email || !pass) { $('loginErr').textContent = 'Email va parolni kiriting'; return; }
   const btn = $('loginBtn');
   if (btn.disabled) return;
   btn.disabled = true;
@@ -429,7 +446,7 @@ async function login() {
     const r = await fetch(API + '/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: pass })
+      body: JSON.stringify({ email, password: pass })
     });
     if (r.ok) {
       const data = await r.json();
@@ -440,7 +457,7 @@ async function login() {
     } else if (r.status === 429) {
       $('loginErr').textContent = "Juda ko'p urinish — birozdan so'ng qayta urining";
     } else {
-      $('loginErr').textContent = "Parol noto'g'ri";
+      $('loginErr').textContent = "Email yoki parol noto'g'ri";
     }
   } catch (e) {
     $('loginErr').textContent = "Server bilan aloqa yo'q";
@@ -455,18 +472,83 @@ function logout() {
   $('appPage').style.display = 'none';
   $('loginPage').style.display = '';
   $('loginPass').value = '';
-  $('loginPass').focus();
+  $('loginEmail').focus();
 }
 
 $('loginBtn').onclick = login;
 $('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+$('loginEmail').addEventListener('keydown', e => { if (e.key === 'Enter') $('loginPass').focus(); });
 $('logoutBtn').onclick = logout;
+
+/* ── Parolni unutdim ── */
+$('forgotLink').onclick = (e) => {
+  e.preventDefault();
+  $('loginCard').style.display = 'none';
+  $('forgotCard').style.display = '';
+  $('forgotErr').textContent = '';
+  $('forgotEmail').value = $('loginEmail').value;
+  $('forgotEmail').focus();
+};
+$('backToLoginLink').onclick = (e) => {
+  e.preventDefault();
+  $('forgotCard').style.display = 'none';
+  $('loginCard').style.display = '';
+};
+const FORGOT_BTN_LABEL = 'Havola yuborish';
+let _forgotCooldownTimer = null;
+function startForgotCooldown(seconds) {
+  const btn = $('forgotBtn');
+  clearInterval(_forgotCooldownTimer);
+  let left = seconds;
+  btn.disabled = true;
+  btn.textContent = `Qayta yuborish (${left}s)`;
+  _forgotCooldownTimer = setInterval(() => {
+    left -= 1;
+    if (left <= 0) {
+      clearInterval(_forgotCooldownTimer);
+      btn.disabled = false;
+      btn.textContent = FORGOT_BTN_LABEL;
+    } else {
+      btn.textContent = `Qayta yuborish (${left}s)`;
+    }
+  }, 1000);
+}
+$('forgotBtn').onclick = async () => {
+  const email = $('forgotEmail').value.trim();
+  const err = $('forgotErr');
+  if (!email) { err.style.color = 'var(--coral)'; err.textContent = 'Emailni kiriting'; return; }
+  const btn = $('forgotBtn');
+  if (btn.disabled) return;
+  btn.disabled = true;
+  try {
+    const r = await fetch(API + '/api/auth/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    if (r.status === 429) {
+      const retryAfter = parseInt(r.headers.get('Retry-After') || '60', 10);
+      err.style.color = 'var(--coral)';
+      err.textContent = "Juda ko'p urinish — birozdan so'ng qayta urining";
+      startForgotCooldown(retryAfter);
+    } else {
+      const data = await r.json().catch(() => ({}));
+      err.style.color = 'var(--green)';
+      err.textContent = data.message || 'Agar email to\'g\'ri bo\'lsa, havola yuborildi.';
+      startForgotCooldown(30); // spam bo'lmasin — 30s ichida qayta yuborilmaydi
+    }
+  } catch (e) {
+    err.style.color = 'var(--coral)';
+    err.textContent = "Server bilan aloqa yo'q";
+    btn.disabled = false;
+  }
+};
 
 /* ═══ APP INIT ═══ */
 async function showApp() {
   $('loginPage').style.display = 'none';
   $('appPage').style.display = '';
-  await Promise.all([loadContent(), loadLeads(), loadPosts(), loadTelegram(), loadReviews()]);
+  await Promise.all([loadContent(), loadLeads(), loadPosts(), loadTelegram(), loadReviews(), loadAccount()]);
   navigate(currentPage);
 }
 
@@ -508,6 +590,13 @@ async function loadTelegram() {
   try {
     const r = await apiFetch('/api/admin/telegram');
     if (r.ok) TG = await r.json();
+  } catch (e) { /* silent */ }
+}
+
+async function loadAccount() {
+  try {
+    const r = await apiFetch('/api/admin/account');
+    if (r.ok) ACCOUNT = await r.json();
   } catch (e) { /* silent */ }
 }
 
@@ -1486,6 +1575,25 @@ function renderSettings() {
   $('mainContent').innerHTML = `
     <div class="main-header"><h2>Sozlamalar</h2></div>
     <div class="edit-card" style="max-width:500px">
+      <div class="card-hd"><span class="num">HISOB</span></div>
+      <div class="field">
+        <label>Admin emaillar (${ACCOUNT ? ACCOUNT.accounts.length : 0}/3)</label>
+        <div id="accountsList">${ACCOUNT ? ACCOUNT.accounts.map(accountRowHtml).join('') : ''}</div>
+      </div>
+      <div class="field">
+        <label>Yangi admin email qo'shish</label>
+        <input id="newEmailInput" type="email" placeholder="yangi@email.com" autocomplete="off" ${ACCOUNT && ACCOUNT.accounts.length >= 3 ? 'disabled' : ''}>
+        <button class="btn btn-outline btn-sm" style="margin-top:.6rem" onclick="requestAddEmail()" ${ACCOUNT && ACCOUNT.accounts.length >= 3 ? 'disabled' : ''}>So'rov yuborish</button>
+        <p style="font-size:.8rem;opacity:.6;margin-top:.5rem">Tasdiqlash havolasi <b>asosiy admin</b>ning emailiga yuboriladi — faqat u tasdiqlasa email qo'shiladi (ko'pi bilan 3 ta).</p>
+      </div>
+      <div class="field">
+        <label>Parol</label>
+        <button class="btn btn-outline btn-sm" onclick="requestPasswordReset()">Parolni o'zgartirish havolasini yuborish</button>
+        <p style="font-size:.8rem;opacity:.6;margin-top:.5rem">Havola sizning (${esc(ACCOUNT ? ACCOUNT.email : '')}) emailingizga yuboriladi.</p>
+      </div>
+      <div id="accountMsg" style="font-size:.85rem;margin-top:.3rem;font-weight:600"></div>
+    </div>
+    <div class="edit-card" style="max-width:500px;margin-top:1rem">
       <div class="card-hd"><span class="num">INFO</span></div>
       <div class="field">
         <label>Tizim holati</label>
@@ -1528,6 +1636,128 @@ function renderSettings() {
   `;
 }
 
+/* ═══ HISOB (email/parol) ═══ */
+async function requestPasswordReset() {
+  const msg = $('accountMsg');
+  msg.style.color = '';
+  msg.textContent = 'Yuborilmoqda...';
+  try {
+    const r = await apiFetch('/api/admin/account/request-password-reset', { method: 'POST' });
+    if (r.ok) {
+      msg.style.color = 'var(--green)';
+      msg.textContent = 'Havola emailingizga yuborildi.';
+    } else {
+      const d = await r.json().catch(() => ({}));
+      msg.style.color = 'var(--coral)';
+      msg.textContent = d.detail || 'Xatolik yuz berdi';
+    }
+  } catch (e) {
+    msg.style.color = 'var(--coral)';
+    msg.textContent = "Server bilan aloqa yo'q";
+  }
+}
+
+function accountRowHtml(a) {
+  const iAmPrimary = !!(ACCOUNT && ACCOUNT.accounts.find(x => x.email === ACCOUNT.email && x.is_primary));
+  const badge = a.is_primary
+    ? '<span style="background:var(--acid);color:var(--blk);font-size:.65rem;font-weight:700;padding:.15rem .55rem;border-radius:999px;text-transform:uppercase">Asosiy</span>'
+    : '';
+  const pending = (!a.activated)
+    ? '<span style="color:var(--orange);font-size:.72rem">faollashtirilmagan</span>'
+    : '';
+  const emailArg = esc(a.email).replace(/'/g, "\\'");
+  const makePrimaryBtn = (!a.is_primary && a.activated && iAmPrimary)
+    ? `<button class="btn btn-outline btn-sm" onclick="requestSetPrimary('${emailArg}')">Asosiy qilib tayinlash</button>`
+    : '';
+  const removeBtn = a.is_primary
+    ? ''
+    : `<button class="btn btn-coral btn-sm" style="margin-left:auto" onclick="requestRemoveEmail('${emailArg}')">O'chirish</button>`;
+  return `<div style="display:flex;align-items:center;gap:.6rem;padding:.6rem 0;border-bottom:1px solid rgba(11,11,14,.08);flex-wrap:wrap">
+    <span style="font-weight:600;font-size:.92rem">${esc(a.email)}</span>${badge}${pending}${makePrimaryBtn}${removeBtn}
+  </div>`;
+}
+
+async function requestAddEmail() {
+  const input = $('newEmailInput');
+  const newEmail = input.value.trim();
+  const msg = $('accountMsg');
+  if (!newEmail) { msg.style.color = 'var(--coral)'; msg.textContent = 'Yangi emailni kiriting'; return; }
+  msg.style.color = '';
+  msg.textContent = 'Yuborilmoqda...';
+  try {
+    const r = await apiFetch('/api/admin/account/emails/request-add', {
+      method: 'POST',
+      body: JSON.stringify({ new_email: newEmail })
+    });
+    if (r.ok) {
+      msg.style.color = 'var(--green)';
+      msg.textContent = "Tasdiqlash havolasi asosiy admin emailiga yuborildi.";
+      input.value = '';
+    } else {
+      const d = await r.json().catch(() => ({}));
+      msg.style.color = 'var(--coral)';
+      msg.textContent = d.detail || 'Xatolik yuz berdi';
+    }
+  } catch (e) {
+    msg.style.color = 'var(--coral)';
+    msg.textContent = "Server bilan aloqa yo'q";
+  }
+}
+
+async function requestRemoveEmail(email) {
+  const ok = await confirm("Emailni o'chirish", `${email} admin panelga kirish huquqidan mahrum qilinsinmi? Tasdiqlash havolasi asosiy adminga yuboriladi.`, "Ha, so'rov yuborish");
+  if (!ok) return;
+  const msg = $('accountMsg');
+  msg.style.color = '';
+  msg.textContent = 'Yuborilmoqda...';
+  try {
+    const r = await apiFetch('/api/admin/account/emails/request-remove', {
+      method: 'POST',
+      body: JSON.stringify({ email })
+    });
+    if (r.ok) {
+      msg.style.color = 'var(--green)';
+      msg.textContent = "Tasdiqlash havolasi asosiy admin emailiga yuborildi.";
+    } else {
+      const d = await r.json().catch(() => ({}));
+      msg.style.color = 'var(--coral)';
+      msg.textContent = d.detail || 'Xatolik yuz berdi';
+    }
+  } catch (e) {
+    msg.style.color = 'var(--coral)';
+    msg.textContent = "Server bilan aloqa yo'q";
+  }
+}
+
+async function requestSetPrimary(email) {
+  const ok = await confirm(
+    "Asosiy adminni almashtirish",
+    `${email} yangi ASOSIY admin qilinsinmi? Bu — email qo'shish/o'chirishni tasdiqlash huquqini shu hisobga o'tkazadi. Tasdiqlash havolasi sizning o'z emailingizga yuboriladi.`,
+    "Ha, so'rov yuborish"
+  );
+  if (!ok) return;
+  const msg = $('accountMsg');
+  msg.style.color = '';
+  msg.textContent = 'Yuborilmoqda...';
+  try {
+    const r = await apiFetch('/api/admin/account/emails/request-set-primary', {
+      method: 'POST',
+      body: JSON.stringify({ email })
+    });
+    if (r.ok) {
+      msg.style.color = 'var(--green)';
+      msg.textContent = "Tasdiqlash havolasi sizning emailingizga yuborildi.";
+    } else {
+      const d = await r.json().catch(() => ({}));
+      msg.style.color = 'var(--coral)';
+      msg.textContent = d.detail || 'Xatolik yuz berdi';
+    }
+  } catch (e) {
+    msg.style.color = 'var(--coral)';
+    msg.textContent = "Server bilan aloqa yo'q";
+  }
+}
+
 /* ═══ INIT ═══ */
 (async function init() {
   if (TOKEN) {
@@ -1541,7 +1771,7 @@ function renderSettings() {
     localStorage.removeItem('promtchi_token');
   }
   $('loginPage').style.display = '';
-  $('loginPass').focus();
+  $('loginEmail').focus();
 })();
 </script>
 </body>

@@ -86,6 +86,19 @@ class Settings:
     # sahifa <meta name="robots" content="noindex"> bilan qaytariladi.
     CANONICAL_HOST: str = os.getenv("CANONICAL_HOST", "promtchi.uz")
 
+    # ── Admin email + parol tiklash ─────────────────────────────────────────
+    # Bu email'ga parol tiklash/tasdiqlash havolalari yuboriladi. Admin panel
+    # orqali o'zgartirilsa, Setting jadvalidagi qiymat ustunlik qiladi.
+    ADMIN_EMAIL: str = os.getenv("ADMIN_EMAIL", "")
+    SITE_URL: str = os.getenv("SITE_URL", "").strip() or f"https://{os.getenv('CANONICAL_HOST', 'promtchi.uz')}"
+
+    # ── SMTP (Gmail va h.k.) ─────────────────────────────────────────────────
+    SMTP_HOST: str = os.getenv("SMTP_HOST", "smtp.gmail.com")
+    SMTP_PORT: int = _int("SMTP_PORT", 587)
+    SMTP_USER: str = os.getenv("SMTP_USER", "")
+    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
+    SMTP_FROM: str = os.getenv("SMTP_FROM", "") or os.getenv("SMTP_USER", "")
+
     # ── Rate-limit ───────────────────────────────────────────────────────────
     # Bitta IP N daqiqada nechta ariza topshira oladi (burst'ga ruxsat beriladi,
     # shuning uchun bitta ofis/uyali tarmoqdagi bir necha odam bloklanmaydi).

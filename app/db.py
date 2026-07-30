@@ -225,6 +225,60 @@ class Setting(Base):
     value: Mapped[str] = mapped_column(Text, default="", nullable=False)
 
 
+class AdminToken(Base):
+    """Parolni tiklash / email qo'shish-o'chirishni tasdiqlash uchun bir martalik token.
+
+    purpose — "reset_password" | "add_email" | "remove_email".
+    payload — reset_password uchun tegishli admin email (qaysi hisobning paroli
+              tiklanayotgani); add_email/remove_email uchun tasdiqlanishi
+              kutilayotgan email manzil.
+    """
+
+    __tablename__ = "admin_tokens"
+
+    token: Mapped[str] = mapped_column(String(64), primary_key=True)
+    purpose: Mapped[str] = mapped_column(String(20), nullable=False)
+    payload: Mapped[str] = mapped_column(String(200), default="")
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+
+class AdminAccount(Base):
+    """Admin panelga kira oladigan hisob — har birining o'z paroli bor.
+
+    Ko'pi bilan 3 ta hisob (ilova darajasida cheklanadi). Aynan bittasi
+    is_primary=True — yangi email qo'shish/o'chirishni FAQAT shu hisob
+    tasdiqlay oladi (tasdiqlash havolasi doim uning emailiga yuboriladi).
+    password_hash bo'sh bo'lsa — hisob hali faollashtirilmagan (yangi
+    qo'shilgan, egasi hali "parolni tiklash" orqali o'z parolini
+    o'rnatmagan); bunday holda kirish rad etiladi.
+    """
+
+    __tablename__ = "admin_accounts"
+
+    email: Mapped[str] = mapped_column(String(200), primary_key=True)
+    password_hash: Mapped[str] = mapped_column(String(200), default="")
+    is_primary: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    def as_dict(self) -> dict:
+        return {
+            "email": self.email,
+            "is_primary": bool(self.is_primary),
+            "activated": bool(self.password_hash),
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
 # Eski bazalarga yangi ustunlarni qo'shish (create_all mavjud jadvalni o'zgartirmaydi)
 _MIGRATIONS = [
     "ALTER TABLE leads ADD COLUMN status VARCHAR(16) NOT NULL DEFAULT 'new'",

@@ -102,8 +102,62 @@ class ContentDoc(BaseModel):
     socials: list[SocialIn] = Field(default_factory=list, max_length=12)
 
 
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def _validate_email(v: str) -> str:
+    v = (v or "").strip()
+    if not _EMAIL_RE.match(v):
+        raise ValueError("Email formati noto'g'ri")
+    return v
+
+
 class LoginIn(BaseModel):
+    email: str = Field(min_length=3, max_length=200)
     password: str = Field(min_length=1, max_length=200)
+
+    _v_email = field_validator("email")(_validate_email)
+
+
+class ForgotPasswordIn(BaseModel):
+    email: str = Field(min_length=3, max_length=200)
+
+    _v_email = field_validator("email")(_validate_email)
+
+
+class ResetPasswordIn(BaseModel):
+    token: str = Field(min_length=10, max_length=100)
+    new_password: str = Field(min_length=8, max_length=200)
+    confirm_password: str = Field(min_length=8, max_length=200)
+
+    @field_validator("confirm_password")
+    @classmethod
+    def _passwords_match(cls, v: str, info) -> str:
+        if info.data.get("new_password") is not None and v != info.data["new_password"]:
+            raise ValueError("Parollar mos kelmadi")
+        return v
+
+
+class AddEmailRequestIn(BaseModel):
+    new_email: str = Field(min_length=3, max_length=200)
+
+    _v_email = field_validator("new_email")(_validate_email)
+
+
+class RemoveEmailRequestIn(BaseModel):
+    email: str = Field(min_length=3, max_length=200)
+
+    _v_email = field_validator("email")(_validate_email)
+
+
+class SetPrimaryRequestIn(BaseModel):
+    email: str = Field(min_length=3, max_length=200)
+
+    _v_email = field_validator("email")(_validate_email)
+
+
+class ConfirmTokenIn(BaseModel):
+    token: str = Field(min_length=10, max_length=100)
 
 
 _PHONE_RE = re.compile(r"^\+?\d{7,15}$")

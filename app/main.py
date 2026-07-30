@@ -4,7 +4,15 @@ Endpointlar:
   GET  /api/health              — holat
   GET  /api/content             — sayt kontenti (public, keshlangan + ETag)
   GET  /api/posts               — e'lon qilingan postlar (public, keshlangan)
-  POST /api/auth/login          — {password} -> {token}
+  POST /api/auth/login          — {email,password} -> {token} (Telegram xabarnoma)
+  POST /api/auth/forgot-password       — {email} -> tiklash havolasi emailga yuboriladi
+  POST /api/auth/reset-password        — {token,new_password,confirm_password}
+  POST /api/auth/confirm-token         — {token} -> email qo'shish/o'chirishni yakunlaydi
+  GET  /api/admin/account                        — joriy email + barcha hisoblar (Bearer)
+  POST /api/admin/account/request-password-reset — o'z emailiga havola (Bearer)
+  POST /api/admin/account/emails/request-add      — {new_email}, tasdiq asosiyga (Bearer)
+  POST /api/admin/account/emails/request-remove   — {email}, tasdiq asosiyga (Bearer)
+  POST /api/admin/account/emails/request-set-primary — {email}, faqat asosiy admin, tasdiq o'ziga (Bearer)
   PUT  /api/admin/content       — to'liq kontentni saqlash (Bearer)
   POST /api/admin/content/reset — boshlang'ich kontentga qaytarish (Bearer)
   POST /api/leads               — aloqa formasi arizasi (public, rate-limit)
@@ -39,15 +47,26 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .auth import check_password, create_token, require_admin
+from .auth import (
+    add_admin_account, check_login, consume_admin_token, create_admin_token,
+    create_token, get_account, get_primary_account, list_admin_accounts,
+    recent_token_exists, remove_admin_account, require_admin, seed_admin_account,
+    set_account_password, set_primary_account,
+)
 from .config import settings
 from .db import (
-    Base, Content, Lead, Post, Review, ReviewCode, SessionLocal, Setting, engine,
-    get_session, run_migrations,
+    Base, Content, Lead, Post, Review, ReviewCode, SessionLocal, Setting,
+    engine, get_session, run_migrations,
+)
+from .email import (
+    confirm_email_email, new_account_email, reset_password_email, send_email,
+    set_primary_email,
 )
 from .schemas import (
-    DEFAULT_CONTENT, ContentDoc, LeadIn, LeadStatusIn, LoginIn, PostIn,
-    ReviewCodeIn, ReviewIn, TelegramSettingsIn,
+    DEFAULT_CONTENT, AddEmailRequestIn, ConfirmTokenIn, ContentDoc,
+    ForgotPasswordIn, LeadIn, LeadStatusIn, LoginIn, PostIn,
+    RemoveEmailRequestIn, ResetPasswordIn, ReviewCodeIn, ReviewIn,
+    SetPrimaryRequestIn, TelegramSettingsIn,
 )
 from .telegram import bot
 from .security import (
@@ -55,6 +74,7 @@ from .security import (
     RateLimitMiddleware,
     SecurityHeadersMiddleware,
     check_lead_limits,
+    check_pwreset_limit,
     check_review_limits,
     login_limiter,
 )
@@ -167,6 +187,9 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     await run_migrations(engine)
+
+    async with SessionLocal() as s:
+        await seed_admin_account(s)
 
     async with engine.begin() as conn:
         res = await conn.execute(select(Content.data, Content.version).where(Content.id == 1))
@@ -323,15 +346,204 @@ async def create_lead(
 # ══════════ AUTH ══════════
 
 @app.post("/api/auth/login")
-async def login(payload: LoginIn, request: Request):
-    if not check_password(payload.password):
+async def login(
+    payload: LoginIn, request: Request, session: AsyncSession = Depends(get_session)
+):
+    ip = getattr(request.state, "client_ip", "") or "unknown"
+    email = payload.email.strip().lower()
+    acc = await check_login(session, email, payload.password)
+    if acc is None:
         # Token faqat XATO urinishda yeyiladi -> brute-force sekinlashadi,
-        # to'g'ri parol bilan kirish esa hech qachon bloklanmaydi.
-        ip = getattr(request.state, "client_ip", "") or "unknown"
+        # to'g'ri email/parol bilan kirish esa hech qachon bloklanmaydi.
         login_limiter.hit(ip)
-        log.warning("Admin login muvaffaqiyatsiz — ip=%s", ip)
-        raise HTTPException(401, "Parol noto'g'ri")
-    return {"token": create_token(), "expires_hours": settings.JWT_EXPIRE_HOURS}
+        log.warning("Admin login muvaffaqiyatsiz — email=%s ip=%s", email, ip)
+        bot.queue_text(f"❌ <b>Muvaffaqiyatsiz kirish urinishi</b>\nEmail: {escape(email)}\nIP: {escape(ip)}")
+        raise HTTPException(401, "Email yoki parol noto'g'ri")
+    bot.queue_text(f"✅ <b>Admin panelga kirildi</b>\nEmail: {escape(acc.email)}\nIP: {escape(ip)}")
+    return {"token": create_token(acc.email), "expires_hours": settings.JWT_EXPIRE_HOURS}
+
+
+_GENERIC_RESET_MSG = {
+    "ok": True,
+    "message": "Agar bu email ro'yxatdan o'tgan bo'lsa, tiklash havolasi yuborildi.",
+}
+
+
+@app.post("/api/auth/forgot-password")
+async def forgot_password(
+    payload: ForgotPasswordIn, request: Request, session: AsyncSession = Depends(get_session)
+):
+    """Parolni unutgan admin uchun — email mos kelsa-kelmasa bir xil javob qaytadi
+    (email enumeration'ning oldini olish uchun)."""
+    ip = getattr(request.state, "client_ip", "") or "unknown"
+    ok, retry = check_pwreset_limit(ip)
+    if not ok:
+        raise HTTPException(
+            429, "Juda ko'p urinish — birozdan so'ng qayta urining",
+            headers={"Retry-After": str(retry)},
+        )
+    email = payload.email.strip().lower()
+    acc = await get_account(session, email)
+    if acc is None:
+        return _GENERIC_RESET_MSG
+    if await recent_token_exists(session, "reset_password"):
+        return _GENERIC_RESET_MSG
+    token = await create_admin_token(session, "reset_password", payload=acc.email)
+    url = f"{settings.SITE_URL}/reset-password.html?token={token}"
+    await send_email(acc.email, "promtchi — parolni tiklash", reset_password_email(url))
+    return _GENERIC_RESET_MSG
+
+
+@app.post("/api/auth/reset-password")
+async def reset_password(payload: ResetPasswordIn, session: AsyncSession = Depends(get_session)):
+    row = await consume_admin_token(session, payload.token, "reset_password")
+    if row is None:
+        raise HTTPException(400, "Havola noto'g'ri yoki muddati tugagan")
+    ok = await set_account_password(session, row.payload, payload.new_password)
+    if not ok:
+        raise HTTPException(400, "Hisob topilmadi")
+    bot.queue_text(f"🔑 <b>Parol o'zgartirildi</b>\nEmail: {escape(row.payload)}")
+    return {"ok": True}
+
+
+@app.post("/api/auth/confirm-token")
+async def confirm_token(payload: ConfirmTokenIn, session: AsyncSession = Depends(get_session)):
+    """Email qo'shish/o'chirish tasdiqlash havolasi — token o'zi maqsadini bildiradi."""
+    row = await consume_admin_token(session, payload.token, "add_email")
+    if row is not None:
+        acc = await add_admin_account(session, row.payload)
+        if acc is None:
+            raise HTTPException(400, "Hisoblar soni chegarasiga yetgan (ko'pi bilan 3 ta)")
+        reset_token = await create_admin_token(session, "reset_password", payload=acc.email)
+        reset_url = f"{settings.SITE_URL}/reset-password.html?token={reset_token}"
+        await send_email(acc.email, "promtchi — hisobingiz yaratildi", new_account_email(reset_url))
+        bot.queue_text(f"➕ <b>Yangi admin email qo'shildi</b>\nEmail: {escape(acc.email)}")
+        return {"ok": True, "action": "add_email", "email": acc.email}
+
+    row = await consume_admin_token(session, payload.token, "remove_email")
+    if row is not None:
+        ok = await remove_admin_account(session, row.payload)
+        if not ok:
+            raise HTTPException(400, "Bu emailni o'chirib bo'lmaydi")
+        bot.queue_text(f"➖ <b>Admin email o'chirildi</b>\nEmail: {escape(row.payload)}")
+        return {"ok": True, "action": "remove_email", "email": row.payload}
+
+    row = await consume_admin_token(session, payload.token, "set_primary")
+    if row is not None:
+        old_primary = await get_primary_account(session)
+        ok = await set_primary_account(session, row.payload)
+        if not ok:
+            raise HTTPException(400, "Bu hisobni asosiy qilib bo'lmaydi")
+        old_email = old_primary.email if old_primary else "?"
+        bot.queue_text(
+            "👑 <b>Asosiy admin almashtirildi</b>\n"
+            f"Eski: {escape(old_email)}\nYangi: {escape(row.payload)}"
+        )
+        return {"ok": True, "action": "set_primary", "email": row.payload}
+
+    raise HTTPException(400, "Havola noto'g'ri yoki muddati tugagan")
+
+
+# ══════════ ADMIN: HISOB (email/parol) ══════════
+
+@app.get("/api/admin/account")
+async def get_account_info(
+    email: str = Depends(require_admin), session: AsyncSession = Depends(get_session)
+):
+    accounts = await list_admin_accounts(session)
+    return {"email": email, "accounts": [a.as_dict() for a in accounts]}
+
+
+@app.post("/api/admin/account/request-password-reset")
+async def request_password_reset(
+    email: str = Depends(require_admin), session: AsyncSession = Depends(get_session)
+):
+    """Admin panel ichidan — tiklash havolasi HOZIR LOGIN QILINGAN emailga yuboriladi."""
+    if await recent_token_exists(session, "reset_password"):
+        return {"ok": True}
+    token = await create_admin_token(session, "reset_password", payload=email)
+    url = f"{settings.SITE_URL}/reset-password.html?token={token}"
+    await send_email(email, "promtchi — parolni tiklash", reset_password_email(url))
+    return {"ok": True}
+
+
+@app.post("/api/admin/account/emails/request-add")
+async def request_add_email(
+    payload: AddEmailRequestIn,
+    _: str = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    """Istalgan admin so'rashi mumkin — lekin tasdiqlash havolasi FAQAT
+    ASOSIY adminning emailiga boradi, shu kishi bosmasa email qo'shilmaydi."""
+    new_email = payload.new_email.strip().lower()
+    if await get_account(session, new_email) is not None:
+        raise HTTPException(400, "Bu email allaqachon ro'yxatda")
+    accounts = await list_admin_accounts(session)
+    if len(accounts) >= 3:
+        raise HTTPException(400, "Hisoblar soni chegarasiga yetgan (ko'pi bilan 3 ta)")
+    primary = await get_primary_account(session)
+    if primary is None:
+        raise HTTPException(400, "Asosiy admin sozlanmagan")
+    if await recent_token_exists(session, "add_email"):
+        return {"ok": True}
+    token = await create_admin_token(session, "add_email", payload=new_email)
+    url = f"{settings.SITE_URL}/confirm-email.html?token={token}"
+    await send_email(primary.email, "promtchi — yangi admin email tasdiqlash", confirm_email_email(url, new_email, "qo'shish"))
+    return {"ok": True}
+
+
+@app.post("/api/admin/account/emails/request-remove")
+async def request_remove_email(
+    payload: RemoveEmailRequestIn,
+    _: str = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    """Istalgan admin so'rashi mumkin — tasdiqlash havolasi FAQAT ASOSIY
+    adminning emailiga boradi. Asosiy adminning o'zini bu yo'l bilan
+    o'chirib bo'lmaydi."""
+    target = payload.email.strip().lower()
+    acc = await get_account(session, target)
+    if acc is None:
+        raise HTTPException(404, "Bunday email topilmadi")
+    if acc.is_primary:
+        raise HTTPException(400, "Asosiy adminni o'chirib bo'lmaydi")
+    primary = await get_primary_account(session)
+    if primary is None:
+        raise HTTPException(400, "Asosiy admin sozlanmagan")
+    if await recent_token_exists(session, "remove_email"):
+        return {"ok": True}
+    token = await create_admin_token(session, "remove_email", payload=target)
+    url = f"{settings.SITE_URL}/confirm-email.html?token={token}"
+    await send_email(primary.email, "promtchi — admin email o'chirishni tasdiqlash", confirm_email_email(url, target, "o'chirish"))
+    return {"ok": True}
+
+
+@app.post("/api/admin/account/emails/request-set-primary")
+async def request_set_primary(
+    payload: SetPrimaryRequestIn,
+    email: str = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    """Asosiy admin huquqini boshqa hisobga o'tkazishni so'raydi — FAQAT
+    hozirgi asosiy admin so'ray oladi, tasdiqlash havolasi ham uning o'z
+    emailiga boradi (o'z amalini qayta tasdiqlash — 2FA kabi)."""
+    requester = await get_account(session, email)
+    if requester is None or not requester.is_primary:
+        raise HTTPException(403, "Faqat asosiy admin bu amalni bajara oladi")
+    target = payload.email.strip().lower()
+    target_acc = await get_account(session, target)
+    if target_acc is None:
+        raise HTTPException(404, "Bunday email topilmadi")
+    if target_acc.is_primary:
+        raise HTTPException(400, "Bu hisob allaqachon asosiy")
+    if not target_acc.password_hash:
+        raise HTTPException(400, "Bu hisob hali faollashtirilmagan (parol o'rnatilmagan)")
+    if await recent_token_exists(session, "set_primary"):
+        return {"ok": True}
+    token = await create_admin_token(session, "set_primary", payload=target)
+    url = f"{settings.SITE_URL}/confirm-email.html?token={token}"
+    await send_email(requester.email, "promtchi — asosiy adminni almashtirish", set_primary_email(url, target))
+    return {"ok": True}
 
 
 # ══════════ ADMIN ══════════
@@ -826,6 +1038,22 @@ async def admin_page():
     if f.exists():
         return FileResponse(f, headers={"Cache-Control": "no-store"})
     raise HTTPException(404, "static/admin.html topilmadi")
+
+
+@app.get("/reset-password.html", include_in_schema=False)
+async def reset_password_page():
+    f = STATIC_DIR / "reset-password.html"
+    if f.exists():
+        return FileResponse(f, headers={"Cache-Control": "no-store"})
+    raise HTTPException(404, "static/reset-password.html topilmadi")
+
+
+@app.get("/confirm-email.html", include_in_schema=False)
+async def confirm_email_page():
+    f = STATIC_DIR / "confirm-email.html"
+    if f.exists():
+        return FileResponse(f, headers={"Cache-Control": "no-store"})
+    raise HTTPException(404, "static/confirm-email.html topilmadi")
 
 
 if STATIC_DIR.exists():
