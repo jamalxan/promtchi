@@ -139,7 +139,7 @@ class ResetPasswordIn(BaseModel):
 
 
 class AddEmailRequestIn(BaseModel):
-    """Yangi admin taklif qilish — parol shu yerda o'rnatiladi (asosiy admin
+    """Yangi admin taklif qilish — parol shu yerda o'rnatiladi (super admin
     tasdiqlagach hisob darhol shu parol bilan faollashadi)."""
 
     new_email: str = Field(min_length=3, max_length=200)

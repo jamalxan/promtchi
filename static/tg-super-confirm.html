@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Emailni tasdiqlash — promtchi®</title>
+<title>Super adminni almashtirish — promtchi®</title>
 <meta name="robots" content="noindex,nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
@@ -35,15 +35,14 @@ a.back{display:inline-block;margin-top:1.2rem;font-size:.85rem;opacity:.6;color:
 
 <div class="card">
   <div id="askView">
-    <h1>Email <span>tasdiqlash</span></h1>
-    <p>Admin panel email ro'yxatidagi o'zgarishni tasdiqlaysizmi? Bu havola faqat super admin uchun yuborilgan.</p>
+    <h1>Super admin <span>almashtirish</span></h1>
+    <p>Telegram bot orqali <b>super admin</b>ni almashtirish so'raldi. Buni siz boshlagan bo'lsangiz, tasdiqlang — shundan so'ng Telegram botga qaytib, yangi emailni kiritishingiz mumkin bo'ladi.</p>
     <button id="confirmBtn">Tasdiqlash</button>
     <div class="msg" id="msg"></div>
   </div>
   <div id="doneView" class="hide">
     <h1>Tayyor <span>✓</span></h1>
-    <p id="doneText"></p>
-    <a class="back" href="/admin">Admin panelga o'tish →</a>
+    <p>Tasdiqlandi. Endi Telegram botga qayting — u sizdan yangi super admin emailini so'raydi.</p>
   </div>
 </div>
 
@@ -64,20 +63,12 @@ $('confirmBtn').onclick = async () => {
   btn.disabled = true;
   msg.className = 'msg'; msg.textContent = 'Tasdiqlanmoqda...';
   try {
-    const r = await fetch('/api/auth/confirm-token', {
+    const r = await fetch('/api/auth/tg-super/confirm-old', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token })
     });
     if (r.ok) {
-      const data = await r.json();
-      if (data.action === 'set_primary') {
-        $('doneText').innerHTML = `Super admin muvaffaqiyatli almashtirildi: <b>${data.email || ''}</b>`;
-      } else if (data.action === 'add_email') {
-        $('doneText').innerHTML = `Hisob yaratildi va faollashtirildi: <b>${data.email || ''}</b><br><span style="opacity:.7;font-size:.85em">Login ma'lumotlari Telegram admin(lar)ga yuborildi.</span>`;
-      } else {
-        $('doneText').innerHTML = `Email muvaffaqiyatli o'chirildi: <b>${data.email || ''}</b>`;
-      }
       $('askView').classList.add('hide');
       $('doneView').classList.remove('hide');
     } else {

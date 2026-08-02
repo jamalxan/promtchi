@@ -142,9 +142,9 @@ async def remove_admin_account(session: AsyncSession, email: str) -> bool:
 
 
 async def set_primary_account(session: AsyncSession, email: str) -> bool:
-    """Asosiy admin huquqini boshqa (faollashtirilgan) hisobga o'tkazadi.
+    """Super admin huquqini boshqa (faollashtirilgan) hisobga o'tkazadi.
 
-    Eskisi oddiy adminga aylanadi, yangisi asosiy bo'ladi. Faollashtirilmagan
+    Eskisi oddiy adminga aylanadi, yangisi super admin bo'ladi. Faollashtirilmagan
     (paroli hali o'rnatilmagan) hisobga o'tkazib bo'lmaydi.
     """
     new_primary = await get_account(session, email)
@@ -226,9 +226,9 @@ async def require_primary_admin(
     email: str = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
 ) -> str:
-    """require_admin bilan bir xil, lekin FAQAT asosiy admin o'tishiga ruxsat beradi
+    """require_admin bilan bir xil, lekin FAQAT super admin o'tishiga ruxsat beradi
     (Telegram sozlamalari kabi butun jamoaga ta'sir qiladigan amallar uchun)."""
     acc = await get_account(session, email)
     if acc is None or not acc.is_primary:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Faqat asosiy admin bu amalni bajara oladi")
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Faqat super admin bu amalni bajara oladi")
     return email

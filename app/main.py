@@ -8,15 +8,16 @@ Endpointlar:
   POST /api/auth/forgot-password       — {email} -> tiklash havolasi emailga yuboriladi
   POST /api/auth/reset-password        — {token,new_password,confirm_password}
   POST /api/auth/confirm-token         — {token} -> email qo'shish/o'chirishni yakunlaydi
-  GET  /api/admin/account                        — joriy email + barcha hisoblar (Bearer)
+  GET  /api/admin/account                        — joriy email; super admin uchun barcha
+                                                     hisoblar, oddiy admin uchun faqat o'zi (Bearer)
   POST /api/admin/account/request-password-reset — o'z emailiga havola (Bearer)
   POST /api/admin/account/emails/request-add      — {new_email,password,confirm_password},
-                                                     tasdiq asosiyga, tasdiqlangach hisob
-                                                     DARHOL shu parol bilan faollashadi (Bearer)
-  POST /api/admin/account/emails/request-remove   — {email}, tasdiq asosiyga (Bearer)
-  POST /api/admin/account/emails/request-set-primary — {email}, faqat asosiy admin, tasdiq o'ziga (Bearer)
+                                                     FAQAT super admin, tasdiq o'ziga, tasdiqlangach
+                                                     hisob DARHOL shu parol bilan faollashadi (Bearer)
+  POST /api/admin/account/emails/request-remove   — {email}, FAQAT super admin, tasdiq o'ziga (Bearer)
+  POST /api/admin/account/emails/request-set-primary — {email}, FAQAT super admin, tasdiq o'ziga (Bearer)
   POST /api/admin/account/emails/{email}/resend-activation — eski (parolsiz) hisobga
-                                                     qayta faollashtirish havolasi, faqat asosiy (Bearer)
+                                                     qayta faollashtirish havolasi, faqat super admin (Bearer)
   PUT  /api/admin/content       — to'liq kontentni saqlash (Bearer)
   POST /api/admin/content/reset — boshlang'ich kontentga qaytarish (Bearer)
   POST /api/leads               — aloqa formasi arizasi (public, rate-limit)
@@ -24,11 +25,12 @@ Endpointlar:
   PATCH /api/admin/leads/{id}   — ariza holati: new/replied (Bearer)
   DELETE /api/admin/leads/{id}  — arizani o'chirish (Bearer)
   GET/POST/PUT/DELETE /api/admin/posts[/{id}] — postlar CRUD (Bearer)
-  GET  /api/admin/telegram      — bot holati (Bearer, har qanday admin)
-  PUT  /api/admin/telegram      — bot token/chat ID boshqaruvi (faqat asosiy admin)
-  POST /api/admin/telegram/test — test xabar yuborish (faqat asosiy admin)
+  GET/PUT /api/admin/telegram   — bot holati/boshqaruvi — BUTUNLAY faqat super admin (Bearer)
+  POST /api/admin/telegram/test — test xabar yuborish (faqat super admin)
   GET/POST/DELETE /api/admin/telegram/admins[/{chat_id}] — Telegram admin(lar) ro'yxati
-                                                     (GET — har qanday admin, POST/DELETE — faqat asosiy)
+                                                     — BUTUNLAY faqat super admin (Bearer)
+  POST /api/auth/tg-super/confirm-old — {token} -> Telegram /super oqimidagi eski super
+                                                     admin tasdig'ini yakunlaydi (public, token-gated)
   GET  /                        — sayt (static/index.html)
 Hujjatlar: /docs (faqat ENABLE_DOCS=true bo'lganda)
 """
@@ -466,15 +468,30 @@ async def confirm_token(payload: ConfirmTokenIn, session: AsyncSession = Depends
         old_primary = await get_primary_account(session)
         ok = await set_primary_account(session, row.payload)
         if not ok:
-            raise HTTPException(400, "Bu hisobni asosiy qilib bo'lmaydi")
+            raise HTTPException(400, "Bu hisobni super admin qilib bo'lmaydi")
         old_email = old_primary.email if old_primary else "?"
         bot.queue_text_admins(
-            "👑 <b>Asosiy admin almashtirildi</b>\n"
+            "👑 <b>Super admin almashtirildi</b>\n"
             f"Eski: {escape(old_email)}\nYangi: {escape(row.payload)}"
         )
         return {"ok": True, "action": "set_primary", "email": row.payload}
 
     raise HTTPException(400, "Havola noto'g'ri yoki muddati tugagan")
+
+
+@app.post("/api/auth/tg-super/confirm-old")
+async def tg_super_confirm_old(payload: ConfirmTokenIn, session: AsyncSession = Depends(get_session)):
+    """Telegram botdagi /super oqimi — hozirgi super admin shu havolani bosgach
+    chaqiriladi. Bot chatida jarayonni keyingi bosqichga (yangi email so'rash)
+    o'tkazadi. Public (token o'zi bir martalik va 10 daqiqa amal qiladi)."""
+    row = await consume_admin_token(session, payload.token, "tg_super_old")
+    if row is None:
+        raise HTTPException(400, "Havola noto'g'ri yoki muddati tugagan")
+    chat_id = int(row.payload)
+    ok = await bot.advance_super_flow_after_old_confirm(chat_id)
+    if not ok:
+        raise HTTPException(400, "Jarayon topilmadi — vaqti tugagan yoki bekor qilingan bo'lishi mumkin. Botga qaytadan /super yozing.")
+    return {"ok": True}
 
 
 # ══════════ ADMIN: HISOB (email/parol) ══════════
@@ -483,9 +500,17 @@ async def confirm_token(payload: ConfirmTokenIn, session: AsyncSession = Depends
 async def get_account_info(
     email: str = Depends(require_admin), session: AsyncSession = Depends(get_session)
 ):
+    """Oddiy admin FAQAT o'zini ko'radi — boshqa hisoblar va kim SUPER ADMIN
+    ekani unga ko'rsatilmaydi (adminlar bir-biridan bexabar bo'lishi kerak).
+    Super admin esa hammasini ko'radi va boshqaradi."""
+    acc = await get_account(session, email)
+    is_super = bool(acc and acc.is_primary)
+    if not is_super:
+        return {"email": email, "is_super_admin": False}
     accounts = await list_admin_accounts(session)
     return {
         "email": email,
+        "is_super_admin": True,
         "accounts": [a.as_dict() for a in accounts],
         "max_accounts": MAX_ADMIN_ACCOUNTS,
     }
@@ -507,13 +532,14 @@ async def request_password_reset(
 @app.post("/api/admin/account/emails/request-add")
 async def request_add_email(
     payload: AddEmailRequestIn,
-    _: str = Depends(require_admin),
+    _: str = Depends(require_primary_admin),
     session: AsyncSession = Depends(get_session),
 ):
-    """Istalgan admin so'rashi mumkin — lekin tasdiqlash havolasi FAQAT
-    ASOSIY adminning emailiga boradi, shu kishi bosmasa hisob qo'shilmaydi.
-    Parol shu yerda kiritiladi — tasdiqlangach hisob darhol shu parol bilan
-    faollashadi (ayni parol Telegram admin(lar)ga alohida yuboriladi)."""
+    """Admin qo'shish FAQAT super admin ishi — oddiy admin bu endpointga
+    kira olmaydi. Tasdiqlash havolasi baribir super adminning o'z emailiga
+    boradi (JWT o'g'irlangan taqdirda ham himoya — 2FA kabi). Parol shu
+    yerda kiritiladi — tasdiqlangach hisob darhol shu parol bilan faollashadi
+    (ayni parol Telegram admin(lar)ga alohida yuboriladi)."""
     new_email = payload.new_email.strip().lower()
     if await get_account(session, new_email) is not None:
         raise HTTPException(400, "Bu email allaqachon ro'yxatda")
@@ -522,7 +548,7 @@ async def request_add_email(
         raise HTTPException(400, f"Hisoblar soni chegarasiga yetgan (ko'pi bilan {MAX_ADMIN_ACCOUNTS} ta)")
     primary = await get_primary_account(session)
     if primary is None:
-        raise HTTPException(400, "Asosiy admin sozlanmagan")
+        raise HTTPException(400, "Super admin sozlanmagan")
     if await recent_token_exists(session, "add_email"):
         return {"ok": True}
     token_payload = json.dumps({
@@ -543,7 +569,7 @@ async def resend_activation(
     session: AsyncSession = Depends(get_session),
 ):
     """Bu o'zgarishdan OLDIN qo'shilgan, hali parolsiz (faollashtirilmagan)
-    hisoblar uchun — qayta parol o'rnatish havolasini yuboradi. Faqat asosiy
+    hisoblar uchun — qayta parol o'rnatish havolasini yuboradi. Faqat super
     admin so'ray oladi."""
     acc = await get_account(session, email.strip().lower())
     if acc is None:
@@ -561,21 +587,21 @@ async def resend_activation(
 @app.post("/api/admin/account/emails/request-remove")
 async def request_remove_email(
     payload: RemoveEmailRequestIn,
-    _: str = Depends(require_admin),
+    _: str = Depends(require_primary_admin),
     session: AsyncSession = Depends(get_session),
 ):
-    """Istalgan admin so'rashi mumkin — tasdiqlash havolasi FAQAT ASOSIY
-    adminning emailiga boradi. Asosiy adminning o'zini bu yo'l bilan
+    """Admin o'chirish FAQAT super admin ishi. Tasdiqlash havolasi super
+    adminning o'z emailiga boradi. Super adminning o'zini bu yo'l bilan
     o'chirib bo'lmaydi."""
     target = payload.email.strip().lower()
     acc = await get_account(session, target)
     if acc is None:
         raise HTTPException(404, "Bunday email topilmadi")
     if acc.is_primary:
-        raise HTTPException(400, "Asosiy adminni o'chirib bo'lmaydi")
+        raise HTTPException(400, "Super adminni o'chirib bo'lmaydi")
     primary = await get_primary_account(session)
     if primary is None:
-        raise HTTPException(400, "Asosiy admin sozlanmagan")
+        raise HTTPException(400, "Super admin sozlanmagan")
     if await recent_token_exists(session, "remove_email"):
         return {"ok": True}
     token = await create_admin_token(session, "remove_email", payload=target)
@@ -587,28 +613,25 @@ async def request_remove_email(
 @app.post("/api/admin/account/emails/request-set-primary")
 async def request_set_primary(
     payload: SetPrimaryRequestIn,
-    email: str = Depends(require_admin),
+    email: str = Depends(require_primary_admin),
     session: AsyncSession = Depends(get_session),
 ):
-    """Asosiy admin huquqini boshqa hisobga o'tkazishni so'raydi — FAQAT
-    hozirgi asosiy admin so'ray oladi, tasdiqlash havolasi ham uning o'z
+    """Super admin huquqini boshqa hisobga o'tkazishni so'raydi — FAQAT
+    hozirgi super admin so'ray oladi, tasdiqlash havolasi ham uning o'z
     emailiga boradi (o'z amalini qayta tasdiqlash — 2FA kabi)."""
-    requester = await get_account(session, email)
-    if requester is None or not requester.is_primary:
-        raise HTTPException(403, "Faqat asosiy admin bu amalni bajara oladi")
     target = payload.email.strip().lower()
     target_acc = await get_account(session, target)
     if target_acc is None:
         raise HTTPException(404, "Bunday email topilmadi")
     if target_acc.is_primary:
-        raise HTTPException(400, "Bu hisob allaqachon asosiy")
+        raise HTTPException(400, "Bu hisob allaqachon super admin")
     if not target_acc.password_hash:
         raise HTTPException(400, "Bu hisob hali faollashtirilmagan (parol o'rnatilmagan)")
     if await recent_token_exists(session, "set_primary"):
         return {"ok": True}
     token = await create_admin_token(session, "set_primary", payload=target)
     url = f"{settings.SITE_URL}/confirm-email.html?token={token}"
-    await send_email(requester.email, "promtchi — asosiy adminni almashtirish", set_primary_email(url, target))
+    await send_email(email, "promtchi — super adminni almashtirish", set_primary_email(url, target))
     return {"ok": True}
 
 
@@ -782,8 +805,9 @@ async def _tg_state() -> dict:
 
 
 @app.get("/api/admin/telegram")
-async def get_telegram(_: str = Depends(require_admin)):
-    """Holatni har qanday admin ko'ra oladi; o'zgartirish faqat asosiy adminga (pastdagi PUT/POST/DELETE)."""
+async def get_telegram(_: str = Depends(require_primary_admin)):
+    """Butun Telegram bo'limi (holat ham, boshqaruv ham) FAQAT super adminga —
+    oddiy admin bu haqda hech narsa bilmasligi kerak."""
     return await _tg_state()
 
 
@@ -793,7 +817,7 @@ async def put_telegram(
     _: str = Depends(require_primary_admin),
     session: AsyncSession = Depends(get_session),
 ):
-    """Bot va guruh/kanal sozlamalari — FAQAT asosiy admin boshqaradi.
+    """Bot va guruh/kanal sozlamalari — FAQAT super admin boshqaradi.
 
     bot_token=None — token o'zgartirilmaydi; "" — o'chiriladi.
     """
@@ -811,21 +835,21 @@ async def put_telegram(
 
 @app.delete("/api/admin/telegram/subscribers/{chat_id}")
 async def remove_subscriber(chat_id: int, _: str = Depends(require_primary_admin)):
-    """Obunachini ro'yxatdan chiqarish (chat endi xabarnoma olmaydi) — faqat asosiy admin."""
+    """Obunachini ro'yxatdan chiqarish (chat endi xabarnoma olmaydi) — faqat super admin."""
     await bot.remove_subscriber(chat_id)
     return await _tg_state()
 
 
 @app.get("/api/admin/telegram/admins")
-async def list_telegram_admins(_: str = Depends(require_admin)):
+async def list_telegram_admins(_: str = Depends(require_primary_admin)):
     """Telegram admin(lar) ro'yxati — sezgir xabarnomalar (parol, kirish urinishi
-    va h.k.) shu chatlarga boradi, guruh/kanalga emas."""
+    va h.k.) shu chatlarga boradi, guruh/kanalga emas. Faqat super admin ko'ra oladi."""
     return {"admins": bot.admins}
 
 
 @app.post("/api/admin/telegram/admins")
 async def add_telegram_admin(payload: TelegramAdminIn, _: str = Depends(require_primary_admin)):
-    """Yangi Telegram admin qo'shish — faqat asosiy admin. chat_id botga /start
+    """Yangi Telegram admin qo'shish — faqat super admin. chat_id botga /start
     yozgan foydalanuvchining Chat ID'si (bot javobida ko'rsatiladi)."""
     ok = await bot.add_admin(payload.chat_id, payload.label)
     if not ok:
@@ -835,7 +859,7 @@ async def add_telegram_admin(payload: TelegramAdminIn, _: str = Depends(require_
 
 @app.delete("/api/admin/telegram/admins/{chat_id}")
 async def remove_telegram_admin(chat_id: int, _: str = Depends(require_primary_admin)):
-    """Telegram adminni ro'yxatdan chiqarish — faqat asosiy admin."""
+    """Telegram adminni ro'yxatdan chiqarish — faqat super admin."""
     ok = await bot.remove_admin(chat_id)
     if not ok:
         raise HTTPException(404, "Bunday Telegram admin topilmadi")
@@ -1148,6 +1172,14 @@ async def confirm_email_page():
     if f.exists():
         return FileResponse(f, headers={"Cache-Control": "no-store"})
     raise HTTPException(404, "static/confirm-email.html topilmadi")
+
+
+@app.get("/tg-super-confirm.html", include_in_schema=False)
+async def tg_super_confirm_page():
+    f = STATIC_DIR / "tg-super-confirm.html"
+    if f.exists():
+        return FileResponse(f, headers={"Cache-Control": "no-store"})
+    raise HTTPException(404, "static/tg-super-confirm.html topilmadi")
 
 
 if STATIC_DIR.exists():
