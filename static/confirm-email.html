@@ -73,9 +73,10 @@ $('confirmBtn').onclick = async () => {
       const data = await r.json();
       if (data.action === 'set_primary') {
         $('doneText').innerHTML = `Asosiy admin muvaffaqiyatli almashtirildi: <b>${data.email || ''}</b>`;
+      } else if (data.action === 'add_email') {
+        $('doneText').innerHTML = `Hisob yaratildi va faollashtirildi: <b>${data.email || ''}</b><br><span style="opacity:.7;font-size:.85em">Login ma'lumotlari Telegram admin(lar)ga yuborildi.</span>`;
       } else {
-        const verb = data.action === 'remove_email' ? "o'chirildi" : "qo'shildi";
-        $('doneText').innerHTML = `Email muvaffaqiyatli ${verb}: <b>${data.email || ''}</b>`;
+        $('doneText').innerHTML = `Email muvaffaqiyatli o'chirildi: <b>${data.email || ''}</b>`;
       }
       $('askView').classList.add('hide');
       $('doneView').classList.remove('hide');

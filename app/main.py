@@ -10,9 +10,13 @@ Endpointlar:
   POST /api/auth/confirm-token         — {token} -> email qo'shish/o'chirishni yakunlaydi
   GET  /api/admin/account                        — joriy email + barcha hisoblar (Bearer)
   POST /api/admin/account/request-password-reset — o'z emailiga havola (Bearer)
-  POST /api/admin/account/emails/request-add      — {new_email}, tasdiq asosiyga (Bearer)
+  POST /api/admin/account/emails/request-add      — {new_email,password,confirm_password},
+                                                     tasdiq asosiyga, tasdiqlangach hisob
+                                                     DARHOL shu parol bilan faollashadi (Bearer)
   POST /api/admin/account/emails/request-remove   — {email}, tasdiq asosiyga (Bearer)
   POST /api/admin/account/emails/request-set-primary — {email}, faqat asosiy admin, tasdiq o'ziga (Bearer)
+  POST /api/admin/account/emails/{email}/resend-activation — eski (parolsiz) hisobga
+                                                     qayta faollashtirish havolasi, faqat asosiy (Bearer)
   PUT  /api/admin/content       — to'liq kontentni saqlash (Bearer)
   POST /api/admin/content/reset — boshlang'ich kontentga qaytarish (Bearer)
   POST /api/leads               — aloqa formasi arizasi (public, rate-limit)
@@ -20,8 +24,11 @@ Endpointlar:
   PATCH /api/admin/leads/{id}   — ariza holati: new/replied (Bearer)
   DELETE /api/admin/leads/{id}  — arizani o'chirish (Bearer)
   GET/POST/PUT/DELETE /api/admin/posts[/{id}] — postlar CRUD (Bearer)
-  GET/PUT /api/admin/telegram   — bot token/chat ID boshqaruvi (Bearer)
-  POST /api/admin/telegram/test — test xabar yuborish (Bearer)
+  GET  /api/admin/telegram      — bot holati (Bearer, har qanday admin)
+  PUT  /api/admin/telegram      — bot token/chat ID boshqaruvi (faqat asosiy admin)
+  POST /api/admin/telegram/test — test xabar yuborish (faqat asosiy admin)
+  GET/POST/DELETE /api/admin/telegram/admins[/{chat_id}] — Telegram admin(lar) ro'yxati
+                                                     (GET — har qanday admin, POST/DELETE — faqat asosiy)
   GET  /                        — sayt (static/index.html)
 Hujjatlar: /docs (faqat ENABLE_DOCS=true bo'lganda)
 """
@@ -48,10 +55,12 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .auth import (
-    add_admin_account, check_login, consume_admin_token, create_admin_token,
-    create_token, get_account, get_primary_account, list_admin_accounts,
-    recent_token_exists, remove_admin_account, require_admin, seed_admin_account,
-    set_account_password, set_primary_account,
+    MAX_ADMIN_ACCOUNTS, add_admin_account, add_admin_account_with_password,
+    check_login, consume_admin_token, create_admin_token, create_token,
+    get_account, get_primary_account, hash_password, list_admin_accounts,
+    recent_token_exists, remove_admin_account, require_admin,
+    require_primary_admin, seed_admin_account, set_account_password,
+    set_primary_account,
 )
 from .config import settings
 from .db import (
@@ -59,14 +68,14 @@ from .db import (
     engine, get_session, run_migrations,
 )
 from .email import (
-    confirm_email_email, new_account_email, reset_password_email, send_email,
-    set_primary_email,
+    account_ready_email, confirm_email_email, new_account_email,
+    reset_password_email, send_email, set_primary_email,
 )
 from .schemas import (
     DEFAULT_CONTENT, AddEmailRequestIn, ConfirmTokenIn, ContentDoc,
     ForgotPasswordIn, LeadIn, LeadStatusIn, LoginIn, PostIn,
     RemoveEmailRequestIn, ResetPasswordIn, ReviewCodeIn, ReviewIn,
-    SetPrimaryRequestIn, TelegramSettingsIn,
+    SetPrimaryRequestIn, TelegramAdminIn, TelegramSettingsIn,
 )
 from .telegram import bot
 from .security import (
@@ -357,9 +366,9 @@ async def login(
         # to'g'ri email/parol bilan kirish esa hech qachon bloklanmaydi.
         login_limiter.hit(ip)
         log.warning("Admin login muvaffaqiyatsiz — email=%s ip=%s", email, ip)
-        bot.queue_text(f"❌ <b>Muvaffaqiyatsiz kirish urinishi</b>\nEmail: {escape(email)}\nIP: {escape(ip)}")
+        bot.queue_text_admins(f"❌ <b>Muvaffaqiyatsiz kirish urinishi</b>\nEmail: {escape(email)}\nIP: {escape(ip)}")
         raise HTTPException(401, "Email yoki parol noto'g'ri")
-    bot.queue_text(f"✅ <b>Admin panelga kirildi</b>\nEmail: {escape(acc.email)}\nIP: {escape(ip)}")
+    bot.queue_text_admins(f"✅ <b>Admin panelga kirildi</b>\nEmail: {escape(acc.email)}\nIP: {escape(ip)}")
     return {"token": create_token(acc.email), "expires_hours": settings.JWT_EXPIRE_HOURS}
 
 
@@ -402,7 +411,7 @@ async def reset_password(payload: ResetPasswordIn, session: AsyncSession = Depen
     ok = await set_account_password(session, row.payload, payload.new_password)
     if not ok:
         raise HTTPException(400, "Hisob topilmadi")
-    bot.queue_text(f"🔑 <b>Parol o'zgartirildi</b>\nEmail: {escape(row.payload)}")
+    bot.queue_text_admins(f"🔑 <b>Parol o'zgartirildi</b>\nEmail: {escape(row.payload)}")
     return {"ok": True}
 
 
@@ -411,13 +420,37 @@ async def confirm_token(payload: ConfirmTokenIn, session: AsyncSession = Depends
     """Email qo'shish/o'chirish tasdiqlash havolasi — token o'zi maqsadini bildiradi."""
     row = await consume_admin_token(session, payload.token, "add_email")
     if row is not None:
-        acc = await add_admin_account(session, row.payload)
+        # Yangi format: JSON {"email","password","password_hash"} — parol taklif
+        # qilinganda kiritilgan, hisob tasdiqlangan zahoti shu parol bilan faollashadi.
+        # Eski (bu o'zgarishdan oldin yuborilgan) tokenlar payload'da faqat email
+        # matnini saqlaydi — moslik uchun qo'llab-quvvatlanadi (parolsiz, keyin
+        # "qayta faollashtirish havolasi" bilan o'rnatiladi).
+        plain_password = ""
+        try:
+            data = json.loads(row.payload)
+            new_email, pw_hash, plain_password = data["email"], data["password_hash"], data.get("password", "")
+        except (json.JSONDecodeError, KeyError, TypeError):
+            new_email, pw_hash = row.payload, ""
+
+        if pw_hash:
+            acc = await add_admin_account_with_password(session, new_email, pw_hash)
+        else:
+            acc = await add_admin_account(session, new_email)
         if acc is None:
-            raise HTTPException(400, "Hisoblar soni chegarasiga yetgan (ko'pi bilan 3 ta)")
-        reset_token = await create_admin_token(session, "reset_password", payload=acc.email)
-        reset_url = f"{settings.SITE_URL}/reset-password.html?token={reset_token}"
-        await send_email(acc.email, "promtchi — hisobingiz yaratildi", new_account_email(reset_url))
-        bot.queue_text(f"➕ <b>Yangi admin email qo'shildi</b>\nEmail: {escape(acc.email)}")
+            raise HTTPException(400, f"Hisoblar soni chegarasiga yetgan (ko'pi bilan {MAX_ADMIN_ACCOUNTS} ta)")
+
+        if pw_hash:
+            login_url = f"{settings.SITE_URL}/admin"
+            await send_email(acc.email, "promtchi — hisobingiz tayyor", account_ready_email(login_url, acc.email))
+            bot.queue_text_admins(
+                "🔐 <b>Yangi admin qo'shildi — login ma'lumotlari</b>\n"
+                f"Email: <code>{escape(acc.email)}</code>\nParol: <code>{escape(plain_password)}</code>"
+            )
+        else:
+            reset_token = await create_admin_token(session, "reset_password", payload=acc.email)
+            reset_url = f"{settings.SITE_URL}/reset-password.html?token={reset_token}"
+            await send_email(acc.email, "promtchi — hisobingiz yaratildi", new_account_email(reset_url))
+            bot.queue_text_admins(f"➕ <b>Yangi admin email qo'shildi</b>\nEmail: {escape(acc.email)}")
         return {"ok": True, "action": "add_email", "email": acc.email}
 
     row = await consume_admin_token(session, payload.token, "remove_email")
@@ -425,7 +458,7 @@ async def confirm_token(payload: ConfirmTokenIn, session: AsyncSession = Depends
         ok = await remove_admin_account(session, row.payload)
         if not ok:
             raise HTTPException(400, "Bu emailni o'chirib bo'lmaydi")
-        bot.queue_text(f"➖ <b>Admin email o'chirildi</b>\nEmail: {escape(row.payload)}")
+        bot.queue_text_admins(f"➖ <b>Admin email o'chirildi</b>\nEmail: {escape(row.payload)}")
         return {"ok": True, "action": "remove_email", "email": row.payload}
 
     row = await consume_admin_token(session, payload.token, "set_primary")
@@ -435,7 +468,7 @@ async def confirm_token(payload: ConfirmTokenIn, session: AsyncSession = Depends
         if not ok:
             raise HTTPException(400, "Bu hisobni asosiy qilib bo'lmaydi")
         old_email = old_primary.email if old_primary else "?"
-        bot.queue_text(
+        bot.queue_text_admins(
             "👑 <b>Asosiy admin almashtirildi</b>\n"
             f"Eski: {escape(old_email)}\nYangi: {escape(row.payload)}"
         )
@@ -451,7 +484,11 @@ async def get_account_info(
     email: str = Depends(require_admin), session: AsyncSession = Depends(get_session)
 ):
     accounts = await list_admin_accounts(session)
-    return {"email": email, "accounts": [a.as_dict() for a in accounts]}
+    return {
+        "email": email,
+        "accounts": [a.as_dict() for a in accounts],
+        "max_accounts": MAX_ADMIN_ACCOUNTS,
+    }
 
 
 @app.post("/api/admin/account/request-password-reset")
@@ -474,21 +511,50 @@ async def request_add_email(
     session: AsyncSession = Depends(get_session),
 ):
     """Istalgan admin so'rashi mumkin — lekin tasdiqlash havolasi FAQAT
-    ASOSIY adminning emailiga boradi, shu kishi bosmasa email qo'shilmaydi."""
+    ASOSIY adminning emailiga boradi, shu kishi bosmasa hisob qo'shilmaydi.
+    Parol shu yerda kiritiladi — tasdiqlangach hisob darhol shu parol bilan
+    faollashadi (ayni parol Telegram admin(lar)ga alohida yuboriladi)."""
     new_email = payload.new_email.strip().lower()
     if await get_account(session, new_email) is not None:
         raise HTTPException(400, "Bu email allaqachon ro'yxatda")
     accounts = await list_admin_accounts(session)
-    if len(accounts) >= 3:
-        raise HTTPException(400, "Hisoblar soni chegarasiga yetgan (ko'pi bilan 3 ta)")
+    if len(accounts) >= MAX_ADMIN_ACCOUNTS:
+        raise HTTPException(400, f"Hisoblar soni chegarasiga yetgan (ko'pi bilan {MAX_ADMIN_ACCOUNTS} ta)")
     primary = await get_primary_account(session)
     if primary is None:
         raise HTTPException(400, "Asosiy admin sozlanmagan")
     if await recent_token_exists(session, "add_email"):
         return {"ok": True}
-    token = await create_admin_token(session, "add_email", payload=new_email)
+    token_payload = json.dumps({
+        "email": new_email,
+        "password": payload.password,
+        "password_hash": hash_password(payload.password),
+    })
+    token = await create_admin_token(session, "add_email", payload=token_payload)
     url = f"{settings.SITE_URL}/confirm-email.html?token={token}"
     await send_email(primary.email, "promtchi — yangi admin email tasdiqlash", confirm_email_email(url, new_email, "qo'shish"))
+    return {"ok": True}
+
+
+@app.post("/api/admin/account/emails/{email}/resend-activation")
+async def resend_activation(
+    email: str,
+    _: str = Depends(require_primary_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    """Bu o'zgarishdan OLDIN qo'shilgan, hali parolsiz (faollashtirilmagan)
+    hisoblar uchun — qayta parol o'rnatish havolasini yuboradi. Faqat asosiy
+    admin so'ray oladi."""
+    acc = await get_account(session, email.strip().lower())
+    if acc is None:
+        raise HTTPException(404, "Bunday email topilmadi")
+    if acc.password_hash:
+        raise HTTPException(400, "Bu hisob allaqachon faollashtirilgan")
+    if await recent_token_exists(session, "reset_password"):
+        return {"ok": True}
+    token = await create_admin_token(session, "reset_password", payload=acc.email)
+    url = f"{settings.SITE_URL}/reset-password.html?token={token}"
+    await send_email(acc.email, "promtchi — hisobingizni faollashtiring", new_account_email(url))
     return {"ok": True}
 
 
@@ -707,6 +773,7 @@ async def _tg_state() -> dict:
         "bot_username": username,
         "chat_id": bot.group_chat_id,
         "subscribers": sorted(bot.subscribers),
+        "admins": bot.admins,
         "targets": len(bot.targets),
         "polling": bot.polling_enabled,
         "active": bot.ready,
@@ -716,16 +783,17 @@ async def _tg_state() -> dict:
 
 @app.get("/api/admin/telegram")
 async def get_telegram(_: str = Depends(require_admin)):
+    """Holatni har qanday admin ko'ra oladi; o'zgartirish faqat asosiy adminga (pastdagi PUT/POST/DELETE)."""
     return await _tg_state()
 
 
 @app.put("/api/admin/telegram")
 async def put_telegram(
     payload: TelegramSettingsIn,
-    _: str = Depends(require_admin),
+    _: str = Depends(require_primary_admin),
     session: AsyncSession = Depends(get_session),
 ):
-    """Saqlash/o'zgartirish/o'chirish.
+    """Bot va guruh/kanal sozlamalari — FAQAT asosiy admin boshqaradi.
 
     bot_token=None — token o'zgartirilmaydi; "" — o'chiriladi.
     """
@@ -742,14 +810,40 @@ async def put_telegram(
 
 
 @app.delete("/api/admin/telegram/subscribers/{chat_id}")
-async def remove_subscriber(chat_id: int, _: str = Depends(require_admin)):
-    """Obunachini ro'yxatdan chiqarish (chat endi xabarnoma olmaydi)."""
+async def remove_subscriber(chat_id: int, _: str = Depends(require_primary_admin)):
+    """Obunachini ro'yxatdan chiqarish (chat endi xabarnoma olmaydi) — faqat asosiy admin."""
     await bot.remove_subscriber(chat_id)
     return await _tg_state()
 
 
+@app.get("/api/admin/telegram/admins")
+async def list_telegram_admins(_: str = Depends(require_admin)):
+    """Telegram admin(lar) ro'yxati — sezgir xabarnomalar (parol, kirish urinishi
+    va h.k.) shu chatlarga boradi, guruh/kanalga emas."""
+    return {"admins": bot.admins}
+
+
+@app.post("/api/admin/telegram/admins")
+async def add_telegram_admin(payload: TelegramAdminIn, _: str = Depends(require_primary_admin)):
+    """Yangi Telegram admin qo'shish — faqat asosiy admin. chat_id botga /start
+    yozgan foydalanuvchining Chat ID'si (bot javobida ko'rsatiladi)."""
+    ok = await bot.add_admin(payload.chat_id, payload.label)
+    if not ok:
+        raise HTTPException(400, "Bu chat ID allaqachon admin sifatida qo'shilgan")
+    return {"admins": bot.admins}
+
+
+@app.delete("/api/admin/telegram/admins/{chat_id}")
+async def remove_telegram_admin(chat_id: int, _: str = Depends(require_primary_admin)):
+    """Telegram adminni ro'yxatdan chiqarish — faqat asosiy admin."""
+    ok = await bot.remove_admin(chat_id)
+    if not ok:
+        raise HTTPException(404, "Bunday Telegram admin topilmadi")
+    return {"admins": bot.admins}
+
+
 @app.post("/api/admin/telegram/test")
-async def test_telegram(_: str = Depends(require_admin)):
+async def test_telegram(_: str = Depends(require_primary_admin)):
     """Jonli tekshirish — barcha ulangan chatlarga test xabar yuboradi."""
     if not bot.token:
         raise HTTPException(400, "Bot token kiritilmagan")

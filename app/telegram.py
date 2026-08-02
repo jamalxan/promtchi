@@ -26,6 +26,7 @@ log = logging.getLogger("promtchi.tg")
 
 API = "https://api.telegram.org/bot{token}/{method}"
 SUBS_KEY = "tg_subscribers"  # JSON massiv: [chat_id, ...]
+ADMINS_KEY = "tg_admin_ids"  # JSON massiv: [{"chat_id": int, "label": str}, ...]
 
 
 class TelegramBot:
@@ -35,6 +36,7 @@ class TelegramBot:
         self.token: str = ""
         self.group_chat_id: str = ""      # admin panelda ko'rsatilgan asosiy guruh
         self.subscribers: set[int] = set()  # /start bosgan yoki qo'shilgan chatlar
+        self.admins: list[dict] = []      # [{"chat_id": int, "label": str}] — sezgir xabarlar shu yerga boradi
         self.admin_password: str = ""
         self.client: httpx.AsyncClient | None = None
         self.queue: asyncio.Queue | None = None
@@ -104,6 +106,31 @@ class TelegramBot:
         await self._save_subscribers()
         return True
 
+    # ── Telegram adminlar (sezgir xabarnomalar — parol, kirish urinishi va h.k.) ──
+    @property
+    def admin_chat_ids(self) -> list[str]:
+        return [str(a["chat_id"]) for a in self.admins]
+
+    async def _save_admins(self) -> None:
+        async with SessionLocal() as s:
+            await s.merge(Setting(key=ADMINS_KEY, value=json.dumps(self.admins)))
+            await s.commit()
+
+    async def add_admin(self, chat_id: int, label: str = "") -> bool:
+        if any(a["chat_id"] == chat_id for a in self.admins):
+            return False
+        self.admins.append({"chat_id": chat_id, "label": label.strip()})
+        await self._save_admins()
+        return True
+
+    async def remove_admin(self, chat_id: int) -> bool:
+        before = len(self.admins)
+        self.admins = [a for a in self.admins if a["chat_id"] != chat_id]
+        if len(self.admins) == before:
+            return False
+        await self._save_admins()
+        return True
+
     # ── ariza xabari ─────────────────────────────────────────────────────────
     @staticmethod
     def lead_text(lead_id: int, name: str, phone: str, ptype: str, message: str, status: str) -> str:
@@ -141,13 +168,29 @@ class TelegramBot:
             log.warning("Telegram navbati to'la — xabarnoma tashlandi (ariza saqlandi)")
 
     def queue_text(self, text: str) -> None:
-        """Ixtiyoriy matnli xabarni navbatga qo'yadi (tugmasiz)."""
+        """Ixtiyoriy matnli xabarni navbatga qo'yadi (tugmasiz) — guruh + barcha
+        obunachilarga (ommaviy)."""
         if self.queue is None or not self.ready:
             return
         try:
-            self.queue.put_nowait({"lead_id": None, "text": text, "keyboard": None})
+            self.queue.put_nowait({"lead_id": None, "text": text, "keyboard": None, "targets": None})
         except asyncio.QueueFull:
             log.warning("Telegram navbati to'la — xabar tashlandi")
+
+    def queue_text_admins(self, text: str) -> None:
+        """Sezgir xabarnoma (parol, kirish urinishi, hisob o'zgarishi) — FAQAT
+        Telegram admin sifatida belgilangan chatlarga boradi (guruhga emas).
+        Hali hech qanday Telegram admin sozlanmagan bo'lsa — eski xatti-harakat
+        (barcha ulangan chatlarga) saqlanib qoladi, xabarnoma yo'qolib qolmasin."""
+        if self.queue is None or not self.token:
+            return
+        targets = self.admin_chat_ids
+        if not targets and not self.ready:
+            return
+        try:
+            self.queue.put_nowait({"lead_id": None, "text": text, "keyboard": None, "targets": targets or None})
+        except asyncio.QueueFull:
+            log.warning("Telegram navbati to'la — admin xabari tashlandi")
 
     async def worker(self, worker_id: int) -> None:
         """Navbatdagi xabarlarni barcha chatlarga yuboradi."""
@@ -156,7 +199,8 @@ class TelegramBot:
             item = await self.queue.get()
             try:
                 delivered = False
-                for chat in self.targets:
+                chats = item.get("targets") or self.targets
+                for chat in chats:
                     body = {"chat_id": chat, "text": item["text"], "parse_mode": "HTML"}
                     if item.get("keyboard"):
                         body["reply_markup"] = item["keyboard"]
@@ -371,7 +415,7 @@ class TelegramBot:
         """DB'dan token, guruh va obunachilarni o'qiydi."""
         res = await conn.execute(
             select(Setting.key, Setting.value).where(
-                Setting.key.in_(["tg_bot_token", "tg_chat_id", SUBS_KEY])
+                Setting.key.in_(["tg_bot_token", "tg_chat_id", SUBS_KEY, ADMINS_KEY])
             )
         )
         stored = dict(res.all())
@@ -383,6 +427,10 @@ class TelegramBot:
             self.subscribers = set(json.loads(stored.get(SUBS_KEY, "[]")))
         except Exception:
             self.subscribers = set()
+        try:
+            self.admins = list(json.loads(stored.get(ADMINS_KEY, "[]")))
+        except Exception:
+            self.admins = []
 
 
 bot = TelegramBot()

@@ -139,9 +139,21 @@ class ResetPasswordIn(BaseModel):
 
 
 class AddEmailRequestIn(BaseModel):
+    """Yangi admin taklif qilish — parol shu yerda o'rnatiladi (asosiy admin
+    tasdiqlagach hisob darhol shu parol bilan faollashadi)."""
+
     new_email: str = Field(min_length=3, max_length=200)
+    password: str = Field(min_length=8, max_length=200)
+    confirm_password: str = Field(min_length=8, max_length=200)
 
     _v_email = field_validator("new_email")(_validate_email)
+
+    @field_validator("confirm_password")
+    @classmethod
+    def _passwords_match(cls, v: str, info) -> str:
+        if info.data.get("password") is not None and v != info.data["password"]:
+            raise ValueError("Parollar mos kelmadi")
+        return v
 
 
 class RemoveEmailRequestIn(BaseModel):
@@ -243,6 +255,14 @@ class TelegramSettingsIn(BaseModel):
 
     bot_token: str | None = Field(default=None, max_length=200)
     chat_id: str = Field(default="", max_length=64)
+
+
+class TelegramAdminIn(BaseModel):
+    """Sezgir xabarnomalarni (yangi admin paroli va h.k.) olishi kerak bo'lgan
+    shaxsiy Telegram chat — guruh/kanaldan farqli, faqat shu odamlarga boradi."""
+
+    chat_id: int
+    label: str = Field(default="", max_length=60)
 
 
 # ── Boshlang'ich kontent (saytdagi bilan bir xil) ─────────────────────────────
