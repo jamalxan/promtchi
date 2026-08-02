@@ -105,8 +105,20 @@ def set_primary_email(url: str, new_primary_email: str) -> str:
 
 
 def new_account_email(url: str) -> str:
+    """Eski (parolsiz) faollashtirish oqimi — endi faqat asosiy admin oldindan
+    yaratilgan, lekin hali faollashtirilmagan hisoblarni qayta yuborganda ishlatiladi."""
     body = (
         "Sizga promtchi admin panelida hisob ochildi. Ishni boshlash uchun quyidagi tugma orqali "
         "o'z parolingizni o'rnating."
     )
     return _template("Hisobingiz yaratildi", body, url, "Parol o'rnatish")
+
+
+def account_ready_email(login_url: str, email: str) -> str:
+    """Yangi admin darhol parol bilan yaratilganda yuboriladi — parolning o'zi
+    email orqali yuborilmaydi (u Telegram admin(lar)ga alohida boradi)."""
+    body = (
+        f"Sizga promtchi admin panelida <b>{email}</b> emaili bilan hisob ochildi va faollashtirildi. "
+        "Kirish parolingiz Telegram orqali yuborilgan (yoki sizga taklif qilgan admin bilan bog'laning)."
+    )
+    return _template("Hisobingiz tayyor", body, login_url, "Admin panelga kirish")

@@ -1,6 +1,6 @@
 """JWT autentifikatsiya — ko'p admin (har birining o'z emaili va paroli).
 
-Ko'pi bilan 3 ta admin hisobi (AdminAccount jadvali). Aynan bittasi
+Ko'pi bilan MAX_ADMIN_ACCOUNTS ta admin hisobi (AdminAccount jadvali). Aynan bittasi
 is_primary=True — yangi email qo'shish/o'chirishni FAQAT shu hisob
 tasdiqlay oladi. JWT'ning "sub" maydonida haqiqiy login qilingan email
 saqlanadi (xabarnoma va "o'z emailimga havola yubor" kabi funksiyalar
@@ -16,12 +16,12 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .config import settings
-from .db import AdminAccount, AdminToken, Setting
+from .db import AdminAccount, AdminToken, Setting, get_session
 
 bearer = HTTPBearer(auto_error=False)
 
 RESET_TTL_MINUTES = 30
-MAX_ADMIN_ACCOUNTS = 3
+MAX_ADMIN_ACCOUNTS = 10
 
 
 def create_token(email: str) -> str:
@@ -109,6 +109,24 @@ async def add_admin_account(session: AsyncSession, email: str) -> AdminAccount |
     if existing is not None:
         return existing
     acc = AdminAccount(email=email, password_hash="", is_primary=False)
+    session.add(acc)
+    await session.commit()
+    return acc
+
+
+async def add_admin_account_with_password(
+    session: AsyncSession, email: str, password_hash: str
+) -> AdminAccount | None:
+    """add_admin_account bilan bir xil, lekin hisob DARHOL faollashtirilgan holda
+    yaratiladi (parol allaqachon o'rnatilgan — taklif qilinayotganda kiritilgan)."""
+    email = email.strip().lower()
+    count = await session.scalar(select(func.count()).select_from(AdminAccount))
+    if count and count >= MAX_ADMIN_ACCOUNTS:
+        return None
+    existing = await get_account(session, email)
+    if existing is not None:
+        return existing
+    acc = AdminAccount(email=email, password_hash=password_hash, is_primary=False)
     session.add(acc)
     await session.commit()
     return acc
@@ -202,3 +220,15 @@ async def require_admin(
     except jwt.InvalidTokenError:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Token noto'g'ri")
     return payload["sub"]
+
+
+async def require_primary_admin(
+    email: str = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+) -> str:
+    """require_admin bilan bir xil, lekin FAQAT asosiy admin o'tishiga ruxsat beradi
+    (Telegram sozlamalari kabi butun jamoaga ta'sir qiladigan amallar uchun)."""
+    acc = await get_account(session, email)
+    if acc is None or not acc.is_primary:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Faqat asosiy admin bu amalni bajara oladi")
+    return email

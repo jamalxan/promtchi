@@ -228,17 +228,19 @@ class Setting(Base):
 class AdminToken(Base):
     """Parolni tiklash / email qo'shish-o'chirishni tasdiqlash uchun bir martalik token.
 
-    purpose — "reset_password" | "add_email" | "remove_email".
-    payload — reset_password uchun tegishli admin email (qaysi hisobning paroli
-              tiklanayotgani); add_email/remove_email uchun tasdiqlanishi
-              kutilayotgan email manzil.
+    purpose — "reset_password" | "add_email" | "remove_email" | "set_primary".
+    payload — reset_password/remove_email/set_primary uchun tegishli admin email
+              (oddiy matn); add_email uchun JSON: {"email","password","password_hash"}
+              (yangi hisob ASOSIY admin tasdiqlagan zahoti tayyor parol bilan
+              yaratilishi uchun — parol matni faqat Telegram admin(lar)ga
+              xabar yuborish uchun vaqtincha saqlanadi, token bir martalik).
     """
 
     __tablename__ = "admin_tokens"
 
     token: Mapped[str] = mapped_column(String(64), primary_key=True)
     purpose: Mapped[str] = mapped_column(String(20), nullable=False)
-    payload: Mapped[str] = mapped_column(String(200), default="")
+    payload: Mapped[str] = mapped_column(Text, default="")
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
@@ -251,7 +253,7 @@ class AdminToken(Base):
 class AdminAccount(Base):
     """Admin panelga kira oladigan hisob — har birining o'z paroli bor.
 
-    Ko'pi bilan 3 ta hisob (ilova darajasida cheklanadi). Aynan bittasi
+    Ko'pi bilan auth.MAX_ADMIN_ACCOUNTS ta hisob (ilova darajasida cheklanadi). Aynan bittasi
     is_primary=True — yangi email qo'shish/o'chirishni FAQAT shu hisob
     tasdiqlay oladi (tasdiqlash havolasi doim uning emailiga yuboriladi).
     password_hash bo'sh bo'lsa — hisob hali faollashtirilmagan (yangi

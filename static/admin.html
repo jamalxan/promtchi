@@ -162,6 +162,13 @@ tr:hover td{background:rgba(217,255,63,.08)}
 .field-check input[type=checkbox]{width:20px;height:20px;accent-color:var(--blue)}
 .field-check span{font-size:.88rem;font-weight:600}
 
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:2.6rem !important}
+.pw-wrap .pw-eye{position:absolute;right:.35rem;top:50%;transform:translateY(-50%);width:2rem;height:2rem;
+  display:grid;place-items:center;background:none;border:none;cursor:pointer;opacity:.5;color:inherit}
+.pw-wrap .pw-eye:hover{opacity:1}
+.pw-wrap .pw-eye svg{width:18px;height:18px;stroke:currentColor;stroke-width:2;fill:none}
+
 .add-btn{display:flex;align-items:center;justify-content:center;gap:.5rem;width:100%;padding:1rem;
   border:2.5px dashed rgba(11,11,14,.25);border-radius:var(--radius);font-weight:700;
   color:rgba(11,11,14,.5);transition:.2s;margin-top:.8rem}
@@ -317,7 +324,7 @@ tr:hover td{background:rgba(217,255,63,.08)}
       <div class="nav-label">Tizim</div>
       <a href="#" data-page="telegram">
         <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-        Telegram bot
+        Telegram
       </a>
       <a href="#" data-page="settings">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -370,6 +377,27 @@ let currentPage = 'dashboard';
 /* ═══ UTILS ═══ */
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const EYE_SVG = '<svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_OFF_SVG = '<svg viewBox="0 0 24 24"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.8 21.8 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 7 11 7a21.8 21.8 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+
+function pwFieldHtml(id, placeholder) {
+  return `<div class="pw-wrap">
+    <input id="${id}" type="password" placeholder="${placeholder}" autocomplete="new-password">
+    <button type="button" class="pw-eye" tabindex="-1" onclick="togglePw('${id}', this)">${EYE_SVG}</button>
+  </div>`;
+}
+
+function togglePw(id, btn) {
+  const el = $(id);
+  const show = el.type === 'password';
+  el.type = show ? 'text' : 'password';
+  btn.innerHTML = show ? EYE_OFF_SVG : EYE_SVG;
+}
+
+function isPrimary() {
+  return !!(ACCOUNT && ACCOUNT.accounts && ACCOUNT.accounts.find(x => x.email === ACCOUNT.email && x.is_primary));
+}
 
 function toast(msg, type = 'success') {
   const t = $('toast');
@@ -1450,19 +1478,26 @@ async function deletePost(id) {
 
 /* ═══ TELEGRAM ═══ */
 function renderTelegram() {
-  const st = TG || { has_token: false, bot_token_masked: '', chat_id: '', active: false, subscribers: [], targets: 0 };
+  const st = TG || { has_token: false, bot_token_masked: '', chat_id: '', active: false, subscribers: [], admins: [], targets: 0 };
   const subs = st.subscribers || [];
+  const admins = st.admins || [];
   const link = st.bot_username ? `https://t.me/${st.bot_username}` : '';
+  const primary = isPrimary();
+  const ro = primary ? '' : 'disabled'; // read-only bo'lmagan admin uchun boshqaruv o'chirilgan
 
   $('mainContent').innerHTML = `
-    <div class="main-header"><h2>Telegram bot</h2>
+    <div class="main-header"><h2>Telegram</h2>
       <div class="actions">
         <button class="btn btn-outline btn-sm" onclick="refreshTelegram()">↻ Yangilash</button>
       </div>
     </div>
 
+    ${!primary ? `<div class="edit-card" style="max-width:620px;background:#fef3c7;color:#92400e">
+      <b>Bu bo'limni faqat ASOSIY admin boshqara oladi.</b> Siz holatni ko'rishingiz mumkin, lekin sozlamalarni o'zgartira olmaysiz.
+    </div>` : ''}
+
     <div class="edit-card" style="max-width:620px">
-      <div class="card-hd"><span class="num">HOLAT</span>
+      <div class="card-hd"><span class="num">BOT</span>
         <span style="font-weight:700;font-size:.9rem;color:${st.active ? 'var(--green)' : 'var(--coral)'}">
           ${st.active ? `● Ishlayapti — ${st.targets} ta chatga yuboriladi` : (st.has_token ? '● Chat ulanmagan' : '● Token yo\'q')}</span>
       </div>
@@ -1479,17 +1514,51 @@ function renderTelegram() {
         Oxirgi xato: ${esc(st.last_error)}</div>` : ''}
       <div class="field">
         <label>Bot token ${st.has_token ? `(joriy: <span style="text-transform:none">${esc(st.bot_token_masked)}</span>${st.bot_username ? ` — @${esc(st.bot_username)}` : ''})` : ''}</label>
-        <input id="tgToken" type="text" placeholder="${st.has_token ? "O'zgartirish uchun yangi token kiriting" : '123456789:ABC-DEF...'}" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>Asosiy guruh chat ID (ixtiyoriy — bot o'zi ham ulanadi)</label>
-        <input id="tgChat" type="text" value="${esc(st.chat_id)}" placeholder="-1001234567890" autocomplete="off">
+        <input id="tgToken" type="text" placeholder="${st.has_token ? "O'zgartirish uchun yangi token kiriting" : '123456789:ABC-DEF...'}" autocomplete="off" ${ro}>
       </div>
       <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1.1rem">
-        <button class="btn btn-blk btn-sm" id="tgSaveBtn" onclick="saveTelegram()">Saqlash</button>
-        <button class="btn btn-acid btn-sm" id="tgTestBtn" onclick="testTelegram()">Test xabar yuborish</button>
-        <button class="btn btn-coral btn-sm" onclick="clearTelegram()">Botni o'chirish</button>
+        <button class="btn btn-blk btn-sm" id="tgSaveBtn" onclick="saveTelegram()" ${ro}>Saqlash</button>
+        <button class="btn btn-acid btn-sm" id="tgTestBtn" onclick="testTelegram()" ${ro}>Test xabar yuborish</button>
+        <button class="btn btn-coral btn-sm" onclick="clearTelegram()" ${ro}>Botni o'chirish</button>
       </div>
+    </div>
+
+    <div class="edit-card" style="max-width:620px;margin-top:1rem">
+      <div class="card-hd"><span class="num">GURUH / KANAL</span></div>
+      <p style="font-size:.85rem;opacity:.65;margin-bottom:.3rem">Yangi arizalar va umumiy xabarnomalar shu chatga (yoki botni qo'shgan har qanday guruhga) yuboriladi.</p>
+      <div class="field">
+        <label>Guruh/kanal chat ID (ixtiyoriy — bot o'zi ham ulanadi)</label>
+        <input id="tgChat" type="text" value="${esc(st.chat_id)}" placeholder="-1001234567890" autocomplete="off" ${ro}>
+      </div>
+      ${primary ? `<button class="btn btn-blk btn-sm" style="margin-top:.6rem" onclick="saveTelegram()">Saqlash</button>` : ''}
+    </div>
+
+    <div class="edit-card" style="max-width:620px;margin-top:1rem">
+      <div class="card-hd"><span class="num">TELEGRAM ADMINLAR (${admins.length})</span></div>
+      <p style="font-size:.85rem;opacity:.65;margin-bottom:.3rem">Sezgir xabarnomalar (yangi admin paroli, kirish urinishlari, hisob o'zgarishlari) FAQAT shu chatlarga boradi — guruh/kanalga emas.</p>
+      ${admins.length ? `<table style="margin-top:.4rem">
+        <thead><tr><th>Chat ID</th><th>Nomi</th><th></th></tr></thead>
+        <tbody>${admins.map(a => `<tr>
+          <td style="font-family:var(--mono);font-size:.88rem">${esc(a.chat_id)}</td>
+          <td>${esc(a.label || '—')}</td>
+          <td class="td-actions">${primary ? `<button onclick="removeTelegramAdmin(${a.chat_id})" title="O'chirish">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>` : ''}</td>
+        </tr>`).join('')}</tbody></table>`
+        : '<p style="opacity:.5;font-size:.88rem;padding:.4rem 0">Hali qo\'shilmagan — xabarnomalar hozircha guruh/kanal va ulangan barcha chatlarga boradi.</p>'}
+      ${primary ? `
+      <div class="field-row" style="margin-top:.8rem">
+        <div class="field" style="margin-top:0">
+          <label>Chat ID</label>
+          <input id="tgAdminChatId" type="text" inputmode="numeric" placeholder="123456789" autocomplete="off">
+        </div>
+        <div class="field" style="margin-top:0">
+          <label>Nomi (ixtiyoriy)</label>
+          <input id="tgAdminLabel" type="text" placeholder="Masalan: Aziz" autocomplete="off">
+        </div>
+      </div>
+      <button class="btn btn-outline btn-sm" style="margin-top:.6rem" onclick="addTelegramAdmin()">+ Admin qo'shish</button>
+      <p style="font-size:.8rem;opacity:.6;margin-top:.5rem">Chat ID'ni bilish uchun — kerakli odam botga <b>/start</b> yozadi, bot javobida Chat ID'ni ko'rsatadi.</p>
+      ` : ''}
     </div>
 
     <div class="edit-card" style="max-width:620px;margin-top:1rem">
@@ -1499,8 +1568,8 @@ function renderTelegram() {
         <tbody>${subs.map(s => `<tr>
           <td style="font-family:var(--mono);font-size:.88rem">${s}</td>
           <td>${String(s).startsWith('-') ? 'Guruh / kanal' : 'Shaxsiy'}</td>
-          <td class="td-actions"><button onclick="removeSub(${s})" title="Chiqarish">
-            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>
+          <td class="td-actions">${primary ? `<button onclick="removeSub(${s})" title="Chiqarish">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>` : ''}</td>
         </tr>`).join('')}</tbody></table>`
         : '<p style="opacity:.5;font-size:.88rem;padding:.6rem 0">Hali hech kim ulanmagan — botga /start yozing yoki guruhga qo\'shing.</p>'}
     </div>
@@ -1514,6 +1583,7 @@ function renderTelegram() {
         <li><b>/arizalar</b> — oxirgi 10 ta ariza, <b>/yangi</b> — javob kutayotganlari</li>
         <li><b>/stop</b> — xabarnomalarni o'chirish, <b>/start</b> — qayta yoqish</li>
         <li>Yangi mijoz fikri kelganda ham xabar beradi</li>
+        <li>Telegram admin sifatida qo'shilgan chatlarga yangi admin paroli va kirish urinishlari kabi sezgir xabarlar alohida yuboriladi</li>
       </ul>
     </div>
   `;
@@ -1532,6 +1602,42 @@ async function removeSub(chatId) {
     const r = await apiFetch('/api/admin/telegram/subscribers/' + chatId, { method: 'DELETE' });
     if (r.ok) { TG = await r.json(); renderTelegram(); toast('Chiqarildi'); }
   } catch (e) { toast('Xatolik', 'error'); }
+}
+
+async function addTelegramAdmin() {
+  const chatIdVal = $('tgAdminChatId').value.trim();
+  const label = $('tgAdminLabel').value.trim();
+  const chatId = parseInt(chatIdVal, 10);
+  if (!chatIdVal || Number.isNaN(chatId)) { toast("Chat ID noto'g'ri — faqat raqam kiriting", 'error'); return; }
+  try {
+    const r = await apiFetch('/api/admin/telegram/admins', {
+      method: 'POST',
+      body: JSON.stringify({ chat_id: chatId, label })
+    });
+    if (r.ok) {
+      const data = await r.json();
+      TG = { ...TG, admins: data.admins };
+      renderTelegram();
+      toast('Telegram admin qo\'shildi ✓');
+    } else {
+      const d = await r.json().catch(() => ({}));
+      toast(d.detail || 'Xatolik yuz berdi', 'error');
+    }
+  } catch (e) { toast('Xatolik yuz berdi', 'error'); }
+}
+
+async function removeTelegramAdmin(chatId) {
+  const ok = await confirm("Telegram adminni o'chirish", `${chatId} endi sezgir xabarnomalarni olmaydi. Davom etasizmi?`, "Ha, o'chirish");
+  if (!ok) return;
+  try {
+    const r = await apiFetch('/api/admin/telegram/admins/' + chatId, { method: 'DELETE' });
+    if (r.ok) {
+      const data = await r.json();
+      TG = { ...TG, admins: data.admins };
+      renderTelegram();
+      toast("O'chirildi");
+    }
+  } catch (e) { toast('Xatolik yuz berdi', 'error'); }
 }
 
 async function saveTelegram() {
@@ -1572,29 +1678,54 @@ async function clearTelegram() {
 
 /* ═══ SETTINGS ═══ */
 function renderSettings() {
+  const maxAcc = ACCOUNT ? (ACCOUNT.max_accounts || 10) : 10;
+  const accCount = ACCOUNT ? ACCOUNT.accounts.length : 0;
+  const full = accCount >= maxAcc;
+
   $('mainContent').innerHTML = `
     <div class="main-header"><h2>Sozlamalar</h2></div>
+
     <div class="edit-card" style="max-width:500px">
-      <div class="card-hd"><span class="num">HISOB</span></div>
+      <div class="card-hd"><span class="num">MENING HISOBIM</span></div>
       <div class="field">
-        <label>Admin emaillar (${ACCOUNT ? ACCOUNT.accounts.length : 0}/3)</label>
-        <div id="accountsList">${ACCOUNT ? ACCOUNT.accounts.map(accountRowHtml).join('') : ''}</div>
-      </div>
-      <div class="field">
-        <label>Yangi admin email qo'shish</label>
-        <input id="newEmailInput" type="email" placeholder="yangi@email.com" autocomplete="off" ${ACCOUNT && ACCOUNT.accounts.length >= 3 ? 'disabled' : ''}>
-        <button class="btn btn-outline btn-sm" style="margin-top:.6rem" onclick="requestAddEmail()" ${ACCOUNT && ACCOUNT.accounts.length >= 3 ? 'disabled' : ''}>So'rov yuborish</button>
-        <p style="font-size:.8rem;opacity:.6;margin-top:.5rem">Tasdiqlash havolasi <b>asosiy admin</b>ning emailiga yuboriladi — faqat u tasdiqlasa email qo'shiladi (ko'pi bilan 3 ta).</p>
+        <label>Email</label>
+        <div style="padding:.7rem 0;font-weight:600">${esc(ACCOUNT ? ACCOUNT.email : '')}</div>
       </div>
       <div class="field">
         <label>Parol</label>
         <button class="btn btn-outline btn-sm" onclick="requestPasswordReset()">Parolni o'zgartirish havolasini yuborish</button>
-        <p style="font-size:.8rem;opacity:.6;margin-top:.5rem">Havola sizning (${esc(ACCOUNT ? ACCOUNT.email : '')}) emailingizga yuboriladi.</p>
+        <p style="font-size:.8rem;opacity:.6;margin-top:.5rem">Havola sizning o'z emailingizga yuboriladi.</p>
       </div>
       <div id="accountMsg" style="font-size:.85rem;margin-top:.3rem;font-weight:600"></div>
     </div>
+
     <div class="edit-card" style="max-width:500px;margin-top:1rem">
-      <div class="card-hd"><span class="num">INFO</span></div>
+      <div class="card-hd"><span class="num">ADMIN HISOBLARI (${accCount}/${maxAcc})</span></div>
+      <div id="accountsList">${ACCOUNT ? ACCOUNT.accounts.map(accountRowHtml).join('') : ''}</div>
+      <div class="field" style="margin-top:1.1rem;padding-top:1rem;border-top:1px solid rgba(11,11,14,.08)">
+        <label>Yangi admin qo'shish</label>
+        <input id="newEmailInput" type="email" placeholder="Email" autocomplete="off" ${full ? 'disabled' : ''}>
+        <div style="margin-top:.5rem">${pwFieldHtml('newPassInput', "Parol (kamida 8 belgi)")}</div>
+        <div style="margin-top:.5rem">${pwFieldHtml('newPassConfirmInput', "Parolni tasdiqlang")}</div>
+        <button class="btn btn-outline btn-sm" style="margin-top:.6rem" onclick="requestAddEmail()" ${full ? 'disabled' : ''}>So'rov yuborish</button>
+        <p style="font-size:.8rem;opacity:.6;margin-top:.5rem">
+          ${full ? `Hisoblar chegarasiga yetgan (ko'pi bilan ${maxAcc} ta).` :
+            "Tasdiqlash havolasi <b>asosiy admin</b>ning emailiga yuboriladi — faqat u tasdiqlasa hisob DARHOL shu parol bilan faollashadi. Login ma'lumotlari (email + parol) Telegram admin(lar)ga yuboriladi."}
+        </p>
+      </div>
+      <div id="addAccountMsg" style="font-size:.85rem;margin-top:.3rem;font-weight:600"></div>
+    </div>
+
+    <div class="edit-card" style="max-width:500px;margin-top:1rem">
+      <div class="card-hd"><span class="num">TELEGRAM</span></div>
+      <div style="padding:.3rem 0;font-weight:600;color:${TG && TG.active ? 'var(--green)' : 'var(--coral)'}">
+        ${TG && TG.active ? '● Ulangan' : '● Sozlanmagan'}
+        <button class="btn btn-outline btn-sm" style="margin-left:.8rem" onclick="navigate('telegram')">Boshqarish →</button>
+      </div>
+    </div>
+
+    <div class="edit-card" style="max-width:500px;margin-top:1rem">
+      <div class="card-hd"><span class="num">TIZIM MA'LUMOTI</span></div>
       <div class="field">
         <label>Tizim holati</label>
         <div style="padding:.7rem 0;display:flex;align-items:center;gap:.5rem">
@@ -1620,14 +1751,8 @@ function renderSettings() {
           Postlar: ${POSTS.length}
         </div>
       </div>
-      <div class="field">
-        <label>Telegram bot</label>
-        <div style="padding:.7rem 0;font-weight:600;color:${TG && TG.active ? 'var(--green)' : 'var(--coral)'}">
-          ${TG && TG.active ? '● Ulangan' : '● Sozlanmagan'}
-          <button class="btn btn-outline btn-sm" style="margin-left:.8rem" onclick="navigate('telegram')">Boshqarish →</button>
-        </div>
-      </div>
     </div>
+
     <div class="edit-card" style="max-width:500px;margin-top:1rem">
       <div class="card-hd"><span class="num">XAVFLI ZONA</span></div>
       <p style="font-size:.88rem;opacity:.7;margin-bottom:1rem">Kontentni boshlang'ich holatga qaytarish barcha tahrirlarni o'chiradi.</p>
@@ -1658,7 +1783,7 @@ async function requestPasswordReset() {
 }
 
 function accountRowHtml(a) {
-  const iAmPrimary = !!(ACCOUNT && ACCOUNT.accounts.find(x => x.email === ACCOUNT.email && x.is_primary));
+  const iAmPrimary = isPrimary();
   const badge = a.is_primary
     ? '<span style="background:var(--acid);color:var(--blk);font-size:.65rem;font-weight:700;padding:.15rem .55rem;border-radius:999px;text-transform:uppercase">Asosiy</span>'
     : '';
@@ -1666,6 +1791,9 @@ function accountRowHtml(a) {
     ? '<span style="color:var(--orange);font-size:.72rem">faollashtirilmagan</span>'
     : '';
   const emailArg = esc(a.email).replace(/'/g, "\\'");
+  const resendBtn = (!a.activated && iAmPrimary)
+    ? `<button class="btn btn-outline btn-sm" onclick="resendActivation('${emailArg}')">Faollashtirish havolasini yuborish</button>`
+    : '';
   const makePrimaryBtn = (!a.is_primary && a.activated && iAmPrimary)
     ? `<button class="btn btn-outline btn-sm" onclick="requestSetPrimary('${emailArg}')">Asosiy qilib tayinlash</button>`
     : '';
@@ -1673,26 +1801,52 @@ function accountRowHtml(a) {
     ? ''
     : `<button class="btn btn-coral btn-sm" style="margin-left:auto" onclick="requestRemoveEmail('${emailArg}')">O'chirish</button>`;
   return `<div style="display:flex;align-items:center;gap:.6rem;padding:.6rem 0;border-bottom:1px solid rgba(11,11,14,.08);flex-wrap:wrap">
-    <span style="font-weight:600;font-size:.92rem">${esc(a.email)}</span>${badge}${pending}${makePrimaryBtn}${removeBtn}
+    <span style="font-weight:600;font-size:.92rem">${esc(a.email)}</span>${badge}${pending}${resendBtn}${makePrimaryBtn}${removeBtn}
   </div>`;
 }
 
 async function requestAddEmail() {
-  const input = $('newEmailInput');
-  const newEmail = input.value.trim();
-  const msg = $('accountMsg');
+  const emailInput = $('newEmailInput');
+  const passInput = $('newPassInput');
+  const passConfirmInput = $('newPassConfirmInput');
+  const newEmail = emailInput.value.trim();
+  const password = passInput.value;
+  const confirmPassword = passConfirmInput.value;
+  const msg = $('addAccountMsg');
   if (!newEmail) { msg.style.color = 'var(--coral)'; msg.textContent = 'Yangi emailni kiriting'; return; }
+  if (password.length < 8) { msg.style.color = 'var(--coral)'; msg.textContent = "Parol kamida 8 belgidan iborat bo'lishi kerak"; return; }
+  if (password !== confirmPassword) { msg.style.color = 'var(--coral)'; msg.textContent = 'Parollar mos kelmadi'; return; }
   msg.style.color = '';
   msg.textContent = 'Yuborilmoqda...';
   try {
     const r = await apiFetch('/api/admin/account/emails/request-add', {
       method: 'POST',
-      body: JSON.stringify({ new_email: newEmail })
+      body: JSON.stringify({ new_email: newEmail, password, confirm_password: confirmPassword })
     });
     if (r.ok) {
       msg.style.color = 'var(--green)';
       msg.textContent = "Tasdiqlash havolasi asosiy admin emailiga yuborildi.";
-      input.value = '';
+      emailInput.value = ''; passInput.value = ''; passConfirmInput.value = '';
+    } else {
+      const d = await r.json().catch(() => ({}));
+      msg.style.color = 'var(--coral)';
+      msg.textContent = d.detail || 'Xatolik yuz berdi';
+    }
+  } catch (e) {
+    msg.style.color = 'var(--coral)';
+    msg.textContent = "Server bilan aloqa yo'q";
+  }
+}
+
+async function resendActivation(email) {
+  const msg = $('addAccountMsg');
+  msg.style.color = '';
+  msg.textContent = 'Yuborilmoqda...';
+  try {
+    const r = await apiFetch(`/api/admin/account/emails/${encodeURIComponent(email)}/resend-activation`, { method: 'POST' });
+    if (r.ok) {
+      msg.style.color = 'var(--green)';
+      msg.textContent = 'Faollashtirish havolasi yuborildi.';
     } else {
       const d = await r.json().catch(() => ({}));
       msg.style.color = 'var(--coral)';
@@ -1707,7 +1861,7 @@ async function requestAddEmail() {
 async function requestRemoveEmail(email) {
   const ok = await confirm("Emailni o'chirish", `${email} admin panelga kirish huquqidan mahrum qilinsinmi? Tasdiqlash havolasi asosiy adminga yuboriladi.`, "Ha, so'rov yuborish");
   if (!ok) return;
-  const msg = $('accountMsg');
+  const msg = $('addAccountMsg');
   msg.style.color = '';
   msg.textContent = 'Yuborilmoqda...';
   try {
@@ -1736,7 +1890,7 @@ async function requestSetPrimary(email) {
     "Ha, so'rov yuborish"
   );
   if (!ok) return;
-  const msg = $('accountMsg');
+  const msg = $('addAccountMsg');
   msg.style.color = '';
   msg.textContent = 'Yuborilmoqda...';
   try {
