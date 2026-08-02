@@ -38,11 +38,11 @@ jobs:
             --exclude '*.db' --exclude '*.db-wal' --exclude '*.db-shm' \
             --exclude '.venv' \
             --exclude '__pycache__' \
-            ./ ubuntu@3.235.28.241:/home/ubuntu/promtchi/
+            ./ ubuntu@32.199.91.62:/home/ubuntu/promtchi/
 
       - name: Kutubxonalarni yangilash va xizmatni qayta ishga tushirish
         run: |
-          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@3.235.28.241 '
+          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@32.199.91.62 '
             set -e
             cd ~/promtchi
             .venv/bin/pip install -q -r requirements.txt
