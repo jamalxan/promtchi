@@ -3,7 +3,8 @@
 Ikki yo'nalish:
   • Chiquvchi — yangi ariza kelganda guruhga va obuna bo'lgan adminlarga
     inline tugmali xabar yuboriladi ("✅ Javob berildi" / "↩️ Yangi").
-  • Kiruvchi — long polling (getUpdates): tugma bosilishi, /start, /arizalar.
+  • Kiruvchi — long polling (getUpdates): tugma bosilishi, /start, /arizalar,
+    /super (super adminni almashtirish — faqat ro'yxatdagi Telegram admin uchun).
 
 Obunachilar DB'dagi `settings` jadvalida saqlanadi, shuning uchun bot guruhga
 qo'shilishi bilan qo'lda chat ID kiritmasdan ishlay boshlaydi.
@@ -16,17 +17,26 @@ import asyncio
 import html
 import json
 import logging
+import re
+import secrets
+import time
 
 import httpx
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 
-from .db import Lead, SessionLocal, Setting
+from .auth import MAX_ADMIN_ACCOUNTS, create_admin_token, hash_password
+from .config import settings
+from .db import AdminAccount, Lead, SessionLocal, Setting
+from .email import send_email, tg_super_code_email, tg_super_old_confirm_email
 
 log = logging.getLogger("promtchi.tg")
 
 API = "https://api.telegram.org/bot{token}/{method}"
 SUBS_KEY = "tg_subscribers"  # JSON massiv: [chat_id, ...]
 ADMINS_KEY = "tg_admin_ids"  # JSON massiv: [{"chat_id": int, "label": str}, ...]
+
+SUPER_FLOW_TTL = 600  # soniya — /super jarayonining har bosqichi shuncha vaqt amal qiladi
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 class TelegramBot:
@@ -37,6 +47,7 @@ class TelegramBot:
         self.group_chat_id: str = ""      # admin panelda ko'rsatilgan asosiy guruh
         self.subscribers: set[int] = set()  # /start bosgan yoki qo'shilgan chatlar
         self.admins: list[dict] = []      # [{"chat_id": int, "label": str}] — sezgir xabarlar shu yerga boradi
+        self.super_flow: dict[int, dict] = {}  # chat_id -> /super jarayoni holati (vaqtinchalik, xotirada)
         self.admin_password: str = ""
         self.client: httpx.AsyncClient | None = None
         self.queue: asyncio.Queue | None = None
@@ -312,6 +323,22 @@ class TelegramBot:
         chat_id = msg["chat"]["id"]
         text = (msg.get("text") or "").strip()
 
+        if text.startswith("/cancel"):
+            if chat_id in self.super_flow:
+                del self.super_flow[chat_id]
+                await self.call("sendMessage", {"chat_id": chat_id, "text": "❌ Bekor qilindi."})
+            return
+
+        if text.startswith("/super") or text.startswith("/supper"):
+            await self._super_start(chat_id)
+            return
+
+        # Faol /super jarayoni bo'lsa — matnni shu jarayonga yo'naltiramiz
+        # (boshqa buyruqlardan OLDIN, chunki oddiy email/kod matni bo'ladi)
+        if chat_id in self.super_flow:
+            await self._super_handle_text(chat_id, text)
+            return
+
         if text.startswith("/start"):
             await self.add_subscriber(chat_id)
             await self.call("sendMessage", {
@@ -361,6 +388,8 @@ class TelegramBot:
     async def _handle_callback(self, cq: dict) -> None:
         data = cq.get("data", "")
         cq_id = cq["id"]
+        if data.startswith("super:"):
+            return await self._handle_super_callback(cq)
         parts = data.split(":")
         if len(parts) != 3 or parts[0] != "lead":
             await self.call("answerCallbackQuery", {"callback_query_id": cq_id})
@@ -399,6 +428,176 @@ class TelegramBot:
             "callback_query_id": cq_id,
             "text": "✅ Javob berildi deb belgilandi" if new_status == "replied" else "↩️ Yangi deb belgilandi",
         })
+
+    # ── /super — Telegram orqali super adminni almashtirish ────────────────────
+    # Faqat ro'yxatdagi Telegram admin(lar) uchun. Bosqichlar:
+    #   1) /super yoki /supper -> hozirgi super admin emailini so'raydi
+    #   2) email to'g'ri kelsa -> shu emailga tasdiqlash havolasi yuboriladi
+    #   3) havola bosilgach (tg-super-confirm.html) -> yangi email so'raladi
+    #   4) yangi emailga 6 xonali kod yuboriladi -> kod kiritiladi
+    #   5) tugmalar orqali tanlanadi: mavjud hisobni Super qilish YOKI yangi
+    #      Super Admin sifatida qo'shish (parol avtomatik yaratilib shu yerga yuboriladi)
+    async def _super_start(self, chat_id: int) -> None:
+        if chat_id not in [a["chat_id"] for a in self.admins]:
+            await self.call("sendMessage", {
+                "chat_id": chat_id,
+                "text": "⛔ Bu buyruq faqat ro'yxatdan o'tgan Telegram admin uchun mavjud.",
+            })
+            return
+        self.super_flow[chat_id] = {"step": "await_old_email", "expires": time.time() + SUPER_FLOW_TTL}
+        await self.call("sendMessage", {
+            "chat_id": chat_id,
+            "text": (
+                "🔐 <b>Super adminni almashtirish</b>\n\n"
+                "Hozirgi SUPER ADMIN emailini kiriting (tasdiqlash uchun).\nBekor qilish: /cancel"
+            ),
+            "parse_mode": "HTML",
+        })
+
+    async def _super_handle_text(self, chat_id: int, text: str) -> None:
+        flow = self.super_flow.get(chat_id)
+        if flow is None:
+            return
+        if time.time() > flow["expires"]:
+            del self.super_flow[chat_id]
+            await self.call("sendMessage", {"chat_id": chat_id, "text": "⏱ Vaqt tugadi. Qaytadan boshlash uchun /super yozing."})
+            return
+
+        step = flow["step"]
+
+        if step == "await_old_email":
+            email = text.strip().lower()
+            async with SessionLocal() as s:
+                primary = await s.scalar(select(AdminAccount).where(AdminAccount.is_primary.is_(True)))
+            if primary is None or primary.email != email:
+                await self.call("sendMessage", {"chat_id": chat_id, "text": "❌ Email noto'g'ri. Qaytadan kiriting yoki /cancel."})
+                return
+            async with SessionLocal() as s:
+                token = await create_admin_token(s, "tg_super_old", payload=str(chat_id))
+            url = f"{settings.SITE_URL}/tg-super-confirm.html?token={token}"
+            await send_email(email, "promtchi — Super adminni almashtirish", tg_super_old_confirm_email(url))
+            flow["step"] = "await_old_confirm"
+            flow["expires"] = time.time() + SUPER_FLOW_TTL
+            await self.call("sendMessage", {
+                "chat_id": chat_id,
+                "text": "📧 Tasdiqlash havolasi hozirgi super adminning emailiga yuborildi. U tasdiqlagach shu yerga xabar keladi.",
+            })
+            return
+
+        if step == "await_old_confirm":
+            await self.call("sendMessage", {"chat_id": chat_id, "text": "⏳ Hali eski super admin tasdiqlamadi. Kuting yoki /cancel."})
+            return
+
+        if step == "await_new_email":
+            new_email = text.strip().lower()
+            if not _EMAIL_RE.match(new_email):
+                await self.call("sendMessage", {"chat_id": chat_id, "text": "❌ Email formati noto'g'ri. Qaytadan kiriting."})
+                return
+            code = f"{secrets.randbelow(1_000_000):06d}"
+            flow["new_email"] = new_email
+            flow["code"] = code
+            flow["step"] = "await_code"
+            flow["expires"] = time.time() + SUPER_FLOW_TTL
+            await send_email(new_email, "promtchi — tasdiqlash kodi", tg_super_code_email(code))
+            await self.call("sendMessage", {
+                "chat_id": chat_id,
+                "text": f"📧 Tasdiqlash kodi {new_email} manziliga yuborildi. Kodni shu yerga kiriting:",
+            })
+            return
+
+        if step == "await_code":
+            if text.strip() != flow.get("code"):
+                await self.call("sendMessage", {"chat_id": chat_id, "text": "❌ Kod noto'g'ri. Qaytadan kiriting yoki /cancel."})
+                return
+            new_email = flow["new_email"]
+            async with SessionLocal() as s:
+                existing = await s.get(AdminAccount, new_email)
+            if existing is not None and existing.is_primary:
+                await self.call("sendMessage", {"chat_id": chat_id, "text": "ℹ️ Bu hisob allaqachon super admin."})
+                del self.super_flow[chat_id]
+                return
+            if existing is not None:
+                buttons = [[{"text": "🔄 Mavjud hisobni Super qilish", "callback_data": "super:promote"}]]
+            else:
+                buttons = [[{"text": "➕ Yangi Super Admin sifatida qo'shish", "callback_data": "super:create"}]]
+            flow["step"] = "await_choice"
+            flow["expires"] = time.time() + SUPER_FLOW_TTL
+            await self.call("sendMessage", {
+                "chat_id": chat_id,
+                "text": f"✅ Kod to'g'ri. <b>{html.escape(new_email)}</b> uchun amalni tanlang:",
+                "parse_mode": "HTML",
+                "reply_markup": {"inline_keyboard": buttons},
+            })
+            return
+
+        if step == "await_choice":
+            await self.call("sendMessage", {"chat_id": chat_id, "text": "Iltimos, yuqoridagi tugmalardan birini bosing yoki /cancel."})
+            return
+
+    async def advance_super_flow_after_old_confirm(self, chat_id: int) -> bool:
+        """Eski super admin emaildagi havolani bosgach chaqiriladi (main.py'dan)."""
+        flow = self.super_flow.get(chat_id)
+        if flow is None or flow.get("step") != "await_old_confirm":
+            return False
+        flow["step"] = "await_new_email"
+        flow["expires"] = time.time() + SUPER_FLOW_TTL
+        await self.call("sendMessage", {
+            "chat_id": chat_id,
+            "text": "✅ Tasdiqlandi! Endi yangi SUPER ADMIN qilinadigan emailni kiriting:",
+        })
+        return True
+
+    async def _handle_super_callback(self, cq: dict) -> None:
+        cq_id = cq["id"]
+        chat_id = cq["message"]["chat"]["id"]
+        action = cq["data"].split(":", 1)[1]
+        flow = self.super_flow.get(chat_id)
+        if flow is None or flow.get("step") != "await_choice":
+            await self.call("answerCallbackQuery", {
+                "callback_query_id": cq_id, "text": "Jarayon topilmadi yoki eskirgan.", "show_alert": True})
+            return
+        new_email = flow["new_email"]
+        result_msg = ""
+        async with SessionLocal() as s:
+            old_primary = await s.scalar(select(AdminAccount).where(AdminAccount.is_primary.is_(True)))
+            if action == "promote":
+                target = await s.get(AdminAccount, new_email)
+                if target is None:
+                    await self.call("answerCallbackQuery", {
+                        "callback_query_id": cq_id, "text": "Hisob topilmadi", "show_alert": True})
+                    return
+                if old_primary:
+                    old_primary.is_primary = False
+                target.is_primary = True
+                await s.commit()
+                result_msg = f"👑 <b>Super Admin almashtirildi</b>\nYangi: {html.escape(new_email)}"
+            elif action == "create":
+                existing = await s.get(AdminAccount, new_email)
+                if existing is not None:
+                    await self.call("answerCallbackQuery", {
+                        "callback_query_id": cq_id, "text": "Bu email allaqachon mavjud", "show_alert": True})
+                    return
+                count = await s.scalar(select(func.count()).select_from(AdminAccount))
+                if count and count >= MAX_ADMIN_ACCOUNTS:
+                    await self.call("answerCallbackQuery", {
+                        "callback_query_id": cq_id, "text": "Hisoblar chegarasiga yetgan", "show_alert": True})
+                    del self.super_flow[chat_id]
+                    return
+                password = secrets.token_urlsafe(9)
+                if old_primary:
+                    old_primary.is_primary = False
+                s.add(AdminAccount(email=new_email, password_hash=hash_password(password), is_primary=True))
+                await s.commit()
+                result_msg = (
+                    "👑 <b>Yangi Super Admin qo'shildi</b>\n"
+                    f"Email: <code>{html.escape(new_email)}</code>\nParol: <code>{html.escape(password)}</code>"
+                )
+            else:
+                await self.call("answerCallbackQuery", {"callback_query_id": cq_id})
+                return
+        del self.super_flow[chat_id]
+        await self.call("answerCallbackQuery", {"callback_query_id": cq_id, "text": "Bajarildi ✓"})
+        await self.call("sendMessage", {"chat_id": chat_id, "text": result_msg, "parse_mode": "HTML"})
 
     # ── ishga tushirish / to'xtatish ─────────────────────────────────────────
     async def notify_lead_status(self, lead_id: int, status: str) -> None:

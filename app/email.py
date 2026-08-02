@@ -89,7 +89,7 @@ def confirm_email_email(url: str, target_email: str, action: str) -> str:
     verb = "qo'shishni" if action == "qo'shish" else "o'chirishni"
     body = (
         f"Admin panel uchun <b>{target_email}</b> emailini {verb} so'ralmoqda. Bu — faqat "
-        "ASOSIY admin sifatida sizga yuborilgan so'rov. Tasdiqlash uchun quyidagi tugmani bosing."
+        "SUPER ADMIN sifatida sizga yuborilgan so'rov. Tasdiqlash uchun quyidagi tugmani bosing."
     )
     title = "Email qo'shishni tasdiqlash" if action == "qo'shish" else "Email o'chirishni tasdiqlash"
     return _template(title, body, url, "Tasdiqlash")
@@ -97,15 +97,15 @@ def confirm_email_email(url: str, target_email: str, action: str) -> str:
 
 def set_primary_email(url: str, new_primary_email: str) -> str:
     body = (
-        f"<b>{new_primary_email}</b>ni yangi ASOSIY admin qilib tayinlash so'ralmoqda. "
-        "Bu — asosiy admin huquqini (email qo'shish/o'chirishni tasdiqlash) shu hisobga "
+        f"<b>{new_primary_email}</b>ni yangi SUPER ADMIN qilib tayinlash so'ralmoqda. "
+        "Bu — super admin huquqini (email qo'shish/o'chirishni tasdiqlash) shu hisobga "
         "o'tkazadi. Tasdiqlash uchun quyidagi tugmani bosing."
     )
-    return _template("Asosiy adminni almashtirish", body, url, "Tasdiqlash")
+    return _template("Super adminni almashtirish", body, url, "Tasdiqlash")
 
 
 def new_account_email(url: str) -> str:
-    """Eski (parolsiz) faollashtirish oqimi — endi faqat asosiy admin oldindan
+    """Eski (parolsiz) faollashtirish oqimi — endi faqat super admin oldindan
     yaratilgan, lekin hali faollashtirilmagan hisoblarni qayta yuborganda ishlatiladi."""
     body = (
         "Sizga promtchi admin panelida hisob ochildi. Ishni boshlash uchun quyidagi tugma orqali "
@@ -122,3 +122,24 @@ def account_ready_email(login_url: str, email: str) -> str:
         "Kirish parolingiz Telegram orqali yuborilgan (yoki sizga taklif qilgan admin bilan bog'laning)."
     )
     return _template("Hisobingiz tayyor", body, login_url, "Admin panelga kirish")
+
+
+def tg_super_old_confirm_email(url: str) -> str:
+    """Telegram botdagi /super oqimida — HOZIRGI super adminning o'ziga boradi."""
+    body = (
+        "Telegram bot orqali <b>SUPER ADMIN</b>ni almashtirish so'raldi. Buni siz "
+        "so'ramagan bo'lsangiz, shunchaki e'tiborsiz qoldiring — hech narsa o'zgarmaydi. "
+        "Tasdiqlash uchun tugmani bosing."
+    )
+    return _template("Super adminni almashtirish", body, url, "Tasdiqlash")
+
+
+def tg_super_code_email(code: str) -> str:
+    """Telegram botdagi /super oqimida — YANGI super admin bo'lishi kutilayotgan emailga boradi."""
+    body = (
+        "promtchi admin panelida <b>SUPER ADMIN</b> sifatida tayinlanmoqdasiz. "
+        "Telegram botga quyidagi tasdiqlash kodini kiriting:"
+        f"<div style=\"font-family:monospace;font-size:28px;font-weight:900;letter-spacing:.2em;"
+        f"text-align:center;background:#0B0B0E;color:#D9FF3F;border-radius:12px;padding:16px 0;margin:16px 0\">{code}</div>"
+    )
+    return _template("Tasdiqlash kodi", body, settings.SITE_URL, "Saytga o'tish")
