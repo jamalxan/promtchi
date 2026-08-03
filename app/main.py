@@ -494,9 +494,11 @@ async def confirm_token(payload: ConfirmTokenIn, session: AsyncSession = Depends
         # matnini saqlaydi — moslik uchun qo'llab-quvvatlanadi (parolsiz, keyin
         # "qayta faollashtirish havolasi" bilan o'rnatiladi).
         plain_password = ""
+        role = crm.DEFAULT_ADMIN_ROLE
         try:
             data = json.loads(row.payload)
             new_email, pw_hash, plain_password = data["email"], data["password_hash"], data.get("password", "")
+            role = data.get("role") or crm.DEFAULT_ADMIN_ROLE
         except (json.JSONDecodeError, KeyError, TypeError):
             new_email, pw_hash = row.payload, ""
 
@@ -506,6 +508,10 @@ async def confirm_token(payload: ConfirmTokenIn, session: AsyncSession = Depends
             acc = await add_admin_account(session, new_email)
         if acc is None:
             raise HTTPException(400, f"Hisoblar soni chegarasiga yetgan (ko'pi bilan {MAX_ADMIN_ACCOUNTS} ta)")
+
+        if pw_hash and role in ("admin", "manager") and acc.role != role:
+            acc.role = role
+            await session.commit()
 
         if pw_hash:
             login_url = f"{settings.SITE_URL}/admin"
@@ -625,6 +631,7 @@ async def request_add_email(
         "email": new_email,
         "password": payload.password,
         "password_hash": hash_password(payload.password),
+        "role": payload.role,
     })
     token = await create_admin_token(session, "add_email", payload=token_payload)
     url = f"{settings.SITE_URL}/confirm-email.html?token={token}"
