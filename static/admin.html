@@ -363,7 +363,6 @@ tr:hover td{background:rgba(217,255,63,.08)}
 
 <script>
 const API = '';
-let TOKEN = ''; // ataylab saqlanmaydi — admin panelga har ochilganda qayta login talab qilinadi
 let DATA = null;
 let LEADS = [];
 let POSTS = [];
@@ -438,9 +437,11 @@ $('confirmYes').onclick = () => { if ($('confirmYes').disabled) return; $('confi
 $('confirmNo').onclick = () => { $('confirmOverlay').classList.remove('show'); if (_confirmCb) _confirmCb(false); };
 
 async function apiFetch(path, opts = {}) {
+  // Auth — HttpOnly session cookie orqali (brauzer o'zi yuboradi, JS token
+  // bilan ishlamaydi). `credentials: 'same-origin'` fetch() standart qiymati
+  // bo'lsa ham, aniqlik uchun ochiq yozilgan.
   const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
-  if (TOKEN) headers['Authorization'] = 'Bearer ' + TOKEN;
-  const res = await fetch(API + path, { ...opts, headers });
+  const res = await fetch(API + path, { ...opts, headers, credentials: 'same-origin' });
   if (res.status === 401) { logout(); throw new Error('Unauthorized'); }
   return res;
 }
@@ -477,11 +478,12 @@ async function login() {
     const r = await fetch(API + '/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
       body: JSON.stringify({ email, password: pass })
     });
     if (r.ok) {
-      const data = await r.json();
-      TOKEN = data.token;
+      // Server javobga HttpOnly session cookie qo'ydi — JS tomonda hech
+      // narsa saqlash shart emas, brauzer o'zi keyingi so'rovlarga qo'shadi.
       $('loginErr').textContent = '';
       showApp();
     } else if (r.status === 429) {
@@ -496,8 +498,10 @@ async function login() {
   }
 }
 
-function logout() {
-  TOKEN = '';
+async function logout() {
+  try {
+    await fetch(API + '/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+  } catch (e) { /* baribir UI'ni qulflaymiz */ }
   $('appPage').style.display = 'none';
   $('loginPage').style.display = '';
   $('loginPass').value = '';
@@ -1141,9 +1145,7 @@ function makeMediaField(label, key, idx, value) {
 async function uploadMediaFile(file, idx, key) {
   const fd = new FormData();
   fd.append('file', file);
-  const headers = {};
-  if (TOKEN) headers['Authorization'] = 'Bearer ' + TOKEN;
-  const r = await fetch(API + '/api/admin/upload', { method: 'POST', headers, body: fd });
+  const r = await fetch(API + '/api/admin/upload', { method: 'POST', credentials: 'same-origin', body: fd });
   if (r.status === 401) { logout(); return; }
   if (!r.ok) {
     const d = await r.json().catch(() => ({}));
@@ -1933,9 +1935,16 @@ async function requestSetPrimary(email) {
 }
 
 /* ═══ INIT ═══ */
-(function init() {
-  // TOKEN hech qachon saqlanmagani uchun bu yerda doim bo'sh — har sahifa
-  // ochilganda (yangilanganda ham) email/parol qayta so'raladi.
+(async function init() {
+  // Localhost'da saqlangan token yo'q — sessiya FAQAT HttpOnly cookie orqali.
+  // Shu sabab "kirilganmi?" savolini serverdan so'raymiz: cookie tirik bo'lsa
+  // (refresh, yangi tab, orqaga/oldinga tugmasi — hammasi shu holat) darhol
+  // panelga o'tamiz; cookie yo'q/eskirgan bo'lsa (chiqish, 30 daq harakatsizlik,
+  // 12 soat, brauzer butunlay yopilishi) login formasi ko'rsatiladi.
+  try {
+    const r = await fetch(API + '/api/admin/account', { credentials: 'same-origin' });
+    if (r.ok) { showApp(); return; }
+  } catch (e) { /* server bilan aloqa yo'q — login sahifasini ko'rsatamiz */ }
   $('loginPage').style.display = '';
   $('loginEmail').focus();
 })();

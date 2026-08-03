@@ -10,7 +10,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, Response, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,14 +23,50 @@ bearer = HTTPBearer(auto_error=False)
 RESET_TTL_MINUTES = 30
 MAX_ADMIN_ACCOUNTS = 10
 
+# ══════════ SESSIYA (HttpOnly cookie) ══════════
+#
+# Refresh/yangi tab/back-forward — session tirik qolishi kerak; brauzer
+# BUTUNLAY yopilishi, "Chiqish", 30 daq harakatsizlik yoki 12 soat mutlaq
+# muddat esa qayta login talab qilishi kerak. Buni JS holatisiz (localStorage
+# ishlatmasdan), sof JWT + cookie orqali hal qilamiz:
+#   • iat — login qilingan payt, HECH QACHON o'zgarmaydi (mutlaq muddat shundan
+#     hisoblanadi).
+#   • exp — har autentifikatsiyalangan so'rovda min(hozir+30daq, iat+12soat)ga
+#     "siljiydi" (require_admin javobga yangilangan cookie qo'yadi).
+#   • Cookie'da Max-Age/Expires YO'Q — bu haqiqiy "session cookie": brauzer
+#     butunlay yopilganda o'chadi, lekin oddiy refresh'da saqlanadi.
+ADMIN_COOKIE_NAME = "admin_session"
 
-def create_token(email: str) -> str:
+
+def create_token(email: str, *, iat: datetime | None = None) -> str:
+    """iat berilmasa — hozir (yangi login). Berilsa — mavjud sessiyani
+    "siljitadi" (renew_token bundan foydalanadi)."""
+    now = datetime.now(timezone.utc)
+    iat = iat or now
+    idle_deadline = now + timedelta(minutes=settings.ADMIN_IDLE_TIMEOUT_MINUTES)
+    absolute_deadline = iat + timedelta(hours=settings.JWT_EXPIRE_HOURS)
     payload = {
         "sub": email.lower(),
-        "exp": datetime.now(timezone.utc) + timedelta(hours=settings.JWT_EXPIRE_HOURS),
-        "iat": datetime.now(timezone.utc),
+        "iat": iat,
+        "exp": min(idle_deadline, absolute_deadline),
     }
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALG)
+
+
+def set_admin_cookie(response: Response, token: str) -> None:
+    response.set_cookie(
+        key=ADMIN_COOKIE_NAME,
+        value=token,
+        httponly=True,
+        secure=settings.is_production,
+        samesite="lax",
+        path="/",
+        # max_age/expires ATAYLAB yo'q — haqiqiy "session cookie" bo'lishi uchun.
+    )
+
+
+def clear_admin_cookie(response: Response) -> None:
+    response.delete_cookie(key=ADMIN_COOKIE_NAME, path="/")
 
 
 # ══════════ HISOBLAR ══════════
@@ -206,20 +242,44 @@ async def recent_token_exists(session: AsyncSession, purpose: str, seconds: int 
 
 
 async def require_admin(
+    request: Request,
+    response: Response,
     cred: HTTPAuthorizationCredentials | None = Depends(bearer),
 ) -> str:
-    """Qaytaradi: hozir login qilingan admin email (JWT "sub")."""
-    if cred is None:
+    """Qaytaradi: hozir login qilingan admin email (JWT "sub").
+
+    Token manbai — avval HttpOnly cookie (admin.html shu orqali ishlaydi),
+    bo'lmasa `Authorization: Bearer` header (skriptlar/testlar uchun).
+    Har muvaffaqiyatli chaqiruvda idle timeout SILJIYDI — javobga yangilangan
+    cookie qo'yiladi ("touch"), shuning uchun faol ishlayotgan admin hech
+    qachon "kutilmaganda" chiqarib yuborilmaydi, lekin 30 daqiqa hech qanday
+    so'rov bo'lmasa yoki iat'dan 12 soat o'tsa — token o'zi eskiradi.
+    """
+    token = request.cookies.get(ADMIN_COOKIE_NAME) or (cred.credentials if cred else None)
+    if not token:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Token yo'q")
     try:
-        payload = jwt.decode(
-            cred.credentials, settings.JWT_SECRET, algorithms=[settings.JWT_ALG]
-        )
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALG])
     except jwt.ExpiredSignatureError:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Token muddati tugagan")
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Sessiya muddati tugagan")
     except jwt.InvalidTokenError:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Token noto'g'ri")
-    return payload["sub"]
+
+    email = payload["sub"]
+    iat = datetime.fromtimestamp(payload["iat"], tz=timezone.utc)
+    # Mutlaq muddatni EXP'ga qaramasdan alohida tekshiramiz — shu bilan
+    # "12 soatdan keyin har doim so'ralsin" qat'iy va tekshirish oson bo'ladi
+    # (aks holda faqat exp'ga tayansak, qo'lda tuzilgan/eskirgan token bitta
+    # qo'shimcha so'rovda o'tib ketishi mumkin edi).
+    if datetime.now(timezone.utc) - iat > timedelta(hours=settings.JWT_EXPIRE_HOURS):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Sessiya muddati tugagan")
+
+    # Faqat cookie orqali kelgan sessiyani "siljitamiz" — Bearer bilan qat'iy
+    # skript/test chaqirsa, uning tokeni o'zgarmasdan qoladi (kutilmagan cookie
+    # o'rnatib yubormaslik uchun).
+    if request.cookies.get(ADMIN_COOKIE_NAME):
+        set_admin_cookie(response, create_token(email, iat=iat))
+    return email
 
 
 async def require_primary_admin(

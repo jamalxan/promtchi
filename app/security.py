@@ -62,8 +62,14 @@ class SecurityHeadersMiddleware:
                 h = MutableHeaders(raw=message["headers"])
                 for k, v in self.headers:
                     h.setdefault(k, v)
-                # admin/API javoblari keshlanmasin
-                if path.startswith("/api/admin") or path == "/api/auth/login":
+                # admin/API javoblari keshlanmasin (parol so'raladigan yoki
+                # sessiyaga bog'liq har qanday sahifa/API — brauzer/oraliq
+                # keshlar hech qachon eski holatni ko'rsatmasin)
+                if (
+                    path.startswith("/api/admin")
+                    or path.startswith("/api/auth/")
+                    or path == "/admin"
+                ):
                     h["Cache-Control"] = "no-store"
             await send(message)
 
