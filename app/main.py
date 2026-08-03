@@ -70,8 +70,8 @@ from .auth import (
 )
 from .config import settings
 from .db import (
-    Base, Content, Lead, Post, Review, ReviewCode, SessionLocal, Setting,
-    engine, get_session, run_data_fixups, run_migrations,
+    Base, Content, Lead, LeadNote, LeadStageHistory, Post, Review, ReviewCode,
+    SessionLocal, Setting, engine, get_session, run_data_fixups, run_migrations,
 )
 from .email import (
     account_ready_email, confirm_email_email, new_account_email,
@@ -84,6 +84,7 @@ from .schemas import (
     SetPrimaryRequestIn, TelegramAdminIn, TelegramSettingsIn,
 )
 from . import crm_api, crm_service, crypto
+from . import crm_constants as crm
 from .telegram import bot
 from .security import (
     BodyLimitMiddleware,
@@ -351,22 +352,47 @@ async def list_posts_public(request: Request):
 async def create_lead(
     payload: LeadIn, request: Request, session: AsyncSession = Depends(get_session)
 ):
+    if payload.website:
+        # Honeypot to'ldirilgan — bot. Haqiqiy foydalanuvchiga signal bermasdan
+        # muvaffaqiyatli javob qaytaramiz, hech narsa saqlamaymiz.
+        return {"ok": True, "id": 0}
+
     ip = getattr(request.state, "client_ip", "") or ""
     # Lead limitlari validatsiyadan KEYIN — xato forma (422) limit yemaydi.
     # DB'ga hali tegilmagan (sessiya birinchi so'rovgacha ulanish olmaydi).
     ok, retry, msg = check_lead_limits(ip or "unknown")
     if not ok:
         raise HTTPException(429, msg, headers={"Retry-After": str(retry)})
+
+    message = payload.message.strip()
+    contact_normalized, contact_type = crm_service.normalize_contact(payload.phone)
+
+    duplicate = await crm_service.find_recent_duplicate(session, contact_normalized)
+    if duplicate is not None:
+        # Bir xil mijoz 30 kun ichida qayta ariza qoldirdi — yangi Lead
+        # yaratmaymiz, mavjudiga izoh qo'shamiz va Telegram xabarini yangilaymiz.
+        note_text = f"Qayta ariza qoldirdi: {message}" if message else "Qayta ariza qoldirdi (saytdan)."
+        session.add(LeadNote(lead_id=duplicate.id, author=None, text=note_text[:2000]))
+        await session.commit()
+        crm_service.queue_telegram_sync(bot, duplicate.id)
+        return {"ok": True, "id": duplicate.id}
+
     lead = Lead(
         name=payload.name.strip(),
         phone=payload.phone.strip(),
+        contact_normalized=contact_normalized,
+        contact_type=contact_type,
         project_type=payload.project_type.strip(),
-        message=payload.message.strip(),
+        message=message,
         ip=ip[:64],
+        source=crm.DEFAULT_SOURCE,
+        stage=crm.DEFAULT_STAGE,
     )
     session.add(lead)
     await session.commit()
-    bot.queue_lead(lead)  # guruh + obuna bo'lgan adminlarga (navbat orqali)
+    session.add(LeadStageHistory(lead_id=lead.id, from_stage="", to_stage=lead.stage, changed_by=None))
+    await session.commit()
+    crm_service.queue_telegram_sync(bot, lead.id)
     return {"ok": True, "id": lead.id}
 
 
@@ -545,12 +571,16 @@ async def get_account_info(
     Super admin esa hammasini ko'radi va boshqaradi."""
     acc = await get_account(session, email)
     is_super = bool(acc and acc.is_primary)
+    # role — FAQAT o'zining rolini ko'radi (CRM huquqlar matritsasi uchun,
+    # boshqa hisoblar haqida hech narsa oshkor qilinmaydi).
+    role = "superadmin" if is_super else ((acc.role if acc else None) or crm.DEFAULT_ADMIN_ROLE)
     if not is_super:
-        return {"email": email, "is_super_admin": False}
+        return {"email": email, "is_super_admin": False, "role": role}
     accounts = await list_admin_accounts(session)
     return {
         "email": email,
         "is_super_admin": True,
+        "role": role,
         "accounts": [a.as_dict() for a in accounts],
         "max_accounts": MAX_ADMIN_ACCOUNTS,
     }

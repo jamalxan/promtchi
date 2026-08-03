@@ -67,7 +67,7 @@ a{color:inherit;text-decoration:none}
 .sidebar .logout button:hover{color:var(--coral)}
 .sidebar .logout button svg{width:18px;height:18px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
 
-.main{flex:1;margin-left:var(--sidebar);padding:2rem;min-height:100vh}
+.main{flex:1;min-width:0;margin-left:var(--sidebar);padding:2rem;min-height:100vh}
 .main-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;gap:1rem;flex-wrap:wrap}
 .main-header h2{font-family:var(--anton);font-size:1.8rem;text-transform:uppercase}
 .main-header .actions{display:flex;gap:.6rem;flex-wrap:wrap}
@@ -226,6 +226,53 @@ tr:hover td{background:rgba(217,255,63,.08)}
   letter-spacing:.12em;width:100px;flex-shrink:0;color:rgba(11,11,14,.5);padding-top:.15rem}
 .lead-detail .ld-val{font-size:.92rem}
 
+/* ═══ CRM KANBAN ═══ */
+.kanban-toolbar{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem}
+.kanban-toolbar select{padding:.5rem .8rem;border:2px solid var(--blk);border-radius:999px;background:var(--w);font-size:.82rem;font-weight:700}
+.kanban-board{display:flex;gap:1rem;overflow-x:auto;padding-bottom:1rem;align-items:flex-start}
+.kanban-col{flex:0 0 280px;width:280px;background:var(--w);border:2.5px solid var(--blk);border-radius:var(--radius);
+  display:flex;flex-direction:column;max-height:calc(100vh - 220px)}
+.kanban-col-hd{padding:.85rem 1rem;border-bottom:3px solid var(--col,var(--blk));display:flex;align-items:center;gap:.5rem;flex-shrink:0}
+.kanban-col-hd .title{font-weight:700;font-size:.86rem;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kanban-col-hd .cnt{font-family:var(--mono);font-size:.72rem;background:var(--cream);padding:.1rem .5rem;border-radius:999px;font-weight:700}
+.kanban-col-body{flex:1;overflow-y:auto;padding:.6rem;display:flex;flex-direction:column;gap:.6rem;min-height:60px}
+.kanban-col-body.drag-over{background:rgba(43,43,255,.08);outline:2px dashed var(--blue);outline-offset:-4px}
+.kanban-card{background:var(--cream);border:2px solid rgba(11,11,14,.15);border-radius:10px;padding:.75rem .85rem;
+  cursor:grab;transition:.15s;font-size:.85rem}
+.kanban-card:hover{border-color:var(--blk);box-shadow:2px 2px 0 var(--blk)}
+.kanban-card:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.kanban-card.dragging{opacity:.4}
+.kanban-card .kc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:.4rem;margin-bottom:.3rem}
+.kanban-card .kc-id{font-family:var(--mono);font-size:.68rem;opacity:.4}
+.kanban-card .kc-name{font-weight:700;font-size:.92rem;margin-bottom:.2rem;word-break:break-word}
+.kanban-card .kc-contact{font-size:.78rem;opacity:.65;margin-bottom:.4rem}
+.kanban-card .kc-meta{display:flex;flex-wrap:wrap;gap:.3rem;align-items:center;font-size:.7rem}
+.kanban-card .kc-age{font-family:var(--mono);padding:.1rem .4rem;border-radius:999px;background:rgba(11,11,14,.08)}
+.kanban-card .kc-age.warn{background:#fef3c7;color:#92400e}
+.kanban-card .kc-age.danger{background:#fee2e2;color:#991b1b}
+.kanban-card .kc-assignee{margin-left:auto;width:22px;height:22px;border-radius:50%;background:var(--blk);color:var(--w);
+  display:grid;place-items:center;font-size:.65rem;font-weight:700;flex-shrink:0}
+.kanban-empty{opacity:.35;font-size:.78rem;text-align:center;padding:1.2rem 0}
+
+/* ═══ CRM DRAWER ═══ */
+.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9500;opacity:0;pointer-events:none;transition:.2s}
+.drawer-overlay.show{opacity:1;pointer-events:all}
+.drawer{position:fixed;top:0;right:0;height:100vh;width:min(480px,100vw);background:var(--w);z-index:9600;
+  box-shadow:-8px 0 0 var(--blk);transform:translateX(100%);transition:.25s;display:flex;flex-direction:column;border-left:3px solid var(--blk)}
+.drawer.show{transform:translateX(0)}
+.drawer-hd{padding:1.3rem 1.4rem;border-bottom:2.5px solid var(--blk);display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-shrink:0}
+.drawer-hd h3{font-family:var(--anton);font-size:1.3rem;text-transform:uppercase}
+.drawer-body{flex:1;overflow-y:auto;padding:1.2rem 1.4rem}
+.drawer-close{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--blk);flex-shrink:0}
+.drawer-close:hover{background:var(--blk);color:var(--w)}
+.drawer-section{margin-bottom:1.4rem}
+.drawer-section h4{font-family:var(--mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;opacity:.5;margin-bottom:.6rem}
+.dw-note{background:var(--cream);border-radius:8px;padding:.6rem .8rem;font-size:.85rem;margin-bottom:.5rem}
+.dw-note .meta{font-size:.7rem;opacity:.5;margin-top:.3rem}
+.dw-hist{display:flex;gap:.6rem;font-size:.8rem;padding:.4rem 0;border-bottom:1px solid rgba(11,11,14,.08)}
+.dw-hist .dot{width:8px;height:8px;border-radius:50%;background:var(--blue);margin-top:.4rem;flex-shrink:0}
+@media(max-width:600px){.drawer{width:100vw}}
+
 /* ═══ RESPONSIVE ═══ */
 @media(max-width:860px){
   .sidebar{transform:translateX(-100%)}
@@ -326,6 +373,14 @@ tr:hover td{background:rgba(217,255,63,.08)}
         <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         Telegram
       </a>
+      <a href="#" data-page="crmtelegram">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        CRM Telegram
+      </a>
+      <a href="#" data-page="stats">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Statistika
+      </a>
       <a href="#" data-page="settings">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         Sozlamalar
@@ -361,15 +416,30 @@ tr:hover td{background:rgba(217,255,63,.08)}
   </div>
 </div>
 
+<!-- ═══ CRM DRAWER ═══ -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeLeadDrawer()"></div>
+<div class="drawer" id="leadDrawer">
+  <div class="drawer-hd">
+    <h3 id="drawerTitle">Mijoz</h3>
+    <button class="drawer-close" onclick="closeLeadDrawer()">
+      <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+</div>
+
 <script>
 const API = '';
 let DATA = null;
-let LEADS = [];
+let LEADS = [];       // CRM lead lar (stage-based) — /api/admin/crm/leads
+let CRM_META = null;  // {stages, project_types, sources} — /api/admin/crm/meta
+let CRM_ACCOUNTS = []; // mas'ul biriktirish dropdown'i uchun
+let CRM_TG = null;    // CRM Telegram sozlamalari holati
 let POSTS = [];
 let REVIEWS = [];
 let RCODES = [];
 let TG = null; // {has_token, bot_token_masked, chat_id, active, subscribers, ...}
-let ACCOUNT = null; // {email}
+let ACCOUNT = null; // {email, is_super_admin, role}
 let CONTENT_VERSION = '—';
 let currentPage = 'dashboard';
 
@@ -399,6 +469,16 @@ function isPrimary() {
   // shu sabab bu yerda faqat serverning o'zi aytgan is_super_admin'ga ishonamiz
   // (adminlar bir-biridan bexabar bo'lishi kerak).
   return !!(ACCOUNT && ACCOUNT.is_super_admin);
+}
+
+function myRole() {
+  return (ACCOUNT && ACCOUNT.role) || 'manager';
+}
+function isManager() {
+  return myRole() === 'manager';
+}
+function canAssign() {
+  return myRole() === 'superadmin' || myRole() === 'admin';
 }
 
 function toast(msg, type = 'success') {
@@ -581,17 +661,40 @@ $('forgotBtn').onclick = async () => {
 async function showApp() {
   $('loginPage').style.display = 'none';
   $('appPage').style.display = '';
-  await Promise.all([loadContent(), loadLeads(), loadPosts(), loadTelegram(), loadReviews(), loadAccount()]);
-  // Telegram bo'limi butunlay super admin uchun — oddiy admin uni menyuda
-  // ko'rmasligi ham kerak (adminlar bir-biridan bexabar bo'lishi uchun)
-  const tgNav = document.querySelector('.sidebar nav a[data-page="telegram"]');
-  if (tgNav) tgNav.style.display = isPrimary() ? '' : 'none';
-  if (!isPrimary() && currentPage === 'telegram') currentPage = 'dashboard';
+  await loadAccount(); // rol boshqa hammasidan oldin ma'lum bo'lishi kerak (navigatsiya shunga bog'liq)
+  const tasks = [loadContent(), loadCrmMeta(), loadLeads(), loadPosts(), loadTelegram(), loadReviews()];
+  if (canAssign()) tasks.push(loadCrmAccounts());
+  await Promise.all(tasks);
+  applyRoleVisibility();
+  // Sotuv/manager doim to'g'ridan-to'g'ri o'z Arizalar (Kanban) sahifasiga tushadi —
+  // to'liq admin panel (kontent, Telegram, sozlamalar) unga ko'rsatilmaydi.
+  if (isManager()) currentPage = 'leads';
   navigate(currentPage);
 }
 
+/* Rolga qarab yon menyuni cheklash — server ham har bir endpointda mustaqil
+   tekshiradi (bu yerdagi yashirish faqat UX, xavfsizlik chegarasi emas). */
+const MANAGER_HIDDEN_PAGES = new Set([
+  'dashboard', 'cases', 'packages', 'team', 'contacts', 'socials',
+  'posts', 'telegram', 'crmtelegram', 'stats',
+]);
+function applyRoleVisibility() {
+  document.querySelectorAll('.sidebar nav a').forEach(a => {
+    const page = a.dataset.page;
+    if (page === 'telegram' || page === 'crmtelegram') {
+      a.style.display = isPrimary() ? '' : 'none';
+      return;
+    }
+    if (page === 'stats') {
+      a.style.display = isManager() ? 'none' : '';
+      return;
+    }
+    a.style.display = (isManager() && MANAGER_HIDDEN_PAGES.has(page)) ? 'none' : '';
+  });
+}
+
 function updateNavBadge() {
-  const n = LEADS.filter(l => (l.status || 'new') === 'new').length;
+  const n = LEADS.filter(l => l.stage === 'new').length;
   const b = $('navNewLeads');
   b.textContent = n;
   b.style.display = n ? '' : 'none';
@@ -612,8 +715,22 @@ async function loadContent() {
 
 async function loadLeads() {
   try {
-    const r = await apiFetch('/api/admin/leads');
+    const r = await apiFetch('/api/admin/crm/leads');
     if (r.ok) { LEADS = await r.json(); updateNavBadge(); }
+  } catch (e) { /* silent */ }
+}
+
+async function loadCrmMeta() {
+  try {
+    const r = await apiFetch('/api/admin/crm/meta');
+    if (r.ok) CRM_META = await r.json();
+  } catch (e) { /* silent */ }
+}
+
+async function loadCrmAccounts() {
+  try {
+    const r = await apiFetch('/api/admin/crm/accounts');
+    if (r.ok) CRM_ACCOUNTS = await r.json();
   } catch (e) { /* silent */ }
 }
 
@@ -666,6 +783,8 @@ function navigate(page) {
     reviews: renderReviews,
     posts: renderPosts,
     telegram: renderTelegram,
+    crmtelegram: renderCrmTelegram,
+    stats: renderStats,
     settings: renderSettings
   };
   (renderers[page] || renderDashboard)();
@@ -681,20 +800,33 @@ $('overlay').onclick = closeMobileMenu;
 function closeMobileMenu() { $('sidebar').classList.remove('open'); $('overlay').classList.remove('show'); }
 
 /* ═══ DASHBOARD ═══ */
-function statusBadge(l) {
-  return (l.status || 'new') === 'replied'
-    ? '<span class="badge badge-replied">Javob berilgan</span>'
-    : '<span class="badge badge-new">Yangi</span>';
+/* ═══ CRM YORDAMCHILARI ═══ */
+function stageMeta(slug) {
+  const fallback = { slug, label: slug, emoji: '', color: '#999' };
+  if (!CRM_META) return fallback;
+  return CRM_META.stages.find(s => s.slug === slug) || fallback;
 }
-function tgDot(l) {
-  return l.tg_sent
-    ? '<span class="tg-dot" title="Telegramga xabar yuborilgan">✈️</span>'
-    : '<span class="tg-dot" title="Telegramga xabar yuborilmagan" style="opacity:.25">✈️</span>';
+function projectTypeLabel(slug) {
+  if (!CRM_META) return slug || '—';
+  const p = CRM_META.project_types.find(p => p.slug === slug);
+  return p ? p.label : (slug || '—');
+}
+function daysSince(iso) {
+  if (!iso) return 0;
+  return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86400000));
+}
+function initials(email) {
+  return email ? email.trim()[0].toUpperCase() : '?';
+}
+function debounce(fn, ms) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
 }
 
 function renderDashboard() {
   const totalLeads = LEADS.length;
-  const newLeads = LEADS.filter(l => (l.status || 'new') === 'new').length;
+  const newLeads = LEADS.filter(l => l.stage === 'new').length;
+  const wonLeads = LEADS.filter(l => l.stage === 'won').length;
   const todayLeads = LEADS.filter(l => {
     const d = new Date(l.created_at);
     const now = new Date();
@@ -714,19 +846,19 @@ function renderDashboard() {
     </div>
     <div class="stats">
       <div class="stat-card accent">
-        <div class="label">Javob kutmoqda</div>
+        <div class="label">Yangi mijozlar</div>
         <div class="value">${newLeads}</div>
-        <div class="sub">Yangi arizalar</div>
+        <div class="sub">Javob kutmoqda</div>
       </div>
       <div class="stat-card">
-        <div class="label">Jami arizalar</div>
+        <div class="label">Jami mijozlar</div>
         <div class="value">${totalLeads}</div>
         <div class="sub">Bugun: +${todayLeads}</div>
       </div>
       <div class="stat-card">
-        <div class="label">Loyihalar</div>
-        <div class="value">${totalCases}</div>
-        <div class="sub">Portfolioda</div>
+        <div class="label">Muvaffaqiyatli</div>
+        <div class="value">${wonLeads}</div>
+        <div class="sub">Yakunlangan · ${totalCases} loyiha portfolioda</div>
       </div>
       <div class="stat-card dark">
         <div class="label">Fikrlar</div>
@@ -737,172 +869,455 @@ function renderDashboard() {
 
     <div class="table-wrap">
       <div class="table-bar">
-        <div class="left"><b>Oxirgi arizalar</b></div>
-        <button class="btn btn-outline btn-sm" onclick="navigate('leads')">Barchasini ko'rish →</button>
+        <div class="left"><b>Oxirgi mijozlar</b></div>
+        <button class="btn btn-outline btn-sm" onclick="navigate('leads')">Kanban'ni ko'rish →</button>
       </div>
       <table>
-        <thead><tr><th>Ism</th><th>Telefon</th><th>Holat</th><th>TG</th><th>Vaqt</th></tr></thead>
+        <thead><tr><th>Ism</th><th>Aloqa</th><th>Bosqich</th><th>Vaqt</th></tr></thead>
         <tbody>
-          ${recentLeads.length ? recentLeads.map(l => `
+          ${recentLeads.length ? recentLeads.map(l => { const sm = stageMeta(l.stage); return `
             <tr>
               <td><b>${esc(l.name)}</b></td>
               <td>${esc(l.phone) || '—'}</td>
-              <td>${statusBadge(l)}</td>
-              <td>${tgDot(l)}</td>
+              <td><span class="badge" style="background:${sm.color}22;color:${sm.color}">${sm.emoji} ${esc(sm.label)}</span></td>
               <td style="white-space:nowrap;font-size:.8rem;opacity:.7">${timeAgo(l.created_at)}</td>
             </tr>
-          `).join('') : '<tr><td colspan="5" class="empty-state">Hali arizalar yo\'q</td></tr>'}
+          `; }).join('') : '<tr><td colspan="4" class="empty-state">Hali mijozlar yo\'q</td></tr>'}
         </tbody>
       </table>
     </div>
   `;
 }
 
-/* ═══ LEADS ═══ */
-let leadsSearch = '';
-let leadsFilter = 'all'; // all | new | replied
+/* ═══ CRM KANBAN ═══ */
+let crmSearch = '';
+let crmFilterProject = '';
+let crmOnlyMine = false;
+let crmDragLeadId = null;
+
+function kanbanCardHtml(l) {
+  const days = daysSince(l.stage_changed_at);
+  const ageClass = days >= 7 ? 'danger' : (days >= 3 ? 'warn' : '');
+  const pt = projectTypeLabel(l.project_type);
+  return `
+    <div class="kanban-card" draggable="true" tabindex="0" role="listitem"
+         data-id="${l.id}" data-stage="${l.stage}" onclick="openLeadDrawer(${l.id})">
+      <div class="kc-top">
+        <span class="kc-id">#${l.id}</span>
+        ${l.notes_count ? `<span title="${l.notes_count} ta izoh" style="font-size:.72rem;opacity:.6">💬 ${l.notes_count}</span>` : ''}
+      </div>
+      <div class="kc-name">${esc(l.name)}</div>
+      <div class="kc-contact">${esc(l.phone) || '—'}</div>
+      <div class="kc-meta">
+        ${pt ? `<span class="badge badge-default" style="font-size:.68rem;padding:.1rem .5rem">${esc(pt)}</span>` : ''}
+        <span class="kc-age ${ageClass}">${days} kun</span>
+        ${l.assigned_to ? `<span class="kc-assignee" title="${esc(l.assigned_to)}">${initials(l.assigned_to)}</span>` : ''}
+      </div>
+    </div>`;
+}
+
 function renderLeads() {
+  if (!CRM_META) { $('mainContent').innerHTML = '<div class="empty-state"><p>Yuklanmoqda...</p></div>'; return; }
+  const q = crmSearch.trim().toLowerCase();
   const filtered = LEADS.filter(l => {
-    if (leadsFilter !== 'all' && (l.status || 'new') !== leadsFilter) return false;
-    if (!leadsSearch) return true;
-    const q = leadsSearch.toLowerCase();
+    if (crmOnlyMine && l.assigned_to !== ACCOUNT.email) return false;
+    if (crmFilterProject && l.project_type !== crmFilterProject) return false;
+    if (!q) return true;
     return (l.name || '').toLowerCase().includes(q) ||
       (l.phone || '').toLowerCase().includes(q) ||
-      (l.project_type || '').toLowerCase().includes(q) ||
+      String(l.id).includes(q) ||
       (l.message || '').toLowerCase().includes(q);
   });
-  const segBtn = (val, label) =>
-    `<button class="${leadsFilter === val ? 'on' : ''}" onclick="leadsFilter='${val}';renderLeads()">${label}</button>`;
+
+  const cols = CRM_META.stages.map(s => {
+    const items = filtered.filter(l => l.stage === s.slug)
+      .sort((a, b) => (a.position || 0) - (b.position || 0));
+    return `
+      <div class="kanban-col" data-stage="${s.slug}">
+        <div class="kanban-col-hd" style="--col:${s.color}">
+          <span class="title">${s.emoji} ${esc(s.label)}</span>
+          <span class="cnt">${items.length}</span>
+        </div>
+        <div class="kanban-col-body" role="list" data-stage="${s.slug}">
+          ${items.length ? items.map(kanbanCardHtml).join('') : '<div class="kanban-empty">Bo\'sh</div>'}
+        </div>
+      </div>`;
+  }).join('');
 
   $('mainContent').innerHTML = `
     <div class="main-header">
       <h2>Arizalar</h2>
       <div class="actions">
+        <button class="btn btn-acid btn-sm" onclick="openLeadDrawer(null)">+ Yangi mijoz</button>
+        ${!isManager() ? `<button class="btn btn-outline btn-sm" onclick="exportLeadsCsv()">⤓ CSV</button>` : ''}
         <button class="btn btn-outline btn-sm" onclick="refreshLeads()">↻ Yangilash</button>
       </div>
     </div>
-    <div class="table-wrap">
-      <div class="table-bar">
-        <div class="left">
-          <div class="seg">
-            ${segBtn('all', 'Hammasi')}
-            ${segBtn('new', 'Yangi (' + LEADS.filter(l => (l.status || 'new') === 'new').length + ')')}
-            ${segBtn('replied', 'Javob berilgan')}
-          </div>
-          <div class="search-box">
-            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" placeholder="Qidirish..." id="leadsSearchInput" value="${esc(leadsSearch)}">
-          </div>
-          <span class="count">${filtered.length} ta ariza</span>
-        </div>
+    <div class="kanban-toolbar">
+      <div class="search-box" style="flex:0 0 240px">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="crmSearchInput" placeholder="Qidirish (ism, telefon, #ID)..." value="${esc(crmSearch)}" style="width:100%">
       </div>
-      <table>
-        <thead><tr><th>#</th><th>Ism</th><th>Telefon</th><th>Turi</th><th>Xabar</th><th>Holat</th><th>TG</th><th>Sana</th><th></th></tr></thead>
-        <tbody>
-          ${filtered.length ? filtered.map(l => `
-            <tr>
-              <td style="font-family:var(--mono);font-size:.78rem;opacity:.5">${l.id}</td>
-              <td><b>${esc(l.name)}</b></td>
-              <td>${esc(l.phone) || '—'}</td>
-              <td>${l.project_type ? `<span class="badge badge-default">${esc(l.project_type)}</span>` : '—'}</td>
-              <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.message) || '—'}</td>
-              <td>${statusBadge(l)}</td>
-              <td>${tgDot(l)}</td>
-              <td style="white-space:nowrap;font-size:.8rem">${formatDate(l.created_at)}</td>
-              <td class="td-actions">
-                ${(l.status || 'new') === 'new'
-                  ? `<button onclick="markLead(${l.id},'replied')" title="Javob berildi deb belgilash" style="color:var(--green)">
-                      <svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`
-                  : `<button onclick="markLead(${l.id},'new')" title="Yangi deb belgilash">
-                      <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" stroke-linecap="round"/><path d="M3 3v5h5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`}
-                <button onclick="viewLead(${l.id})" title="Ko'rish">
-                  <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                </button>
-                <button onclick="deleteLead(${l.id})" title="O'chirish">
-                  <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                </button>
-              </td>
-            </tr>
-          `).join('') : `<tr><td colspan="9" class="empty-state">
-            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-            <p>Arizalar topilmadi</p>
-          </td></tr>`}
-        </tbody>
-      </table>
+      <select id="crmProjectFilter">
+        <option value="">Barcha loyihalar</option>
+        ${CRM_META.project_types.map(p => `<option value="${p.slug}" ${crmFilterProject === p.slug ? 'selected' : ''}>${esc(p.label)}</option>`).join('')}
+      </select>
+      ${!isManager() ? `<label style="display:flex;align-items:center;gap:.4rem;font-size:.82rem;font-weight:600">
+        <input type="checkbox" id="crmOnlyMine" ${crmOnlyMine ? 'checked' : ''}> Faqat menikilar
+      </label>` : ''}
+      <span class="count">${filtered.length} ta mijoz</span>
     </div>
+    <div class="kanban-board">${cols}</div>
   `;
 
-  const searchInput = $('leadsSearchInput');
-  if (searchInput) {
-    searchInput.oninput = e => { leadsSearch = e.target.value; renderLeads(); };
-    if (leadsSearch) searchInput.focus();
+  const si = $('crmSearchInput');
+  if (si) {
+    si.oninput = e => { crmSearch = e.target.value; renderLeads(); };
+    if (crmSearch) { si.focus(); si.setSelectionRange(si.value.length, si.value.length); }
   }
+  const pf = $('crmProjectFilter');
+  if (pf) pf.onchange = e => { crmFilterProject = e.target.value; renderLeads(); };
+  const om = $('crmOnlyMine');
+  if (om) om.onchange = e => { crmOnlyMine = e.target.checked; renderLeads(); };
+
+  bindKanbanDnd();
 }
 
-async function markLead(id, status, norender) {
+function bindKanbanDnd() {
+  const stages = CRM_META.stages.map(s => s.slug);
+  document.querySelectorAll('.kanban-card').forEach(card => {
+    card.addEventListener('dragstart', e => {
+      crmDragLeadId = +card.dataset.id;
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    card.addEventListener('dragend', () => card.classList.remove('dragging'));
+    card.addEventListener('keydown', e => {
+      const idx = stages.indexOf(card.dataset.stage);
+      if (e.key === 'ArrowRight' && idx < stages.length - 1) {
+        e.preventDefault();
+        changeLeadStage(+card.dataset.id, stages[idx + 1]);
+      } else if (e.key === 'ArrowLeft' && idx > 0) {
+        e.preventDefault();
+        changeLeadStage(+card.dataset.id, stages[idx - 1]);
+      } else if (e.key === 'Enter') {
+        openLeadDrawer(+card.dataset.id);
+      }
+    });
+  });
+  document.querySelectorAll('.kanban-col-body').forEach(col => {
+    col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('drag-over'); });
+    col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+    col.addEventListener('drop', e => {
+      e.preventDefault();
+      col.classList.remove('drag-over');
+      if (crmDragLeadId != null) changeLeadStage(crmDragLeadId, col.dataset.stage);
+      crmDragLeadId = null;
+    });
+  });
+}
+
+async function changeLeadStage(id, newStage) {
+  const lead = LEADS.find(x => x.id === id);
+  if (!lead || lead.stage === newStage) return;
+  const oldStage = lead.stage;
+  lead.stage = newStage; // optimistik UI — xato bo'lsa pastda qaytariladi
+  renderLeads();
   try {
-    const r = await apiFetch('/api/admin/leads/' + id, {
-      method: 'PATCH',
-      body: JSON.stringify({ status })
+    const r = await apiFetch(`/api/admin/crm/leads/${id}/stage`, {
+      method: 'PATCH', body: JSON.stringify({ stage: newStage })
     });
     if (r.ok) {
-      const l = LEADS.find(x => x.id === id);
-      if (l) l.status = status;
+      const updated = await r.json();
+      Object.assign(lead, updated);
+      const sm = stageMeta(newStage);
+      toast(`${lead.name} → ${sm.emoji} ${sm.label}`);
       updateNavBadge();
-      toast(status === 'replied' ? "Javob berilgan deb belgilandi ✓" : "Yangi deb belgilandi");
-      if (!norender) { if (currentPage === 'leads') renderLeads(); else renderDashboard(); }
-    } else toast('Xatolik', 'error');
-  } catch (e) { toast('Xatolik yuz berdi', 'error'); }
-}
-async function markLeadThenView(id, status) {
-  await markLead(id, status, true);
-  viewLead(id);
-}
-
-function viewLead(id) {
-  const l = LEADS.find(x => x.id === id);
-  if (!l) return;
-  const isNew = (l.status || 'new') === 'new';
-  $('mainContent').innerHTML = `
-    <div class="main-header">
-      <h2>Ariza #${l.id}</h2>
-      <div class="actions">
-        <button class="btn btn-outline btn-sm" onclick="renderLeads()">← Orqaga</button>
-        ${isNew
-          ? `<button class="btn btn-acid btn-sm" onclick="markLeadThenView(${l.id},'replied')">✓ Javob berildi</button>`
-          : `<button class="btn btn-outline btn-sm" onclick="markLeadThenView(${l.id},'new')">↺ Yangi deb belgilash</button>`}
-        <button class="btn btn-coral btn-sm" onclick="deleteLead(${l.id})">O'chirish</button>
-      </div>
-    </div>
-    <div class="lead-detail">
-      <div class="ld-row"><div class="ld-label">Holat</div><div class="ld-val">${statusBadge(l)}</div></div>
-      <div class="ld-row"><div class="ld-label">Telegram</div><div class="ld-val">${l.tg_sent ? "✈️ Guruhga xabar yuborilgan" : "✈️ Xabar yuborilmagan (bot sozlanmagan yoki xato)"}</div></div>
-      <div class="ld-row"><div class="ld-label">Ism</div><div class="ld-val"><b>${esc(l.name)}</b></div></div>
-      <div class="ld-row"><div class="ld-label">Telefon</div><div class="ld-val">${esc(l.phone) || '—'}</div></div>
-      <div class="ld-row"><div class="ld-label">Loyiha turi</div><div class="ld-val">${esc(l.project_type) || '—'}</div></div>
-      <div class="ld-row"><div class="ld-label">Xabar</div><div class="ld-val">${esc(l.message) || '—'}</div></div>
-      <div class="ld-row"><div class="ld-label">Sana</div><div class="ld-val">${formatDate(l.created_at)}</div></div>
-    </div>
-  `;
-}
-
-async function deleteLead(id) {
-  const ok = await confirm("O'chirish", "Bu arizani o'chirishni xohlaysizmi?", "Ha, o'chirish");
-  if (!ok) return;
-  try {
-    const r = await apiFetch('/api/admin/leads/' + id, { method: 'DELETE' });
-    if (r.ok) {
-      LEADS = LEADS.filter(l => l.id !== id);
-      toast("Ariza o'chirildi");
-      renderLeads();
+    } else {
+      lead.stage = oldStage;
+      const d = await r.json().catch(() => ({}));
+      toast(`Saqlanmadi: ${d.detail || 'xatolik'}`, 'error');
     }
-  } catch (e) { toast("Xatolik yuz berdi", 'error'); }
+  } catch (e) {
+    lead.stage = oldStage;
+    toast("Saqlanmadi: server bilan aloqa yo'q", 'error');
+  }
+  renderLeads();
+  if (drawerLeadId === id) openLeadDrawer(id);
 }
 
 async function refreshLeads() {
   await loadLeads();
   renderLeads();
   toast('Yangilandi');
+}
+
+function exportLeadsCsv() {
+  window.open(API + '/api/admin/crm/leads/export.csv', '_blank');
+}
+
+/* ═══ CRM DRAWER (mijoz detali) ═══ */
+let drawerLeadId = null;
+
+function closeLeadDrawer() {
+  $('leadDrawer').classList.remove('show');
+  $('drawerOverlay').classList.remove('show');
+  drawerLeadId = null;
+}
+
+async function openLeadDrawer(id) {
+  drawerLeadId = id;
+  $('leadDrawer').classList.add('show');
+  $('drawerOverlay').classList.add('show');
+  if (id == null) { renderDrawerCreate(); return; }
+  $('drawerTitle').textContent = `Mijoz #${id}`;
+  $('drawerBody').innerHTML = '<p style="opacity:.5">Yuklanmoqda...</p>';
+  try {
+    const r = await apiFetch(`/api/admin/crm/leads/${id}`);
+    if (!r.ok) { $('drawerBody').innerHTML = "<p>Topilmadi yoki ruxsat yo'q</p>"; return; }
+    renderDrawerDetail(await r.json());
+  } catch (e) { $('drawerBody').innerHTML = '<p>Xatolik yuz berdi</p>'; }
+}
+
+function tgMessageLink(lead) {
+  if (!lead.tg_message_id || !lead.tg_chat_id) return '';
+  const chat = String(lead.tg_chat_id).replace(/^-100/, '').replace(/^-/, '');
+  return `https://t.me/c/${chat}/${lead.tg_message_id}`;
+}
+
+function renderDrawerCreate() {
+  $('drawerTitle').textContent = 'Yangi mijoz';
+  $('drawerBody').innerHTML = `
+    <div class="drawer-section">
+      <div class="field"><label>Ism</label><input id="ndName" placeholder="Ism Familiya"></div>
+      <div class="field"><label>Aloqa</label><input id="ndPhone" placeholder="+998901234567 yoki @username"></div>
+      <div class="field"><label>Loyiha turi</label>
+        <select id="ndProject">${CRM_META.project_types.map(p => `<option value="${p.slug}">${esc(p.label)}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>Manba</label>
+        <select id="ndSource">${CRM_META.sources.map(s => `<option value="${s}" ${s === 'manual' ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>Byudjet ($, ixtiyoriy)</label><input id="ndBudget" type="number" step="0.01"></div>
+      <div class="field"><label>Xabar</label><textarea id="ndMessage" style="min-height:80px"></textarea></div>
+      ${canAssign() ? `<div class="field"><label>Mas'ul</label>
+        <select id="ndAssign"><option value="">— tanlanmagan —</option>
+          ${CRM_ACCOUNTS.map(a => `<option value="${esc(a.email)}" ${a.email === ACCOUNT.email ? 'selected' : ''}>${esc(a.email)}</option>`).join('')}
+        </select></div>` : ''}
+      <button class="btn btn-blk" style="width:100%;margin-top:1rem" onclick="submitNewLead()">Qo'shish</button>
+    </div>
+  `;
+}
+
+async function submitNewLead() {
+  const name = $('ndName').value.trim();
+  if (!name) { toast('Ismni kiriting', 'error'); return; }
+  const body = {
+    name,
+    phone: $('ndPhone').value.trim(),
+    project_type: $('ndProject').value,
+    source: $('ndSource').value,
+    message: $('ndMessage').value.trim(),
+    budget: $('ndBudget').value ? parseFloat($('ndBudget').value) : null,
+  };
+  const assignEl = $('ndAssign');
+  if (assignEl) body.assigned_to = assignEl.value || null;
+  try {
+    const r = await apiFetch('/api/admin/crm/leads', { method: 'POST', body: JSON.stringify(body) });
+    if (r.ok) {
+      LEADS.unshift(await r.json());
+      updateNavBadge();
+      closeLeadDrawer();
+      renderLeads();
+      toast("Mijoz qo'shildi ✓");
+    } else {
+      const d = await r.json().catch(() => ({}));
+      toast(d.detail || 'Xatolik', 'error');
+    }
+  } catch (e) { toast('Xatolik yuz berdi', 'error'); }
+}
+
+function renderDrawerDetail(lead) {
+  const tgLink = tgMessageLink(lead);
+  $('drawerBody').innerHTML = `
+    <div class="drawer-section">
+      <div class="field"><label>Bosqich</label>
+        <select id="dwStage">
+          ${CRM_META.stages.map(s => `<option value="${s.slug}" ${s.slug === lead.stage ? 'selected' : ''}>${s.emoji} ${esc(s.label)}</option>`).join('')}
+        </select>
+      </div>
+      ${tgLink ? `<a href="${tgLink}" target="_blank" rel="noopener" style="font-size:.82rem;text-decoration:underline">✈️ Telegramdagi xabarni ochish →</a>` : ''}
+    </div>
+    <div class="drawer-section">
+      <h4>Mijoz ma'lumotlari</h4>
+      <div class="field"><label>Ism</label><input id="dwName" value="${esc(lead.name)}"></div>
+      <div class="field"><label>Aloqa</label><input id="dwPhone" value="${esc(lead.phone || '')}"></div>
+      <div class="field"><label>Loyiha turi</label>
+        <select id="dwProject">${CRM_META.project_types.map(p => `<option value="${p.slug}" ${p.slug === lead.project_type ? 'selected' : ''}>${esc(p.label)}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>Byudjet ($)</label><input id="dwBudget" type="number" step="0.01" value="${lead.budget != null ? lead.budget : ''}"></div>
+      <div class="field"><label>Xabar</label><textarea id="dwMessage" style="min-height:80px">${esc(lead.message || '')}</textarea></div>
+      ${canAssign() ? `<div class="field"><label>Mas'ul</label>
+        <select id="dwAssign"><option value="">— tanlanmagan —</option>
+          ${CRM_ACCOUNTS.map(a => `<option value="${esc(a.email)}" ${a.email === lead.assigned_to ? 'selected' : ''}>${esc(a.email)}</option>`).join('')}
+        </select></div>` : (lead.assigned_to ? `<div class="field"><label>Mas'ul</label><div style="padding:.6rem 0">${esc(lead.assigned_to)}</div></div>` : '')}
+    </div>
+    <div class="drawer-section">
+      <h4>Izohlar (${(lead.notes || []).length})</h4>
+      <div class="field"><textarea id="dwNoteText" placeholder="Izoh yozing..." style="min-height:60px"></textarea></div>
+      <button class="btn btn-outline btn-sm" onclick="addLeadNote(${lead.id})">+ Izoh qo'shish</button>
+      <div style="margin-top:.8rem">
+        ${(lead.notes || []).map(n => `<div class="dw-note">${esc(n.text)}<div class="meta">${esc(n.author || 'sayt')} · ${formatDate(n.created_at)}</div></div>`).join('') || '<p style="opacity:.4;font-size:.82rem">Hali izoh yo\'q</p>'}
+      </div>
+    </div>
+    <div class="drawer-section">
+      <h4>Tarix</h4>
+      ${(lead.history || []).map(h => {
+        const fromS = h.from_stage ? stageMeta(h.from_stage).label : '—';
+        const toS = stageMeta(h.to_stage).label;
+        return `<div class="dw-hist"><span class="dot"></span><div>${formatDate(h.changed_at)} · ${esc(fromS)} → ${esc(toS)}${h.changed_by ? ' · ' + esc(h.changed_by) : ''}</div></div>`;
+      }).join('') || '<p style="opacity:.4;font-size:.82rem">Tarix yo\'q</p>'}
+    </div>
+    ${isPrimary() ? `<div class="drawer-section">
+      <button class="btn btn-coral btn-sm" onclick="archiveLead(${lead.id})">Arxivlash (o'chirish)</button>
+    </div>` : ''}
+  `;
+
+  $('dwStage').onchange = e => changeLeadStage(lead.id, e.target.value);
+  const debouncedSave = debounce(() => saveLeadFields(lead.id), 600);
+  ['dwName', 'dwPhone', 'dwProject', 'dwBudget', 'dwMessage'].forEach(id => {
+    const el = $(id);
+    if (el) el[el.tagName === 'SELECT' ? 'onchange' : 'oninput'] = debouncedSave;
+  });
+  const assignEl = $('dwAssign');
+  if (assignEl) assignEl.onchange = () => assignLead(lead.id, assignEl.value || null);
+}
+
+async function saveLeadFields(id) {
+  const body = {
+    name: $('dwName').value.trim(),
+    phone: $('dwPhone').value.trim(),
+    project_type: $('dwProject').value,
+    message: $('dwMessage').value,
+    budget: $('dwBudget').value ? parseFloat($('dwBudget').value) : null,
+  };
+  try {
+    const r = await apiFetch(`/api/admin/crm/leads/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+    if (r.ok) {
+      const updated = await r.json();
+      const lead = LEADS.find(x => x.id === id);
+      if (lead) Object.assign(lead, updated);
+      toast('Saqlandi ✓');
+      renderLeads();
+    } else toast('Saqlashda xatolik', 'error');
+  } catch (e) { toast('Saqlashda xatolik', 'error'); }
+}
+
+async function addLeadNote(id) {
+  const ta = $('dwNoteText');
+  const text = ta.value.trim();
+  if (!text) return;
+  try {
+    const r = await apiFetch(`/api/admin/crm/leads/${id}/notes`, { method: 'POST', body: JSON.stringify({ text }) });
+    if (r.ok) {
+      const lead = LEADS.find(x => x.id === id);
+      if (lead) lead.notes_count = (lead.notes_count || 0) + 1;
+      openLeadDrawer(id);
+      renderLeads();
+    } else toast('Xatolik', 'error');
+  } catch (e) { toast('Xatolik yuz berdi', 'error'); }
+}
+
+async function assignLead(id, email) {
+  try {
+    const r = await apiFetch(`/api/admin/crm/leads/${id}/assign`, {
+      method: 'PATCH', body: JSON.stringify({ assigned_to: email }),
+    });
+    if (r.ok) {
+      const updated = await r.json();
+      const lead = LEADS.find(x => x.id === id);
+      if (lead) Object.assign(lead, updated);
+      toast("Mas'ul yangilandi ✓");
+      renderLeads();
+    } else {
+      const d = await r.json().catch(() => ({}));
+      toast(d.detail || 'Xatolik', 'error');
+    }
+  } catch (e) { toast('Xatolik yuz berdi', 'error'); }
+}
+
+async function archiveLead(id) {
+  const ok = await confirm('Arxivlash', "Bu mijozni arxivlaysizmi? Kanbanda ko'rinmay qoladi.", 'Ha, arxivlash');
+  if (!ok) return;
+  try {
+    const r = await apiFetch(`/api/admin/crm/leads/${id}`, { method: 'DELETE' });
+    if (r.ok) {
+      LEADS = LEADS.filter(x => x.id !== id);
+      updateNavBadge();
+      closeLeadDrawer();
+      renderLeads();
+      toast('Arxivlandi');
+    } else {
+      const d = await r.json().catch(() => ({}));
+      toast(d.detail || "Ruxsat yo'q", 'error');
+    }
+  } catch (e) { toast('Xatolik yuz berdi', 'error'); }
+}
+
+/* ═══ STATISTIKA ═══ */
+async function renderStats() {
+  $('mainContent').innerHTML = '<div class="empty-state"><p>Yuklanmoqda...</p></div>';
+  let stats;
+  try {
+    const r = await apiFetch('/api/admin/crm/stats');
+    if (!r.ok) { $('mainContent').innerHTML = "<div class=\"empty-state\"><p>Yuklab bo'lmadi</p></div>"; return; }
+    stats = await r.json();
+  } catch (e) { $('mainContent').innerHTML = '<div class="empty-state"><p>Xatolik</p></div>'; return; }
+
+  const maxFunnel = Math.max(1, ...Object.values(stats.funnel));
+  const funnelRows = CRM_META.stages.map(s => {
+    const n = stats.funnel[s.slug] || 0;
+    const pct = Math.round(n / maxFunnel * 100);
+    return `<div style="display:flex;align-items:center;gap:.7rem;margin-bottom:.6rem">
+      <span style="width:150px;font-size:.85rem;flex-shrink:0">${s.emoji} ${esc(s.label)}</span>
+      <div style="flex:1;background:var(--cream);border-radius:6px;height:22px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:${s.color}"></div>
+      </div>
+      <span style="width:34px;text-align:right;font-family:var(--mono);font-weight:700">${n}</span>
+    </div>`;
+  }).join('');
+
+  const managerRows = Object.entries(stats.by_manager || {}).map(([email, m]) => `
+    <tr><td>${esc(email)}</td><td>${m.total}</td><td>${m.won}</td><td>${m.lost}</td><td>${m.conversion}%</td></tr>
+  `).join('');
+
+  const sourceRows = Object.entries(stats.by_source || {}).map(([src, n]) => `
+    <tr><td>${esc(src)}</td><td>${n}</td></tr>
+  `).join('');
+
+  $('mainContent').innerHTML = `
+    <div class="main-header"><h2>Statistika</h2></div>
+    <div class="stats">
+      <div class="stat-card accent"><div class="label">Jami mijozlar</div><div class="value">${stats.total}</div></div>
+      <div class="stat-card"><div class="label">Konversiya (Yangi → Muvaffaqiyatli)</div><div class="value">${stats.conversion_pct}%</div></div>
+      <div class="stat-card"><div class="label">O'rtacha bitim davri</div><div class="value">${stats.avg_deal_days != null ? stats.avg_deal_days + ' kun' : '—'}</div></div>
+    </div>
+
+    <div class="edit-card" style="margin-bottom:1rem">
+      <div class="card-hd"><span class="num">VORONKA</span></div>
+      ${funnelRows}
+    </div>
+
+    ${managerRows ? `<div class="edit-card" style="margin-bottom:1rem">
+      <div class="card-hd"><span class="num">MENEJERLAR KESIMIDA</span></div>
+      <table><thead><tr><th>Menejer</th><th>Jami</th><th>Muvaffaqiyatli</th><th>Sifatsiz</th><th>Konversiya</th></tr></thead>
+      <tbody>${managerRows}</tbody></table>
+    </div>` : ''}
+
+    <div class="edit-card">
+      <div class="card-hd"><span class="num">MANBA BO'YICHA</span></div>
+      <table><thead><tr><th>Manba</th><th>Soni</th></tr></thead><tbody>${sourceRows || '<tr><td colspan="2" class="empty-state">Ma\'lumot yo\'q</td></tr>'}</tbody></table>
+    </div>
+  `;
 }
 
 /* ═══ CONTENT EDITOR ═══ */
@@ -1692,6 +2107,110 @@ async function clearTelegram() {
   } catch (e) { toast('Xatolik yuz berdi', 'error'); }
 }
 
+/* ═══ CRM TELEGRAM (Kanban sinxronizatsiyasi) ═══ */
+async function loadCrmTelegram() {
+  try {
+    const r = await apiFetch('/api/admin/crm/telegram');
+    if (r.ok) CRM_TG = await r.json();
+  } catch (e) { /* silent */ }
+}
+
+async function renderCrmTelegram() {
+  if (!isPrimary()) {
+    $('mainContent').innerHTML = `
+      <div class="main-header"><h2>CRM Telegram</h2></div>
+      <div class="edit-card" style="max-width:620px;background:#fef3c7;color:#92400e">
+        <b>Bu bo'lim faqat SUPER ADMIN uchun.</b> Sizda ko'rish yoki boshqarish huquqi yo'q.
+      </div>`;
+    return;
+  }
+  if (!CRM_TG) await loadCrmTelegram();
+  const st = CRM_TG || {};
+  $('mainContent').innerHTML = `
+    <div class="main-header"><h2>CRM Telegram</h2>
+      <div class="actions"><button class="btn btn-outline btn-sm" onclick="refreshCrmTelegram()">↻ Yangilash</button></div>
+    </div>
+    <p style="font-size:.86rem;opacity:.6;margin:-1.2rem 0 1.3rem">
+      Kanban'dagi har bir mijoz — guruhda BITTA xabar. Bosqich o'zgarganda shu xabar tahrirlanadi, yangisi yuborilmaydi.</p>
+
+    <div class="edit-card" style="max-width:620px">
+      <div class="card-hd"><span class="num">BOT</span>
+        <span style="font-weight:700;font-size:.9rem;color:${st.has_token ? 'var(--green)' : 'var(--coral)'}">
+          ${st.has_token ? `● ${st.bot_username ? '@' + esc(st.bot_username) : 'ulangan'}` : "● Token yo'q"}</span>
+      </div>
+      <div class="field">
+        <label>Bot token ${st.has_token ? `(joriy: ${esc(st.bot_token_masked)})` : ''}</label>
+        <input id="crmTgToken" type="text" placeholder="${st.has_token ? "O'zgartirish uchun yangi token kiriting" : '123456789:ABC-DEF...'}" autocomplete="off">
+      </div>
+      <p style="font-size:.8rem;opacity:.6;margin-top:.3rem">Bitta bot umumiy bildirishnoma va CRM uchun ham ishlatiladi (Telegram bir tokenda ikkita poller'ga ruxsat bermaydi).</p>
+    </div>
+
+    <div class="edit-card" style="max-width:620px;margin-top:1rem">
+      <div class="card-hd"><span class="num">MIJOZLAR GURUHI</span></div>
+      <p style="font-size:.85rem;opacity:.65;margin-bottom:.3rem">Har bir yangi mijoz shu guruhga (yoki kanalga) yuboriladi va bosqich o'zgarganda shu xabar tahrirlanadi.</p>
+      <div class="field"><label>Guruh/kanal chat ID</label>
+        <input id="crmTgChat" type="text" value="${esc(st.leads_chat_id || '')}" placeholder="-1001234567890" autocomplete="off"></div>
+      <div class="field"><label>Topic thread ID (ixtiyoriy — guruh "Mavzular" rejimida bo'lsa)</label>
+        <input id="crmTgTopic" type="number" value="${st.topic_thread_id || ''}" autocomplete="off"></div>
+    </div>
+
+    <div class="edit-card" style="max-width:620px;margin-top:1rem">
+      <div class="card-hd"><span class="num">BILDIRISHNOMA GURUHI (ixtiyoriy)</span></div>
+      <p style="font-size:.85rem;opacity:.65;margin-bottom:.3rem">Muhim voqealar uchun alohida guruh — hozircha faqat sozlama sifatida saqlanadi.</p>
+      <div class="field"><label>Chat ID</label>
+        <input id="crmTgNotify" type="text" value="${esc(st.notify_chat_id || '')}" placeholder="-1009876543210" autocomplete="off"></div>
+    </div>
+
+    <div class="edit-card" style="max-width:620px;margin-top:1rem">
+      <div class="card-hd"><span class="num">REJIM</span></div>
+      <div class="field-check"><input type="checkbox" id="crmTgEnabled" ${st.is_enabled ? 'checked' : ''}><span>Telegram integratsiyasi yoqilgan</span></div>
+      <div class="field-check"><input type="checkbox" id="crmTgSendCreate" ${st.send_on_create !== false ? 'checked' : ''}><span>Yangi mijoz kelganda xabar yuborilsin</span></div>
+      <div class="field-check"><input type="checkbox" id="crmTgEditUpdate" ${st.edit_on_update !== false ? 'checked' : ''}><span>O'zgarishda xabar tahrirlansin</span></div>
+      <button class="btn btn-blk btn-sm" style="margin-top:1.1rem" onclick="saveCrmTelegram()">Saqlash</button>
+      <button class="btn btn-acid btn-sm" style="margin-top:1.1rem" onclick="testCrmTelegram()">Test xabar yuborish</button>
+    </div>
+
+    <div class="edit-card" style="max-width:620px;margin-top:1rem">
+      <div class="card-hd"><span class="num">HOLAT</span></div>
+      <div class="field"><label>Oxirgi tekshiruv</label>
+        <div style="padding:.5rem 0">${st.last_health_check ? formatDate(st.last_health_check) : '—'} ·
+          <span style="color:${st.last_health_status === 'ok' ? 'var(--green)' : 'var(--coral)'}">${esc(st.last_health_status || '—')}</span></div></div>
+    </div>
+  `;
+}
+
+async function refreshCrmTelegram() {
+  await loadCrmTelegram();
+  renderCrmTelegram();
+  toast('Yangilandi');
+}
+
+async function saveCrmTelegram() {
+  const tokenVal = $('crmTgToken').value.trim();
+  const body = {
+    leads_chat_id: $('crmTgChat').value.trim(),
+    topic_thread_id: $('crmTgTopic').value ? parseInt($('crmTgTopic').value, 10) : null,
+    notify_chat_id: $('crmTgNotify').value.trim(),
+    is_enabled: $('crmTgEnabled').checked,
+    send_on_create: $('crmTgSendCreate').checked,
+    edit_on_update: $('crmTgEditUpdate').checked,
+  };
+  if (tokenVal) body.bot_token = tokenVal;
+  try {
+    const r = await apiFetch('/api/admin/crm/telegram', { method: 'PUT', body: JSON.stringify(body) });
+    if (r.ok) { CRM_TG = await r.json(); renderCrmTelegram(); toast('Saqlandi ✓'); }
+    else toast('Saqlashda xatolik', 'error');
+  } catch (e) { toast('Xatolik yuz berdi', 'error'); }
+}
+
+async function testCrmTelegram() {
+  try {
+    const r = await apiFetch('/api/admin/crm/telegram/test', { method: 'POST' });
+    if (r.ok) toast('Test xabar yuborildi ✓');
+    else { const d = await r.json().catch(() => ({})); toast(d.detail || 'Muvaffaqiyatsiz', 'error'); }
+  } catch (e) { toast('Xatolik yuz berdi', 'error'); }
+}
+
 /* ═══ SETTINGS ═══ */
 function renderSettings() {
   const superAdmin = isPrimary();
@@ -1819,12 +2338,35 @@ function accountRowHtml(a) {
   const makePrimaryBtn = (!a.is_primary && a.activated && iAmPrimary)
     ? `<button class="btn btn-outline btn-sm" onclick="requestSetPrimary('${emailArg}')">Super admin qilib tayinlash</button>`
     : '';
+  const roleSelect = (!a.is_primary && a.activated && iAmPrimary)
+    ? `<select onchange="setAccountRole('${emailArg}', this.value)" style="padding:.35rem .6rem;border:2px solid var(--blk);border-radius:8px;font-size:.8rem;font-weight:700">
+        <option value="manager" ${a.role === 'manager' ? 'selected' : ''}>Manager (sotuv)</option>
+        <option value="admin" ${a.role === 'admin' ? 'selected' : ''}>Admin</option>
+      </select>`
+    : '';
   const removeBtn = a.is_primary
     ? ''
     : `<button class="btn btn-coral btn-sm" style="margin-left:auto" onclick="requestRemoveEmail('${emailArg}')">O'chirish</button>`;
   return `<div style="display:flex;align-items:center;gap:.6rem;padding:.6rem 0;border-bottom:1px solid rgba(11,11,14,.08);flex-wrap:wrap">
-    <span style="font-weight:600;font-size:.92rem">${esc(a.email)}</span>${badge}${pending}${resendBtn}${makePrimaryBtn}${removeBtn}
+    <span style="font-weight:600;font-size:.92rem">${esc(a.email)}</span>${badge}${pending}${roleSelect}${resendBtn}${makePrimaryBtn}${removeBtn}
   </div>`;
+}
+
+async function setAccountRole(email, role) {
+  try {
+    const r = await apiFetch(`/api/admin/crm/accounts/${encodeURIComponent(email)}/role`, {
+      method: 'PATCH', body: JSON.stringify({ role }),
+    });
+    if (r.ok) {
+      const acc = ACCOUNT.accounts.find(x => x.email === email);
+      if (acc) acc.role = role;
+      toast(`${email} — ${role === 'admin' ? 'Admin' : 'Manager'} qilib belgilandi ✓`);
+    } else {
+      const d = await r.json().catch(() => ({}));
+      toast(d.detail || 'Xatolik', 'error');
+      renderSettings();
+    }
+  } catch (e) { toast('Xatolik yuz berdi', 'error'); renderSettings(); }
 }
 
 async function requestAddEmail() {

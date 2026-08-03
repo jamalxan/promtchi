@@ -1,19 +1,21 @@
 """CRM Kanban — HTTP API. Mantiq app/crm_service.py'da; bu yer faqat
 so'rov/javob va ruxsatlar qatlami."""
+import csv
+import io
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from . import crm_constants as crm
 from . import crm_service
 from . import crypto
-from .auth import require_admin, require_primary_admin
+from .auth import get_account, list_admin_accounts, require_admin, require_primary_admin
 from .db import AdminAccount, Lead, LeadNote, LeadStageHistory, Setting, get_session
 from .schemas import (
     CrmTelegramSettingsIn, LeadAssignIn, LeadCreateIn, LeadNoteCreateIn,
-    LeadStageChangeIn, LeadUpdateIn,
+    LeadStageChangeIn, LeadUpdateIn, SetAdminRoleIn,
 )
 from .telegram import bot
 
@@ -37,6 +39,139 @@ async def crm_meta(_: str = Depends(require_admin)):
     """8 bosqich, loyiha turlari, manbalar — frontend shu yerdan chizadi
     (qiymatlar app/crm_constants.py'dan, ikki joyda takrorlanmaydi)."""
     return {"stages": crm.STAGES, "project_types": crm.PROJECT_TYPES, "sources": crm.SOURCES}
+
+
+@router.get("/stats")
+async def crm_stats(
+    email: str = Depends(require_admin), session: AsyncSession = Depends(get_session),
+):
+    """9.1-bo'lim: voronka soni, konversiya, o'rtacha bitim davri, menejerlar
+    kesimi. Manager FAQAT o'z arizalari bo'yicha ko'radi."""
+    role = await crm_service.get_role(session, email)
+    base = select(Lead).where(Lead.is_archived.is_(False))
+    if role == "manager":
+        base = base.where(Lead.assigned_to == email)
+    res = await session.execute(base)
+    leads = res.scalars().all()
+
+    funnel = {s["slug"]: 0 for s in crm.STAGES}
+    for l in leads:
+        if l.stage in funnel:
+            funnel[l.stage] += 1
+
+    total = len(leads)
+    won = funnel.get("won", 0)
+    lost = funnel.get("lost", 0)
+    decided = won + lost
+    conversion = round(won / decided * 100, 1) if decided else 0.0
+
+    won_leads = [l for l in leads if l.stage == "won" and l.stage_changed_at and l.created_at]
+    durations = []
+    for l in won_leads:
+        created = l.created_at
+        changed = l.stage_changed_at
+        if created.tzinfo is None:
+            created = created.replace(tzinfo=timezone.utc)
+        if changed.tzinfo is None:
+            changed = changed.replace(tzinfo=timezone.utc)
+        durations.append((changed - created).total_seconds())
+    avg_deal_days = round(sum(durations) / len(durations) / 86400, 1) if durations else None
+
+    by_manager: dict[str, dict] = {}
+    if role != "manager":
+        for l in leads:
+            key = l.assigned_to or "—"
+            m = by_manager.setdefault(key, {"total": 0, "won": 0, "lost": 0})
+            m["total"] += 1
+            if l.stage == "won":
+                m["won"] += 1
+            elif l.stage == "lost":
+                m["lost"] += 1
+        for m in by_manager.values():
+            decided_m = m["won"] + m["lost"]
+            m["conversion"] = round(m["won"] / decided_m * 100, 1) if decided_m else 0.0
+
+    by_source: dict[str, int] = {}
+    for l in leads:
+        by_source[l.source or "—"] = by_source.get(l.source or "—", 0) + 1
+
+    return {
+        "total": total,
+        "funnel": funnel,
+        "conversion_pct": conversion,
+        "avg_deal_days": avg_deal_days,
+        "by_manager": by_manager,
+        "by_source": by_source,
+    }
+
+
+@router.get("/leads/export.csv")
+async def export_leads_csv(
+    email: str = Depends(require_admin), session: AsyncSession = Depends(get_session),
+):
+    """6-bo'lim: eksport — manager qila olmaydi."""
+    role = await crm_service.get_role(session, email)
+    if role == "manager":
+        raise HTTPException(403, "Ruxsat yo'q")
+    res = await session.execute(
+        select(Lead).where(Lead.is_archived.is_(False)).order_by(Lead.created_at.desc())
+    )
+    leads = res.scalars().all()
+
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow([
+        "id", "name", "phone", "project_type", "stage", "source", "assigned_to",
+        "budget", "message", "created_at", "stage_changed_at",
+    ])
+    for l in leads:
+        w.writerow([
+            l.id, l.name, l.phone, l.project_type, l.stage, l.source, l.assigned_to or "",
+            l.budget if l.budget is not None else "", (l.message or "").replace("\n", " "),
+            l.created_at.isoformat() if l.created_at else "",
+            l.stage_changed_at.isoformat() if l.stage_changed_at else "",
+        ])
+    csv_bytes = ("﻿" + buf.getvalue()).encode("utf-8")  # BOM — Excel o'zbekcha harflarni to'g'ri ko'rsatsin
+    return Response(
+        content=csv_bytes, media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=promtchi-crm-leads.csv"},
+    )
+
+
+@router.get("/accounts")
+async def list_crm_accounts(
+    email: str = Depends(require_admin), session: AsyncSession = Depends(get_session),
+):
+    """Mas'ul biriktirish dropdown'i uchun — faollashtirilgan hisoblar ro'yxati.
+    Manager biriktira olmaydi (assign_lead 403 qaytaradi), shuning uchun bu
+    ro'yxat unga ko'rsatilmaydi."""
+    role = await crm_service.get_role(session, email)
+    if role == "manager":
+        raise HTTPException(403, "Ruxsat yo'q")
+    accounts = await list_admin_accounts(session)
+    return [
+        {"email": a.email, "role": "superadmin" if a.is_primary else a.role}
+        for a in accounts if a.password_hash
+    ]
+
+
+@router.patch("/accounts/{email}/role")
+async def set_account_role(
+    email: str, payload: SetAdminRoleIn,
+    _: str = Depends(require_primary_admin), session: AsyncSession = Depends(get_session),
+):
+    """Admin <-> manager rolini o'zgartirish — FAQAT super admin. Super
+    adminning o'z roli is_primary bilan sinxron (bu yerdan o'zgarmaydi)."""
+    acc = await get_account(session, email.strip().lower())
+    if acc is None:
+        raise HTTPException(404, "Bunday email topilmadi")
+    if acc.is_primary:
+        raise HTTPException(400, "Super adminning roli bu yerdan o'zgartirilmaydi")
+    if not acc.password_hash:
+        raise HTTPException(400, "Hisob hali faollashtirilmagan")
+    acc.role = payload.role
+    await session.commit()
+    return {"email": acc.email, "role": acc.role}
 
 
 @router.get("/leads")
@@ -206,10 +341,10 @@ async def assign_lead(
 async def archive_lead(
     lead_id: int, email: str = Depends(require_admin), session: AsyncSession = Depends(get_session),
 ):
-    """6-bo'lim: arxivlash FAQAT super admin/admin."""
+    """6-bo'lim: arxivlash/o'chirish FAQAT super admin."""
     role = await crm_service.get_role(session, email)
-    if role == "manager":
-        raise HTTPException(403, "Faqat admin/super admin arxivlay oladi")
+    if role != "superadmin":
+        raise HTTPException(403, "Faqat super admin arxivlay oladi")
     lead = await _get_lead_or_404(session, lead_id)
     lead.is_archived = True
     await session.commit()

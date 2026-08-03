@@ -26,6 +26,8 @@ from sqlalchemy import func, select, update
 
 from .auth import MAX_ADMIN_ACCOUNTS, create_admin_token, hash_password
 from .config import settings
+from . import crm_constants as crm
+from . import crm_service
 from .db import AdminAccount, Lead, SessionLocal, Setting
 from .email import send_email, tg_super_code_email, tg_super_old_confirm_email
 
@@ -390,6 +392,8 @@ class TelegramBot:
         cq_id = cq["id"]
         if data.startswith("super:"):
             return await self._handle_super_callback(cq)
+        if data.startswith("crmstage:"):
+            return await self._handle_crmstage_callback(cq)
         parts = data.split(":")
         if len(parts) != 3 or parts[0] != "lead":
             await self.call("answerCallbackQuery", {"callback_query_id": cq_id})
@@ -427,6 +431,58 @@ class TelegramBot:
         await self.call("answerCallbackQuery", {
             "callback_query_id": cq_id,
             "text": "✅ Javob berildi deb belgilandi" if new_status == "replied" else "↩️ Yangi deb belgilandi",
+        })
+
+    async def _handle_crmstage_callback(self, cq: dict) -> None:
+        """CRM Kanban inline tugmasi: crmstage:{lead_id}:{stage_slug}.
+
+        Telegram -> sayt yo'nalishi (5.3-bo'lim): guruhda tugma bosilsa Kanban
+        ham darhol yangilanadi. `changed_by=None` — Telegram bosuvchisi
+        AdminAccount emailiga bog'lanmagan (faqat toast'da ismi ko'rsatiladi)."""
+        cq_id = cq["id"]
+        parts = cq.get("data", "").split(":")
+        if len(parts) != 3:
+            await self.call("answerCallbackQuery", {"callback_query_id": cq_id})
+            return
+        try:
+            lead_id = int(parts[1])
+        except ValueError:
+            await self.call("answerCallbackQuery", {"callback_query_id": cq_id})
+            return
+        new_stage = parts[2]
+        if new_stage not in crm.STAGE_SLUGS:
+            await self.call("answerCallbackQuery", {
+                "callback_query_id": cq_id, "text": "Noto'g'ri bosqich", "show_alert": True})
+            return
+
+        who = cq.get("from", {})
+        who_name = who.get("first_name") or who.get("username") or "Telegram"
+
+        async with SessionLocal() as s:
+            lead = await s.get(Lead, lead_id)
+            if lead is None:
+                await self.call("answerCallbackQuery", {
+                    "callback_query_id": cq_id,
+                    "text": "Mijoz topilmadi (arxivlangan/o'chirilgan)", "show_alert": True,
+                })
+                return
+            await crm_service.change_stage(s, lead, new_stage, changed_by=None)
+            text = crm_service.lead_message_text(lead)
+            keyboard = crm_service.lead_inline_keyboard(lead)
+
+        msg = cq.get("message") or {}
+        if msg:
+            await self.call("editMessageText", {
+                "chat_id": msg["chat"]["id"],
+                "message_id": msg["message_id"],
+                "text": text,
+                "parse_mode": "HTML",
+                "reply_markup": keyboard,
+            })
+        stage_label = crm.STAGE_BY_SLUG[new_stage]["label"]
+        await self.call("answerCallbackQuery", {
+            "callback_query_id": cq_id,
+            "text": f"✅ {stage_label} deb belgilandi — {who_name}",
         })
 
     # ── /super — Telegram orqali super adminni almashtirish ────────────────────

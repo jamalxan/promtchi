@@ -346,6 +346,13 @@ class LeadAssignIn(BaseModel):
     assigned_to: str | None = Field(default=None, max_length=200)
 
 
+class SetAdminRoleIn(BaseModel):
+    """CRM huquqlar matritsasi: admin <-> manager. Super admin roli
+    is_primary bilan sinxron boshqariladi, bu yerdan o'zgartirilmaydi."""
+
+    role: Literal["admin", "manager"]
+
+
 class LeadNoteCreateIn(BaseModel):
     text: str = Field(min_length=1, max_length=2000)
 

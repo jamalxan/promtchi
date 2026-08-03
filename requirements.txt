@@ -9,3 +9,6 @@ httpx>=0.27
 python-multipart>=0.0.9
 bcrypt>=4.1
 cryptography>=42
+
+# Faqat testlar uchun (production'da shart emas)
+pytest>=8.0
