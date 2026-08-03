@@ -295,7 +295,7 @@ tr:hover td{background:rgba(217,255,63,.08)}
 <body>
 
 <!-- ═══ LOGIN ═══ -->
-<div class="login-wrap" id="loginPage">
+<div class="login-wrap" id="loginPage" style="display:none">
   <div class="login-card" id="loginCard">
     <h1>promtchi<span style="color:var(--acid)">®</span></h1>
     <p>Admin panelga kirish uchun email va parolni kiriting.</p>
@@ -2485,6 +2485,12 @@ async function requestSetPrimary(email) {
 }
 
 /* ═══ INIT ═══ */
+// Back/Forward tugmasi sahifani bfcache'dan tiklashi mumkin — bu holda
+// sessiya server tomonda allaqachon tugagan bo'lsa ham eski holat (masalan
+// appPage) ko'rinib qolishi mumkin. Shu sabab bfcache'dan kelgan bo'lsa
+// serverdan qayta so'raymiz (auth holati eskirmasin).
+window.addEventListener('pageshow', e => { if (e.persisted) location.reload(); });
+
 (async function init() {
   // Localhost'da saqlangan token yo'q — sessiya FAQAT HttpOnly cookie orqali.
   // Shu sabab "kirilganmi?" savolini serverdan so'raymiz: cookie tirik bo'lsa
