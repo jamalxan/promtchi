@@ -247,3 +247,34 @@ def test_stats_endpoint_reachable(admin_client):
     assert r.status_code == 200
     d = r.json()
     assert "funnel" in d and "conversion_pct" in d
+
+
+def test_add_account_with_role_sets_role_on_activation(admin_client):
+    """Superadmin yangi hisob qo'shayotganda rolni ('admin'/'manager') tanlay
+    olishi va tasdiqlangach shu rol o'rnatilishi kerak."""
+    r = admin_client.post("/api/admin/account/emails/request-add", json={
+        "new_email": "newsotuv@test.local",
+        "password": "NewSotuv123!",
+        "confirm_password": "NewSotuv123!",
+        "role": "admin",
+    })
+    assert r.status_code == 200
+
+    async def _latest_add_email_token():
+        from sqlalchemy import select
+        from app.db import AdminToken, SessionLocal
+        async with SessionLocal() as s:
+            row = await s.scalar(
+                select(AdminToken).where(AdminToken.purpose == "add_email")
+                .order_by(AdminToken.created_at.desc())
+            )
+            return row.token
+
+    token = asyncio.run(_latest_add_email_token())
+    r = admin_client.post("/api/auth/confirm-token", json={"token": token})
+    assert r.status_code == 200
+    assert r.json()["email"] == "newsotuv@test.local"
+
+    r = admin_client.get("/api/admin/account")
+    acc = next(a for a in r.json()["accounts"] if a["email"] == "newsotuv@test.local")
+    assert acc["role"] == "admin"

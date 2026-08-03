@@ -142,11 +142,13 @@ class ResetPasswordIn(BaseModel):
 
 class AddEmailRequestIn(BaseModel):
     """Yangi admin taklif qilish — parol shu yerda o'rnatiladi (super admin
-    tasdiqlagach hisob darhol shu parol bilan faollashadi)."""
+    tasdiqlagach hisob darhol shu parol bilan faollashadi). role — CRM
+    huquqlar matritsasi uchun ("manager" = sotuv bo'limi, standart)."""
 
     new_email: str = Field(min_length=3, max_length=200)
     password: str = Field(min_length=8, max_length=200)
     confirm_password: str = Field(min_length=8, max_length=200)
+    role: Literal["admin", "manager"] = "manager"
 
     _v_email = field_validator("new_email")(_validate_email)
 
