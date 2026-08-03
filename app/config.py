@@ -56,10 +56,15 @@ class Settings:
     ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", DEFAULT_ADMIN_PASSWORD)
     ADMIN_PASSWORD_HASH: str = os.getenv("ADMIN_PASSWORD_HASH", "")
 
-    # JWT
+    # JWT — admin sessiyasi
     JWT_SECRET: str = os.getenv("JWT_SECRET", DEFAULT_JWT_SECRET)
     JWT_ALG: str = "HS256"
+    # Mutlaq muddat — login qilingan paytdan boshlab (iat'dan), yangilanmaydi.
     JWT_EXPIRE_HOURS: int = _int("JWT_EXPIRE_HOURS", 12)
+    # Harakatsizlik muddati — har so'rovda "siljiydi" (sliding window). Ikkalasi
+    # ham HttpOnly session cookie orqali ishlaydi (Max-Age YO'Q — brauzer butunlay
+    # yopilganda cookie o'zi o'chadi; refresh/yangi tab/back-forward'da o'chmaydi).
+    ADMIN_IDLE_TIMEOUT_MINUTES: int = _int("ADMIN_IDLE_TIMEOUT_MINUTES", 30)
 
     # Login brute-force himoyasi
     LOGIN_MAX_ATTEMPTS: int = _int("LOGIN_MAX_ATTEMPTS", 5)
@@ -68,6 +73,13 @@ class Settings:
     # Telegram xabarnoma (ixtiyoriy)
     TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
     TELEGRAM_CHAT_ID: str = os.getenv("TELEGRAM_CHAT_ID", "")
+
+    # Bazada saqlanadigan maxfiy qiymatlarni (masalan CRM Telegram bot tokeni)
+    # shifrlash uchun Fernet kaliti. `python -m app.config genkey` bilan yaratiladi.
+    # Bo'sh qoldirilsa — JWT_SECRET'dan barqaror kalit hosil qilinadi (faqat dev
+    # uchun qulaylik; production'da ALBATTA o'z ENCRYPTION_KEY'ingizni qo'ying —
+    # aks holda JWT_SECRET almashsa shifrlangan tokenlar ham o'qib bo'lmay qoladi).
+    ENCRYPTION_KEY: str = os.getenv("ENCRYPTION_KEY", "")
     # Xabarnoma navbati — burst paytida serverni bo'g'ib qo'ymasligi uchun
     TELEGRAM_QUEUE_SIZE: int = _int("TELEGRAM_QUEUE_SIZE", 5000)
     TELEGRAM_WORKERS: int = _int("TELEGRAM_WORKERS", 2)
@@ -168,6 +180,12 @@ class Settings:
                 "Production'da SQLite ishlatilmoqda — 1000+ bir vaqtdagi yozuv uchun "
                 "PostgreSQL tavsiya etiladi (DATABASE_URL=postgresql+asyncpg://...)."
             )
+        if self.is_production and not self.ENCRYPTION_KEY:
+            p.append(
+                "ENCRYPTION_KEY sozlanmagan — CRM Telegram bot tokeni JWT_SECRET'dan "
+                "hosil qilingan vaqtinchalik kalit bilan shifrlanadi. Yarating: "
+                "python -m app.config genkey"
+            )
         return p
 
     def validate(self) -> None:
@@ -201,7 +219,12 @@ def hash_password(password: str) -> str:
 
 if __name__ == "__main__":
     # python -m app.config hash "yangi-parol"  -> .env ga qo'yiladigan ADMIN_PASSWORD_HASH
+    # python -m app.config genkey                -> .env ga qo'yiladigan ENCRYPTION_KEY
     if len(sys.argv) == 3 and sys.argv[1] == "hash":
         print(f"ADMIN_PASSWORD_HASH={hash_password(sys.argv[2])}")
+    elif len(sys.argv) == 2 and sys.argv[1] == "genkey":
+        from cryptography.fernet import Fernet
+
+        print(f"ENCRYPTION_KEY={Fernet.generate_key().decode()}")
     else:
-        print('Foydalanish: python -m app.config hash "parolingiz"')
+        print('Foydalanish: python -m app.config hash "parolingiz"  |  python -m app.config genkey')

@@ -4,6 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+from . import crm_constants as crm
+
 # Frontend rasm/avatar maydonlarini style="...url('${esc(v)}')" ichiga qo'yadi.
 # esc() faqat HTML uchun xavfsiz — HTML atributi brauzerda dekod qilingach,
 # ' yoki ) saqlangan bo'lsa CSS qiymatidan chiqib ketish (CSS injection)
@@ -179,8 +181,12 @@ _TG_USERNAME_RE = re.compile(r"^@[A-Za-z0-9_]{5,32}$")
 class LeadIn(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     phone: str = Field(min_length=5, max_length=120)
-    project_type: str = Field(default="", max_length=60)
+    project_type: str = Field(default="other", max_length=60)
     message: str = Field(default="", max_length=4000)
+    # Honeypot — ko'zga ko'rinmas maydon, faqat botlar to'ldiradi (odam ko'rmaydi
+    # va CSS bilan yashirilgan). To'ldirilgan bo'lsa main.py buni jimgina
+    # e'tiborsiz qoldiradi (botga "aniqlandik" signalini bermaslik uchun).
+    website: str = Field(default="", max_length=200)
 
     @field_validator("name")
     @classmethod
@@ -202,6 +208,12 @@ class LeadIn(BaseModel):
         raise ValueError(
             "Telefon raqamini (+998901234567) yoki Telegram @username'ni to'g'ri kiriting"
         )
+
+    @field_validator("project_type")
+    @classmethod
+    def _project_type_slug(cls, v: str) -> str:
+        v = (v or "").strip().lower()
+        return v if v in crm.PROJECT_TYPE_SLUGS else "other"
 
 
 class LeadStatusIn(BaseModel):
@@ -263,6 +275,104 @@ class TelegramAdminIn(BaseModel):
 
     chat_id: int
     label: str = Field(default="", max_length=60)
+
+
+# ══════════ CRM Kanban ══════════
+
+class LeadCreateIn(BaseModel):
+    """Admin panel ichidan qo'lda mijoz qo'shish (8.-bo'limdagi sayt formasidan farqli)."""
+
+    name: str = Field(min_length=1, max_length=120)
+    phone: str = Field(default="", max_length=120)
+    project_type: str = Field(default="other", max_length=60)
+    message: str = Field(default="", max_length=4000)
+    source: str = Field(default="manual", max_length=20)
+    assigned_to: str | None = Field(default=None, max_length=200)
+    budget: float | None = None
+
+    @field_validator("name")
+    @classmethod
+    def _name_ok(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("Ism bo'sh bo'lishi mumkin emas")
+        return v
+
+    @field_validator("project_type")
+    @classmethod
+    def _pt_ok(cls, v: str) -> str:
+        v = (v or "").strip().lower()
+        return v if v in crm.PROJECT_TYPE_SLUGS else "other"
+
+    @field_validator("source")
+    @classmethod
+    def _source_ok(cls, v: str) -> str:
+        v = (v or "").strip().lower()
+        return v if v in crm.SOURCES else "manual"
+
+
+class LeadUpdateIn(BaseModel):
+    """Qisman yangilash — faqat yuborilgan maydonlar o'zgaradi."""
+
+    name: str | None = Field(default=None, max_length=120)
+    phone: str | None = Field(default=None, max_length=120)
+    project_type: str | None = Field(default=None, max_length=60)
+    message: str | None = Field(default=None, max_length=4000)
+    budget: float | None = None
+    next_action_at: str | None = None  # ISO 8601; bo'sh satr = tozalash
+
+    @field_validator("project_type")
+    @classmethod
+    def _pt_ok(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        v = v.strip().lower()
+        return v if v in crm.PROJECT_TYPE_SLUGS else "other"
+
+
+class LeadStageChangeIn(BaseModel):
+    stage: str
+
+    @field_validator("stage")
+    @classmethod
+    def _stage_ok(cls, v: str) -> str:
+        v = (v or "").strip().lower()
+        if v not in crm.STAGE_SLUGS:
+            raise ValueError("Noto'g'ri bosqich")
+        return v
+
+
+class LeadAssignIn(BaseModel):
+    assigned_to: str | None = Field(default=None, max_length=200)
+
+
+class LeadNoteCreateIn(BaseModel):
+    text: str = Field(min_length=1, max_length=2000)
+
+    @field_validator("text")
+    @classmethod
+    def _text_ok(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("Izoh bo'sh bo'lishi mumkin emas")
+        return v
+
+
+class CrmTelegramSettingsIn(BaseModel):
+    """CRM Kanban Telegram sozlamalari.
+
+    bot_token=None — o'zgartirilmaydi (maskalangan qiymat qaytarilgani uchun);
+    bo'sh satr — o'chirish. Bitta bot ikkalasi (umumiy bildirishnoma va CRM)
+    uchun ham ishlatiladi (2-bo'lim: 409 Conflict xavfi tufayli).
+    """
+
+    bot_token: str | None = Field(default=None, max_length=200)
+    leads_chat_id: str = Field(default="", max_length=64)
+    topic_thread_id: int | None = None
+    notify_chat_id: str = Field(default="", max_length=64)
+    is_enabled: bool = False
+    send_on_create: bool = True
+    edit_on_update: bool = True
 
 
 # ── Boshlang'ich kontent (saytdagi bilan bir xil) ─────────────────────────────

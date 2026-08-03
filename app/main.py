@@ -4,7 +4,11 @@ Endpointlar:
   GET  /api/health              — holat
   GET  /api/content             — sayt kontenti (public, keshlangan + ETag)
   GET  /api/posts               — e'lon qilingan postlar (public, keshlangan)
-  POST /api/auth/login          — {email,password} -> {token} (Telegram xabarnoma)
+  POST /api/auth/login          — {email,password} -> HttpOnly session cookie + {token}
+                                   (Telegram xabarnoma). Sessiya: refresh/yangi tab/orqaga-
+                                   oldinga tugmasi qayta so'ramaydi (cookie tirik); 30 daq
+                                   harakatsizlik, 12 soat mutlaq muddat yoki logout — so'raydi.
+  POST /api/auth/logout         — sessiya cookie'sini tozalaydi (Bearer)
   POST /api/auth/forgot-password       — {email} -> tiklash havolasi emailga yuboriladi
   POST /api/auth/reset-password        — {token,new_password,confirm_password}
   POST /api/auth/confirm-token         — {token} -> email qo'shish/o'chirishni yakunlaydi
@@ -58,16 +62,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .auth import (
     MAX_ADMIN_ACCOUNTS, add_admin_account, add_admin_account_with_password,
-    check_login, consume_admin_token, create_admin_token, create_token,
-    get_account, get_primary_account, hash_password, list_admin_accounts,
-    recent_token_exists, remove_admin_account, require_admin,
-    require_primary_admin, seed_admin_account, set_account_password,
-    set_primary_account,
+    check_login, clear_admin_cookie, consume_admin_token, create_admin_token,
+    create_token, get_account, get_primary_account, hash_password,
+    list_admin_accounts, recent_token_exists, remove_admin_account,
+    require_admin, require_primary_admin, seed_admin_account,
+    set_account_password, set_admin_cookie, set_primary_account,
 )
 from .config import settings
 from .db import (
     Base, Content, Lead, Post, Review, ReviewCode, SessionLocal, Setting,
-    engine, get_session, run_migrations,
+    engine, get_session, run_data_fixups, run_migrations,
 )
 from .email import (
     account_ready_email, confirm_email_email, new_account_email,
@@ -79,6 +83,7 @@ from .schemas import (
     RemoveEmailRequestIn, ResetPasswordIn, ReviewCodeIn, ReviewIn,
     SetPrimaryRequestIn, TelegramAdminIn, TelegramSettingsIn,
 )
+from . import crm_api, crm_service, crypto
 from .telegram import bot
 from .security import (
     BodyLimitMiddleware,
@@ -201,6 +206,8 @@ async def lifespan(app: FastAPI):
 
     async with SessionLocal() as s:
         await seed_admin_account(s)
+    async with SessionLocal() as s:
+        await run_data_fixups(s)
 
     async with engine.begin() as conn:
         res = await conn.execute(select(Content.data, Content.version).where(Content.id == 1))
@@ -220,11 +227,18 @@ async def lifespan(app: FastAPI):
         limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
     )
 
-    # ── Telegram bot ──
+    # ── Telegram bot (BITTA — umumiy bildirishnoma va CRM birga ishlatadi) ──
     bot.token = settings.TELEGRAM_BOT_TOKEN.strip()
     bot.group_chat_id = settings.TELEGRAM_CHAT_ID.strip()
     async with SessionLocal() as s:
         await bot.load_settings(s)  # DB qiymatlari .env ustidan yozadi
+        if not bot.token:
+            # Zaxira: eski `Setting` bo'sh bo'lsa ham, CRM sozlamalarida
+            # (TelegramSettings, shifrlangan) token bo'lishi mumkin.
+            tg = await crm_service.get_telegram_settings(s)
+            decrypted = crypto.decrypt(tg.bot_token_enc)
+            if decrypted:
+                bot.token = decrypted
     bot.client = http_client
     bot.polling_enabled = settings.TELEGRAM_POLLING
     bot.queue = asyncio.Queue(maxsize=settings.TELEGRAM_QUEUE_SIZE)
@@ -275,6 +289,8 @@ app.add_middleware(
     max_age=3600,
 )
 app.add_middleware(SecurityHeadersMiddleware)
+
+app.include_router(crm_api.router)
 
 
 # ══════════ PUBLIC ══════════
@@ -358,20 +374,44 @@ async def create_lead(
 
 @app.post("/api/auth/login")
 async def login(
-    payload: LoginIn, request: Request, session: AsyncSession = Depends(get_session)
+    payload: LoginIn, request: Request, response: Response,
+    session: AsyncSession = Depends(get_session),
 ):
     ip = getattr(request.state, "client_ip", "") or "unknown"
+    ua = (request.headers.get("user-agent") or "?")[:180]
     email = payload.email.strip().lower()
     acc = await check_login(session, email, payload.password)
     if acc is None:
         # Token faqat XATO urinishda yeyiladi -> brute-force sekinlashadi,
         # to'g'ri email/parol bilan kirish esa hech qachon bloklanmaydi.
         login_limiter.hit(ip)
-        log.warning("Admin login muvaffaqiyatsiz — email=%s ip=%s", email, ip)
-        bot.queue_text_admins(f"❌ <b>Muvaffaqiyatsiz kirish urinishi</b>\nEmail: {escape(email)}\nIP: {escape(ip)}")
+        log.warning("Admin login muvaffaqiyatsiz — email=%s ip=%s ua=%s", email, ip, ua)
+        bot.queue_text_admins(
+            f"❌ <b>Muvaffaqiyatsiz kirish urinishi</b>\nEmail: {escape(email)}\nIP: {escape(ip)}\nUA: {escape(ua)}"
+        )
         raise HTTPException(401, "Email yoki parol noto'g'ri")
-    bot.queue_text_admins(f"✅ <b>Admin panelga kirildi</b>\nEmail: {escape(acc.email)}\nIP: {escape(ip)}")
-    return {"token": create_token(acc.email), "expires_hours": settings.JWT_EXPIRE_HOURS}
+    log.info("Admin login muvaffaqiyatli — email=%s ip=%s ua=%s", acc.email, ip, ua)
+    bot.queue_text_admins(
+        f"✅ <b>Admin panelga kirildi</b>\nEmail: {escape(acc.email)}\nIP: {escape(ip)}\nUA: {escape(ua)}"
+    )
+    token = create_token(acc.email)
+    set_admin_cookie(response, token)
+    # JSON'dagi `token` — faqat skript/test uchun qulaylik; admin.html HttpOnly
+    # cookie'ga tayanadi (JS undan tokenni o'qiy olmaydi — XSS himoyasi).
+    return {"token": token, "expires_hours": settings.JWT_EXPIRE_HOURS}
+
+
+@app.post("/api/auth/logout")
+async def logout(response: Response):
+    """Cookie'ni serverda tozalaydi — HttpOnly bo'lgani uchun buni faqat
+    backend qila oladi (JS to'g'ridan-to'g'ri o'chira olmaydi).
+
+    ATAYLAB require_admin'ga bog'liq EMAS: token eskirgan/yaroqsiz bo'lsa ham
+    "chiqish" ishlashi kerak, va require_admin'ning o'z siljitish effekti
+    shu yerda ikkita ziddiyatli Set-Cookie yubormasligi uchun chetlab o'tiladi.
+    """
+    clear_admin_cookie(response)
+    return {"ok": True}
 
 
 _GENERIC_RESET_MSG = {
@@ -820,12 +860,18 @@ async def put_telegram(
     """Bot va guruh/kanal sozlamalari — FAQAT super admin boshqaradi.
 
     bot_token=None — token o'zgartirilmaydi; "" — o'chiriladi.
+
+    BITTA bot CRM bilan ham baham ko'riladi — token bu yerdan o'zgartirilsa,
+    CRM Telegram sozlamalaridagi shifrlangan nusxa (TelegramSettings) ham
+    yangilanadi, aks holda ikkalasi bir-biridan uzoqlashib qoladi.
     """
     if payload.bot_token is not None:
         bot.token = payload.bot_token.strip()
         bot.last_error = ""
         bot.polling_enabled = settings.TELEGRAM_POLLING  # yangi token -> qayta urinamiz
         await session.merge(Setting(key="tg_bot_token", value=bot.token))
+        tg = await crm_service.get_telegram_settings(session)
+        tg.bot_token_enc = crypto.encrypt(bot.token)
         await bot.ensure_no_webhook()
     bot.group_chat_id = payload.chat_id.strip()
     await session.merge(Setting(key="tg_chat_id", value=bot.group_chat_id))
