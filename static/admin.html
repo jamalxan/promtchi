@@ -218,14 +218,6 @@ tr:hover td{background:rgba(217,255,63,.08)}
 .confirm-box p{font-size:.9rem;opacity:.7;margin-bottom:1.2rem}
 .confirm-box .btns{display:flex;gap:.6rem;justify-content:center}
 
-/* ═══ LEAD DETAIL ═══ */
-.lead-detail{background:var(--w);border:2.5px solid var(--blk);border-radius:var(--radius);
-  padding:1.5rem;box-shadow:4px 4px 0 var(--blk);margin-bottom:1.5rem}
-.lead-detail .ld-row{display:flex;gap:.8rem;margin-bottom:.6rem;align-items:flex-start}
-.lead-detail .ld-label{font-family:var(--mono);font-size:.7rem;text-transform:uppercase;
-  letter-spacing:.12em;width:100px;flex-shrink:0;color:rgba(11,11,14,.5);padding-top:.15rem}
-.lead-detail .ld-val{font-size:.92rem}
-
 /* ═══ CRM KANBAN ═══ */
 .kanban-toolbar{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem}
 .kanban-toolbar select{padding:.5rem .8rem;border:2px solid var(--blk);border-radius:999px;background:var(--w);font-size:.82rem;font-weight:700}
@@ -253,6 +245,11 @@ tr:hover td{background:rgba(217,255,63,.08)}
 .kanban-card .kc-assignee{margin-left:auto;width:22px;height:22px;border-radius:50%;background:var(--blk);color:var(--w);
   display:grid;place-items:center;font-size:.65rem;font-weight:700;flex-shrink:0}
 .kanban-empty{opacity:.35;font-size:.78rem;text-align:center;padding:1.2rem 0}
+
+/* ═══ STATISTIKA VORONKA ═══ */
+.funnel-row{display:flex;align-items:center;gap:.7rem;margin-bottom:.6rem}
+.funnel-label{width:150px;flex-shrink:0;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:600px){.funnel-label{width:92px;font-size:.76rem}}
 
 /* ═══ CRM DRAWER ═══ */
 .drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9500;opacity:0;pointer-events:none;transition:.2s}
@@ -1283,12 +1280,12 @@ async function renderStats() {
   const funnelRows = CRM_META.stages.map(s => {
     const n = stats.funnel[s.slug] || 0;
     const pct = Math.round(n / maxFunnel * 100);
-    return `<div style="display:flex;align-items:center;gap:.7rem;margin-bottom:.6rem">
-      <span style="width:150px;font-size:.85rem;flex-shrink:0">${s.emoji} ${esc(s.label)}</span>
-      <div style="flex:1;background:var(--cream);border-radius:6px;height:22px;overflow:hidden">
+    return `<div class="funnel-row">
+      <span class="funnel-label">${s.emoji} ${esc(s.label)}</span>
+      <div style="flex:1;background:var(--cream);border-radius:6px;height:22px;overflow:hidden;min-width:40px">
         <div style="width:${pct}%;height:100%;background:${s.color}"></div>
       </div>
-      <span style="width:34px;text-align:right;font-family:var(--mono);font-weight:700">${n}</span>
+      <span style="width:34px;text-align:right;font-family:var(--mono);font-weight:700;flex-shrink:0">${n}</span>
     </div>`;
   }).join('');
 
@@ -1707,7 +1704,7 @@ function renderReviews() {
     <div class="edit-card" style="margin-bottom:1.4rem">
       <div class="card-hd"><span class="num">MIJOZ KODLARI</span>
         <span style="font-size:.82rem;opacity:.6">${unused.length} ta ishlatilmagan</span></div>
-      ${RCODES.length ? `<table style="margin-top:.4rem">
+      ${RCODES.length ? `<div style="overflow-x:auto"><table style="margin-top:.4rem;min-width:380px">
         <thead><tr><th>Kod</th><th>Mijoz</th><th>Holat</th><th></th></tr></thead>
         <tbody>${RCODES.map(c => `
           <tr>
@@ -1722,7 +1719,7 @@ function renderReviews() {
               <button onclick="deleteCode('${esc(c.code)}')" title="O'chirish">
                 <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
             </td>
-          </tr>`).join('')}</tbody></table>`
+          </tr>`).join('')}</tbody></table></div>`
         : '<p style="opacity:.5;font-size:.88rem;padding:.6rem 0">Hali kod yaratilmagan. Mijozga fikr yozdirish uchun kod yarating.</p>'}
     </div>
 
@@ -1972,14 +1969,14 @@ function renderTelegram() {
     <div class="edit-card" style="max-width:620px;margin-top:1rem">
       <div class="card-hd"><span class="num">TELEGRAM ADMINLAR (${admins.length})</span></div>
       <p style="font-size:.85rem;opacity:.65;margin-bottom:.3rem">Sezgir xabarnomalar (yangi admin paroli, kirish urinishlari, hisob o'zgarishlari) FAQAT shu chatlarga boradi — guruh/kanalga emas.</p>
-      ${admins.length ? `<table style="margin-top:.4rem">
+      ${admins.length ? `<div style="overflow-x:auto"><table style="margin-top:.4rem;min-width:340px">
         <thead><tr><th>Chat ID</th><th>Nomi</th><th></th></tr></thead>
         <tbody>${admins.map(a => `<tr>
           <td style="font-family:var(--mono);font-size:.88rem">${esc(a.chat_id)}</td>
           <td>${esc(a.label || '—')}</td>
           <td class="td-actions">${primary ? `<button onclick="removeTelegramAdmin(${a.chat_id})" title="O'chirish">
             <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>` : ''}</td>
-        </tr>`).join('')}</tbody></table>`
+        </tr>`).join('')}</tbody></table></div>`
         : '<p style="opacity:.5;font-size:.88rem;padding:.4rem 0">Hali qo\'shilmagan — xabarnomalar hozircha guruh/kanal va ulangan barcha chatlarga boradi.</p>'}
       ${primary ? `
       <div class="field-row" style="margin-top:.8rem">
@@ -1999,14 +1996,14 @@ function renderTelegram() {
 
     <div class="edit-card" style="max-width:620px;margin-top:1rem">
       <div class="card-hd"><span class="num">ULANGAN CHATLAR (${subs.length})</span></div>
-      ${subs.length ? `<table style="margin-top:.4rem">
+      ${subs.length ? `<div style="overflow-x:auto"><table style="margin-top:.4rem;min-width:300px">
         <thead><tr><th>Chat ID</th><th>Turi</th><th></th></tr></thead>
         <tbody>${subs.map(s => `<tr>
           <td style="font-family:var(--mono);font-size:.88rem">${s}</td>
           <td>${String(s).startsWith('-') ? 'Guruh / kanal' : 'Shaxsiy'}</td>
           <td class="td-actions">${primary ? `<button onclick="removeSub(${s})" title="Chiqarish">
             <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>` : ''}</td>
-        </tr>`).join('')}</tbody></table>`
+        </tr>`).join('')}</tbody></table></div>`
         : '<p style="opacity:.5;font-size:.88rem;padding:.6rem 0">Hali hech kim ulanmagan — botga /start yozing yoki guruhga qo\'shing.</p>'}
     </div>
 
