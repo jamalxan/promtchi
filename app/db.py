@@ -403,6 +403,13 @@ class AdminAccount(Base):
     password_hash: Mapped[str] = mapped_column(String(200), default="")
     is_primary: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     role: Mapped[str] = mapped_column(String(20), default=crm.DEFAULT_ADMIN_ROLE, nullable=False)
+    # Parol oxirgi marta o'zgargan payt — shundan OLDIN chiqarilgan JWT
+    # tokenlar (iat < bu qiymat) require_admin tomonidan rad etiladi. Shu
+    # bilan o'g'irlangan/eski token parol tiklangach avtomatik ishlamay
+    # qoladi (aks holda JWT stateless bo'lgani uchun eskirmaguncha amal
+    # qilaverardi). NULL — hali hech qachon o'zgartirilmagan (eski
+    # hisoblar bilan moslik uchun; bu holda tekshiruv o'tkazib yuboriladi).
+    password_changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -474,6 +481,8 @@ _MIGRATIONS = [
     "ALTER TABLE leads ADD COLUMN stage_changed_at DATETIME",
     # ── CRM rollar (AdminAccount) ────────────────────────────────────────────
     "ALTER TABLE admin_accounts ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'manager'",
+    # ── Sessiya bekor qilish (parol o'zgarganda eski JWT tokenlarni yeyish) ──
+    "ALTER TABLE admin_accounts ADD COLUMN password_changed_at DATETIME",
 ]
 
 

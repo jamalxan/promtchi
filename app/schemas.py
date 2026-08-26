@@ -1,5 +1,6 @@
 """Pydantic sxemalar — frontend DATA tuzilmasiga birebir mos validatsiya."""
 import re
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
@@ -330,6 +331,16 @@ class LeadUpdateIn(BaseModel):
             return None
         v = v.strip().lower()
         return v if v in crm.PROJECT_TYPE_SLUGS else "other"
+
+    @field_validator("next_action_at")
+    @classmethod
+    def _next_action_at_valid(cls, v: str | None) -> str | None:
+        if v:
+            try:
+                datetime.fromisoformat(v)
+            except ValueError:
+                raise ValueError("next_action_at ISO 8601 formatda bo'lishi kerak")
+        return v
 
 
 class LeadStageChangeIn(BaseModel):

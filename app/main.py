@@ -982,10 +982,14 @@ async def test_telegram(_: str = Depends(require_primary_admin)):
 # ══════════ FAYL YUKLASH (rasm / video) ══════════
 
 UPLOAD_DIR = STATIC_DIR / "uploads"
+# .svg ATAYLAB ruxsat etilmagan: SVG ichiga <script> yashirish mumkin va
+# to'g'ridan-to'g'ri /static/uploads/... orqali ochilganda CSP'dagi
+# script-src 'unsafe-inline' (sayt inline skriptlari uchun shart) ostida
+# ishga tushib, saqlanadigan XSS'ga aylanadi.
 _ALLOWED_UPLOADS = {
-    # kengaytma -> (MIME, sehrli baytlar ro'yxati yoki None)
+    # kengaytma -> MIME
     ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
-    ".webp": "image/webp", ".gif": "image/gif", ".svg": "image/svg+xml",
+    ".webp": "image/webp", ".gif": "image/gif",
     ".mp4": "video/mp4", ".webm": "video/webm", ".mov": "video/quicktime",
 }
 

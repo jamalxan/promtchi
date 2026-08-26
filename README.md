@@ -116,7 +116,7 @@ worker uchun alohida — Postgres `max_connections` ni shunga moslang.
 ```bash
 # login
 curl -X POST localhost:8000/api/auth/login -H 'Content-Type: application/json' \
-  -d '{"password":"promtchi2026"}'
+  -d '{"email":"admin@promtchi.uz","password":"promtchi2026"}'
 
 # ariza
 curl -X POST localhost:8000/api/leads -H 'Content-Type: application/json' \

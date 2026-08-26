@@ -95,10 +95,20 @@ async def seed_admin_account(session: AsyncSession) -> None:
     pw_hash = (
         await session.scalar(select(Setting.value).where(Setting.key == "admin_password_hash"))
     ) or settings.ADMIN_PASSWORD_HASH
+    if not pw_hash and settings.ADMIN_PASSWORD:
+        # Eski (hash qilinmagan) ADMIN_PASSWORD yo'li — avval bu yerda HECH
+        # QACHON hashlanmagani uchun bunday sozlangan hisobga umuman kira
+        # bo'lmas edi (password_hash="" bilan yaratilardi). Endi shu yerda
+        # bcrypt bilan hashlab, faollashtirilgan hisob sifatida yaratamiz.
+        pw_hash = hash_password(settings.ADMIN_PASSWORD)
     email = (email or "").strip().lower()
     if not email:
         return
-    session.add(AdminAccount(email=email, password_hash=pw_hash or "", is_primary=True))
+    now = datetime.now(timezone.utc)
+    session.add(AdminAccount(
+        email=email, password_hash=pw_hash or "", is_primary=True,
+        password_changed_at=now if pw_hash else None,
+    ))
     await session.commit()
 
 
@@ -132,6 +142,10 @@ async def set_account_password(session: AsyncSession, email: str, new_password: 
     if acc is None:
         return False
     acc.password_hash = hash_password(new_password)
+    # Eski (parol o'zgarishidan OLDIN chiqarilgan) JWT tokenlar shu payt bilan
+    # solishtirilib rad etiladi (require_admin) — o'g'irlangan/eski sessiya
+    # parol tiklangach avtomatik ishlamay qoladi.
+    acc.password_changed_at = datetime.now(timezone.utc)
     await session.commit()
     return True
 
@@ -162,7 +176,10 @@ async def add_admin_account_with_password(
     existing = await get_account(session, email)
     if existing is not None:
         return existing
-    acc = AdminAccount(email=email, password_hash=password_hash, is_primary=False)
+    acc = AdminAccount(
+        email=email, password_hash=password_hash, is_primary=False,
+        password_changed_at=datetime.now(timezone.utc),
+    )
     session.add(acc)
     await session.commit()
     return acc
@@ -245,6 +262,7 @@ async def require_admin(
     request: Request,
     response: Response,
     cred: HTTPAuthorizationCredentials | None = Depends(bearer),
+    session: AsyncSession = Depends(get_session),
 ) -> str:
     """Qaytaradi: hozir login qilingan admin email (JWT "sub").
 
@@ -254,6 +272,11 @@ async def require_admin(
     cookie qo'yiladi ("touch"), shuning uchun faol ishlayotgan admin hech
     qachon "kutilmaganda" chiqarib yuborilmaydi, lekin 30 daqiqa hech qanday
     so'rov bo'lmasa yoki iat'dan 12 soat o'tsa — token o'zi eskiradi.
+
+    JWT stateless bo'lgani uchun (imzosi to'g'ri bo'lsa exp'gacha amal qiladi)
+    hisob HOZIR ham mavjudligi va parol shu tokendan KEYIN o'zgartirilmaganligi
+    DB'dan tekshiriladi — aks holda o'chirilgan admin yoki o'g'irlangan/eski
+    token parol tiklangandan keyin ham exp'gacha ishlab turaverar edi.
     """
     token = request.cookies.get(ADMIN_COOKIE_NAME) or (cred.credentials if cred else None)
     if not token:
@@ -273,6 +296,19 @@ async def require_admin(
     # qo'shimcha so'rovda o'tib ketishi mumkin edi).
     if datetime.now(timezone.utc) - iat > timedelta(hours=settings.JWT_EXPIRE_HOURS):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Sessiya muddati tugagan")
+
+    acc = await get_account(session, email)
+    if acc is None or not acc.password_hash:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Hisob o'chirilgan yoki faollashtirilmagan")
+    if acc.password_changed_at is not None:
+        changed_at = acc.password_changed_at
+        if changed_at.tzinfo is None:  # SQLite naive qaytaradi (doim UTC yozilgan)
+            changed_at = changed_at.replace(tzinfo=timezone.utc)
+        # JWT "iat" PyJWT tomonidan BUTUN soniyagacha kesib yoziladi (mikrosoniyasiz) —
+        # shu sabab ikkalasini ham soniyagacha kesib solishtiramiz, aks holda parol
+        # bilan bir xil soniyada login qilingan holatlarda soxta-manfiy (401) chiqadi.
+        if iat < changed_at.replace(microsecond=0):
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Parol o'zgartirilgan — qayta kiring")
 
     # Faqat cookie orqali kelgan sessiyani "siljitamiz" — Bearer bilan qat'iy
     # skript/test chaqirsa, uning tokeni o'zgarmasdan qoladi (kutilmagan cookie

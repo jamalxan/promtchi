@@ -80,3 +80,65 @@ def test_login_lockout_after_max_attempts(client):
     r = client.post("/api/auth/login", json={"email": "test@promtchi.local", "password": "wrong"})
     assert r.status_code == 429
     login_limiter._b.clear()  # keyingi testlarga ta'sir qilmasin
+
+
+def test_password_change_revokes_old_session(client, make_account, login_as):
+    """Parol tiklanganda ESKI tokenlar (JWT hali exp'gacha amal qiladigan bo'lsa
+    ham) darhol ishlamay qolishi kerak — aks holda o'g'irlangan token parol
+    tiklangandan keyin ham amal qilib turaveradi."""
+    email = make_account("revoke-pw@test.local", "OldPass123!")
+    old_client = login_as(email, "OldPass123!")
+    old_cookie = old_client.cookies.get("admin_session")
+    r = old_client.get("/api/admin/account")
+    assert r.status_code == 200
+
+    import asyncio
+
+    from app.auth import set_account_password
+    from app.db import SessionLocal
+
+    async def _reset():
+        async with SessionLocal() as s:
+            assert await set_account_password(s, email, "NewPass456!")
+
+    asyncio.run(_reset())
+
+    # Eski cookie endi rad etilishi kerak
+    client.cookies.clear()
+    client.cookies.set("admin_session", old_cookie)
+    r = client.get("/api/admin/account")
+    assert r.status_code == 401
+    client.cookies.clear()
+
+    # Yangi parol bilan esa kirish ishlashi kerak
+    r = client.post("/api/auth/login", json={"email": email, "password": "NewPass456!"})
+    assert r.status_code == 200
+    client.post("/api/auth/logout")
+    client.cookies.clear()
+
+
+def test_removed_account_session_rejected(client, make_account, login_as):
+    """Hisob o'chirilgach uning tokeni (hali exp'gacha vaqti bo'lsa ham)
+    darhol ishlamay qolishi kerak."""
+    email = make_account("revoke-del@test.local", "DelPass123!")
+    victim_client = login_as(email, "DelPass123!")
+    old_cookie = victim_client.cookies.get("admin_session")
+    r = victim_client.get("/api/admin/account")
+    assert r.status_code == 200
+
+    import asyncio
+
+    from app.auth import remove_admin_account
+    from app.db import SessionLocal
+
+    async def _remove():
+        async with SessionLocal() as s:
+            assert await remove_admin_account(s, email)
+
+    asyncio.run(_remove())
+
+    client.cookies.clear()
+    client.cookies.set("admin_session", old_cookie)
+    r = client.get("/api/admin/account")
+    assert r.status_code == 401
+    client.cookies.clear()

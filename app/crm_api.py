@@ -21,6 +21,20 @@ from .telegram import bot
 
 router = APIRouter(prefix="/api/admin/crm", tags=["crm"])
 
+_FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _csv_safe(v) -> str:
+    """CSV/formula-injection'dan himoya (OWASP): agar qiymat Excel/Sheets
+    formulasi deb talqin qilinishi mumkin bo'lgan belgidan boshlansa,
+    oldiga `'` qo'yiladi — mijoz kiritgan (tekshirilmagan) `name`/`message`
+    kabi maydonlar CSV eksportida ochilganda buyruq bajarilishining oldini
+    oladi."""
+    s = "" if v is None else str(v)
+    if s.startswith(_FORMULA_PREFIXES):
+        return "'" + s
+    return s
+
 
 async def _get_lead_or_404(session: AsyncSession, lead_id: int) -> Lead:
     lead = await session.get(Lead, lead_id)
@@ -126,8 +140,9 @@ async def export_leads_csv(
     ])
     for l in leads:
         w.writerow([
-            l.id, l.name, l.phone, l.project_type, l.stage, l.source, l.assigned_to or "",
-            l.budget if l.budget is not None else "", (l.message or "").replace("\n", " "),
+            l.id, _csv_safe(l.name), _csv_safe(l.phone), l.project_type, l.stage, l.source,
+            l.assigned_to or "", l.budget if l.budget is not None else "",
+            _csv_safe((l.message or "").replace("\n", " ")),
             l.created_at.isoformat() if l.created_at else "",
             l.stage_changed_at.isoformat() if l.stage_changed_at else "",
         ])
