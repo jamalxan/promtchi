@@ -83,6 +83,14 @@ class Settings:
     # Xabarnoma navbati — burst paytida serverni bo'g'ib qo'ymasligi uchun
     TELEGRAM_QUEUE_SIZE: int = _int("TELEGRAM_QUEUE_SIZE", 5000)
     TELEGRAM_WORKERS: int = _int("TELEGRAM_WORKERS", 2)
+    # Bot holati (token/chat/obunachilar/adminlar) HAR uvicorn worker'ida
+    # alohida xotirada saqlanadi va faqat startup'da DB'dan o'qiladi. `--workers
+    # N` bilan ishga tushirilganda, admin panel bir workerga tushib sozlamani
+    # o'zgartirsa, boshqa workerlar (jumladan getUpdates'ni yurituvchisi) buni
+    # qayta ishga tushmaguncha "ko'rmas edi". Shu son soniyada har bir worker
+    # DB'dan qayta o'qib, holatni yangilaydi — o'zgarish shu muddat ichida
+    # BARCHA workerlarga yetib boradi (0 = o'chirilgan, tavsiya etilmaydi).
+    TELEGRAM_SETTINGS_REFRESH_SECONDS: int = _int("TELEGRAM_SETTINGS_REFRESH_SECONDS", 20)
     # Bot buyruqlari/tugmalarini tinglash (long polling). Bir necha uvicorn
     # worker ishlatilsa FAQAT bittasida yoqilgan bo'lsin — Telegram bir vaqtda
     # bitta getUpdates'ga ruxsat beradi (aks holda 409 Conflict).
@@ -123,6 +131,16 @@ class Settings:
     API_RATE_LIMIT: int = _int("API_RATE_LIMIT", 600)
     API_RATE_WINDOW_SECONDS: int = _int("API_RATE_WINDOW_SECONDS", 60)
     RATE_LIMIT_MAX_KEYS: int = _int("RATE_LIMIT_MAX_KEYS", 50_000)
+    # Rate-limit xotirada, HAR BIR uvicorn worker o'z hisobini alohida yuritadi
+    # (bitta jarayon ichidagi oddiy dict — Redis emas). `--workers N` bilan
+    # ishga tushirilsa, N ta mustaqil hisoblagich paydo bo'ladi va HAQIQIY
+    # (barcha workerlar bo'ylab) limit shu N ga ko'payadi. Shu yerga xuddi
+    # o'sha N ni qo'ysangiz, quyidagi limitlar N ga bo'lib olinadi — natijada
+    # workerlar bo'ylab YIG'INDI chegara sozlangan qiymatga yaqin qoladi
+    # (bir mijozning so'rovlari qaysi workerga tushishi oldindan noma'lum
+    # bo'lgani uchun bu — qat'iy emas, TAXMINIY muvozanatlash; qat'iy global
+    # limit uchun Redis backend kerak).
+    WORKERS: int = _int("WORKERS", 1)
 
     # ── Proxy ────────────────────────────────────────────────────────────────
     # Nginx/Caddy/Cloudflare ortida ishlaganda ALBATTA yoqing — aks holda

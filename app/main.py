@@ -251,6 +251,13 @@ async def lifespan(app: FastAPI):
         t = asyncio.create_task(bot.poll_loop())
         _bg_tasks.add(t)
         t.add_done_callback(_bg_tasks.discard)
+    # BARCHA workerlarda (faqat polling yurituvchisida emas) — ko'p worker bilan
+    # ishga tushirilganda boshqa worker orqali o'zgargan bot sozlamalari
+    # (token/chat/admin/obunachilar) shu workerga ham yetib borishi uchun.
+    if settings.TELEGRAM_SETTINGS_REFRESH_SECONDS > 0:
+        t = asyncio.create_task(bot.refresh_settings_loop(settings.TELEGRAM_SETTINGS_REFRESH_SECONDS))
+        _bg_tasks.add(t)
+        t.add_done_callback(_bg_tasks.discard)
 
     log.info(
         "promtchi API tayyor — env=%s db=%s pool=%s+%s trust_proxy=%s tg=%s(%s chat)",

@@ -93,6 +93,12 @@ def test_password_change_revokes_old_session(client, make_account, login_as):
     assert r.status_code == 200
 
     import asyncio
+    import time
+
+    # JWT "iat" butun soniyagacha kesib yoziladi — login va parol o'zgarishi
+    # bir xil (butun) soniyada bo'lib qolmasligi uchun chegaradan o'tkazamiz
+    # (aks holda tekshiruv soniya granulyarligi tufayli nomuvofiq bo'ladi).
+    time.sleep(1.1)
 
     from app.auth import set_account_password
     from app.db import SessionLocal

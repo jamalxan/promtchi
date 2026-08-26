@@ -666,6 +666,26 @@ class TelegramBot:
             "<i>(admin panel)</i>"
         )
 
+    async def refresh_settings_loop(self, interval: float) -> None:
+        """Bir necha uvicorn worker bilan ishga tushirilganda HAR worker o'z
+        xotirasida alohida nusxa saqlaydi (load_settings faqat startup'da
+        chaqiriladi) — boshqa worker orqali (masalan admin panel PUT
+        /api/admin/telegram) DB'ga yozilgan o'zgarish shu workerga hech qachon
+        yetib bormas edi (qayta ishga tushmaguncha). Shu tsikl DB'ni davriy
+        o'qib, holatni barcha workerlarda muvofiqlashtiradi (qat'iy emas —
+        `interval` soniyagacha kechikish bilan)."""
+        if interval <= 0:
+            return
+        while True:
+            await asyncio.sleep(interval)
+            try:
+                async with SessionLocal() as s:
+                    await self.load_settings(s)
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                log.warning("Telegram sozlamalarini qayta yuklashda xato: %s", e)
+
     async def load_settings(self, conn) -> None:
         """DB'dan token, guruh va obunachilarni o'qiydi."""
         res = await conn.execute(

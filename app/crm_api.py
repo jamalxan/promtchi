@@ -60,30 +60,41 @@ async def crm_stats(
     email: str = Depends(require_admin), session: AsyncSession = Depends(get_session),
 ):
     """9.1-bo'lim: voronka soni, konversiya, o'rtacha bitim davri, menejerlar
-    kesimi. Manager FAQAT o'z arizalari bo'yicha ko'radi."""
+    kesimi. Manager FAQAT o'z arizalari bo'yicha ko'radi.
+
+    Barcha (arxivlanmagan) mijozlarni Python xotirasiga yuklab tsiklda
+    hisoblash o'rniga — mijozlar soni minglarga yetganda sekinlashadi —
+    hisoblash SQL `GROUP BY` agregatsiyasi bilan amalga oshiriladi; faqat
+    "won" (odatda ancha kamroq) mijozlarning ikkita sana ustuni o'rtacha
+    bitim davri uchun alohida (tor) so'rovda olinadi.
+    """
     role = await crm_service.get_role(session, email)
-    base = select(Lead).where(Lead.is_archived.is_(False))
+    conds = [Lead.is_archived.is_(False)]
     if role == "manager":
-        base = base.where(Lead.assigned_to == email)
-    res = await session.execute(base)
-    leads = res.scalars().all()
+        conds.append(Lead.assigned_to == email)
+
+    total = await session.scalar(select(func.count()).select_from(Lead).where(*conds))
 
     funnel = {s["slug"]: 0 for s in crm.STAGES}
-    for l in leads:
-        if l.stage in funnel:
-            funnel[l.stage] += 1
+    stage_counts = await session.execute(
+        select(Lead.stage, func.count()).where(*conds).group_by(Lead.stage)
+    )
+    for stage, cnt in stage_counts.all():
+        if stage in funnel:
+            funnel[stage] = cnt
 
-    total = len(leads)
     won = funnel.get("won", 0)
     lost = funnel.get("lost", 0)
     decided = won + lost
     conversion = round(won / decided * 100, 1) if decided else 0.0
 
-    won_leads = [l for l in leads if l.stage == "won" and l.stage_changed_at and l.created_at]
+    won_dates = await session.execute(
+        select(Lead.created_at, Lead.stage_changed_at).where(*conds, Lead.stage == "won")
+    )
     durations = []
-    for l in won_leads:
-        created = l.created_at
-        changed = l.stage_changed_at
+    for created, changed in won_dates.all():
+        if created is None or changed is None:
+            continue
         if created.tzinfo is None:
             created = created.replace(tzinfo=timezone.utc)
         if changed.tzinfo is None:
@@ -93,24 +104,30 @@ async def crm_stats(
 
     by_manager: dict[str, dict] = {}
     if role != "manager":
-        for l in leads:
-            key = l.assigned_to or "—"
-            m = by_manager.setdefault(key, {"total": 0, "won": 0, "lost": 0})
-            m["total"] += 1
-            if l.stage == "won":
-                m["won"] += 1
-            elif l.stage == "lost":
-                m["lost"] += 1
+        manager_counts = await session.execute(
+            select(Lead.assigned_to, Lead.stage, func.count())
+            .where(*conds).group_by(Lead.assigned_to, Lead.stage)
+        )
+        for assigned_to, stage, cnt in manager_counts.all():
+            m = by_manager.setdefault(assigned_to or "—", {"total": 0, "won": 0, "lost": 0})
+            m["total"] += cnt
+            if stage == "won":
+                m["won"] += cnt
+            elif stage == "lost":
+                m["lost"] += cnt
         for m in by_manager.values():
             decided_m = m["won"] + m["lost"]
             m["conversion"] = round(m["won"] / decided_m * 100, 1) if decided_m else 0.0
 
     by_source: dict[str, int] = {}
-    for l in leads:
-        by_source[l.source or "—"] = by_source.get(l.source or "—", 0) + 1
+    source_counts = await session.execute(
+        select(Lead.source, func.count()).where(*conds).group_by(Lead.source)
+    )
+    for source, cnt in source_counts.all():
+        by_source[source or "—"] = cnt
 
     return {
-        "total": total,
+        "total": total or 0,
         "funnel": funnel,
         "conversion_pct": conversion,
         "avg_deal_days": avg_deal_days,

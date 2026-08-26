@@ -100,16 +100,26 @@ Telegram xabarnomalar navbatda yuboriladi. Server tomonda esa:
 DATABASE_URL=postgresql+asyncpg://user:parol@localhost:5432/promtchi
 
 # 2) CPU yadrolari soniga mos workerlar (Linux'da uvloop avtomatik yoqiladi)
+#    .env'da WORKERS=4 ham qo'ying (--workers bilan bir xil son) — rate-limit
+#    shu songa qarab avtomatik moslashadi (pastdagi eslatmaga qarang)
 uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 4 --backlog 4096
 
 # 3) Nginx oldida: gzip'ni o'chirish shart emas (backend o'zi beradi),
 #    /static/ ni to'g'ridan-to'g'ri nginx'dan berish yanada tezlashtiradi
 ```
 
-Eslatma: rate-limit xotirada, har worker o'z hisobini yuritadi — limitlar
-worker soniga ko'paytiriladi deb hisoblang (yoki qat'iy global limit kerak
-bo'lsa Redis backend qo'shiladi). `DB_POOL_SIZE`/`DB_MAX_OVERFLOW` ham har
-worker uchun alohida — Postgres `max_connections` ni shunga moslang.
+Eslatma: rate-limit xotirada, har worker o'z hisobini yuritadi — `.env`dagi
+`WORKERS` shu songa moslansa (`--workers`ga teng), limitlar shu worker soniga
+BO'LIB olinadi, shunda workerlar bo'ylab YIG'INDI chegara sozlangan qiymatga
+yaqin qoladi (qat'iy emas, taxminiy; qat'iy global limit kerak bo'lsa Redis
+backend qo'shiladi). `DB_POOL_SIZE`/`DB_MAX_OVERFLOW` ham har worker uchun
+alohida — Postgres `max_connections` ni shunga moslang.
+
+Telegram bot holati (token/chat/adminlar/obunachilar) ham har worker'da alohida
+xotirada saqlanadi; boshqa worker orqali (masalan admin paneldan) o'zgargan
+sozlama har bir workerga `TELEGRAM_SETTINGS_REFRESH_SECONDS` (default 20s)
+oralig'ida avtomatik yetib boradi — darhol emas, lekin qayta ishga tushirish
+shart emas.
 
 ## Tezkor test (curl)
 

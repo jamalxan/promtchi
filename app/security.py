@@ -100,17 +100,33 @@ class BodyLimitMiddleware:
         await self.app(scope, receive, send)
 
 
+# Har bir TokenBucket xotirada — HAR WORKER o'z hisobini alohida yuritadi
+# (config.py'dagi WORKERS izohiga qarang). `--workers N` bilan ishga
+# tushirilganda haqiqiy (workerlar bo'ylab yig'ilgan) limit N ga ko'payib
+# ketmasligi uchun sig'imni shu yerda N ga bo'lib olamiz — bir mijozning
+# so'rovlari qaysi workerga tushishi oldindan noma'lum bo'lgani uchun bu
+# QAT'IY emas, faqat TAXMINIY muvozanatlash (qat'iy global limit uchun
+# Redis backend kerak).
+def _per_worker(n: int) -> int:
+    return max(1, n // max(1, settings.WORKERS))
+
+
 # Limiterlar modul darajasida — login endpoint'i ham ularga murojaat qiladi
 api_limiter = TokenBucket(
-    settings.API_RATE_LIMIT, settings.API_RATE_WINDOW_SECONDS, settings.RATE_LIMIT_MAX_KEYS
+    _per_worker(settings.API_RATE_LIMIT), settings.API_RATE_WINDOW_SECONDS, settings.RATE_LIMIT_MAX_KEYS
 )
 lead_limiter = TokenBucket(
-    settings.LEAD_RATE_LIMIT, settings.LEAD_RATE_WINDOW_SECONDS, settings.RATE_LIMIT_MAX_KEYS
+    _per_worker(settings.LEAD_RATE_LIMIT), settings.LEAD_RATE_WINDOW_SECONDS, settings.RATE_LIMIT_MAX_KEYS
 )
+# MinInterval workerlar bo'ylab BO'LINMAYDI — u sig'im emas, "ikki so'rov
+# orasidagi minimal vaqt" degan mantiq, worker soniga bo'lish ma'nosiz
+# (aks holda min interval N marta qisqarib ketardi). Bir xil mijoz turli
+# workerlarga tushib bu tekshiruvni chetlab o'tishi mumkinligi — README'da
+# ko'rsatilgan tanilgan cheklov, faqat Redis bilan to'liq bartaraf etiladi.
 lead_gap = MinInterval(settings.LEAD_MIN_INTERVAL_SECONDS, settings.RATE_LIMIT_MAX_KEYS)
 
 
-review_limiter = TokenBucket(5, 3600, settings.RATE_LIMIT_MAX_KEYS)
+review_limiter = TokenBucket(_per_worker(5), 3600, settings.RATE_LIMIT_MAX_KEYS)
 
 
 def check_review_limits(ip: str) -> tuple[bool, int, str]:
@@ -136,12 +152,12 @@ def check_lead_limits(ip: str) -> tuple[bool, int, str]:
     return True, 0, ""
 # Login: token faqat NOTO'G'RI parolda yeyiladi (main.py), middleware faqat tekshiradi
 login_limiter = TokenBucket(
-    settings.LOGIN_MAX_ATTEMPTS, settings.LOGIN_LOCKOUT_SECONDS, settings.RATE_LIMIT_MAX_KEYS
+    _per_worker(settings.LOGIN_MAX_ATTEMPTS), settings.LOGIN_LOCKOUT_SECONDS, settings.RATE_LIMIT_MAX_KEYS
 )
 
 # Parol tiklash / email tasdiqlash — haqiqiy email yuborishni ishga tushiradi,
 # shuning uchun qattiqroq: soatiga 3 ta urinish (IP bo'yicha).
-pwreset_limiter = TokenBucket(3, 3600, settings.RATE_LIMIT_MAX_KEYS)
+pwreset_limiter = TokenBucket(_per_worker(3), 3600, settings.RATE_LIMIT_MAX_KEYS)
 
 
 def check_pwreset_limit(ip: str) -> tuple[bool, int]:
