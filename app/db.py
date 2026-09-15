@@ -342,6 +342,112 @@ class ReviewCode(Base):
         }
 
 
+class Service(Base):
+    """Xizmat sahifasi (/{lang}/xizmatlar/{slug}/) — admin-tahrirlanadigan (TZ 19-bo'lim).
+
+    `key` — barcha tillarda bir xil, hreflang/related-link va seed bilan
+    solishtirish uchun barqaror ichki identifikator (URL'da ishlatilmaydi).
+    `data_{lang}` — nav/h1/title/meta/value/for_whom/problem/solution/
+    includes/features/tech/price_note/faq maydonlarini saqlaydigan JSON
+    hujjat (app/content/services.py'dagi eski Python dict bilan bir xil
+    shakl — templates/service_detail.html shu maydonlarga tayanadi).
+    """
+
+    __tablename__ = "services"
+    __table_args__ = (Index("ix_services_order", "order"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    key: Mapped[str] = mapped_column(String(60), unique=True, nullable=False)
+    order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    published: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    slug_uz: Mapped[str] = mapped_column(String(140), nullable=False)
+    slug_ru: Mapped[str] = mapped_column(String(140), nullable=False)
+    slug_en: Mapped[str] = mapped_column(String(140), nullable=False)
+    data_uz: Mapped[dict] = mapped_column(JSON, nullable=False)
+    data_ru: Mapped[dict] = mapped_column(JSON, nullable=False)
+    data_en: Mapped[dict] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    def as_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "key": self.key,
+            "order": self.order,
+            "published": bool(self.published),
+            "slugs": {"uz": self.slug_uz, "ru": self.slug_ru, "en": self.slug_en},
+            "uz": self.data_uz,
+            "ru": self.data_ru,
+            "en": self.data_en,
+        }
+
+
+class PortfolioCase(Base):
+    """Portfolio case (/{lang}/portfolio/{slug}/) — admin-tahrirlanadigan (TZ 19-bo'lim).
+
+    `data_{lang}` shakli app/content/portfolio.py'dagi eski Python dict bilan
+    bir xil: title/cat/client/duration/short/problem/solution/result/tech/meta.
+    """
+
+    __tablename__ = "portfolio_cases"
+    __table_args__ = (Index("ix_portfolio_cases_order", "order"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    key: Mapped[str] = mapped_column(String(60), unique=True, nullable=False)
+    order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    published: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    slug_uz: Mapped[str] = mapped_column(String(140), nullable=False)
+    slug_ru: Mapped[str] = mapped_column(String(140), nullable=False)
+    slug_en: Mapped[str] = mapped_column(String(140), nullable=False)
+    data_uz: Mapped[dict] = mapped_column(JSON, nullable=False)
+    data_ru: Mapped[dict] = mapped_column(JSON, nullable=False)
+    data_en: Mapped[dict] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    def as_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "key": self.key,
+            "order": self.order,
+            "published": bool(self.published),
+            "slugs": {"uz": self.slug_uz, "ru": self.slug_ru, "en": self.slug_en},
+            "uz": self.data_uz,
+            "ru": self.data_ru,
+            "en": self.data_en,
+        }
+
+
+class SlugRedirect(Base):
+    """Xizmat/portfolio slug'i o'zgarganda avtomatik yaratiladigan 301 (TZ 27-bo'lim:
+    "Slugs o'zgarsa 301 redirect yaratiladi"). `old_path`/`new_path` — to'liq
+    ichki yo'l, masalan "/uz/xizmatlar/eski-slug/"."""
+
+    __tablename__ = "slug_redirects"
+    __table_args__ = (Index("ix_slug_redirects_old_path", "old_path", unique=True),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    old_path: Mapped[str] = mapped_column(String(300), nullable=False)
+    new_path: Mapped[str] = mapped_column(String(300), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+
 class Setting(Base):
     """Kalit-qiymat sozlamalar (masalan Telegram bot token/chat ID).
 

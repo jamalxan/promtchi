@@ -14,18 +14,17 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 
-from . import seo
+from . import seo, services_store
 from .config import settings
 from .content import LANGS
 from .content.about import ABOUT
 from .content.common import COMMON, FOOTER, LANG_NAMES, LANG_SHORT, NAV, ORG, PROJECT_TYPE_OPTIONS
 from .content.faq import FAQ
-from .content.portfolio import CASE_KEYS, CASES, SLUGS as CASE_SLUGS
-from .content.services import SERVICES, SERVICE_KEYS, SLUGS as SERVICE_SLUGS
+from .content.legal import LEGAL_LABEL, LEGAL_SLUGS, PRIVACY, TERMS, UPDATED_DATE, UPDATED_LABEL
 from .content.solutions import SLUGS as SOLUTION_SLUGS, SOLUTION_KEYS, SOLUTIONS
 from .db import Content, Post, SessionLocal
 
@@ -124,6 +123,11 @@ async def _base_ctx(request: Request, lang: str, path_by_lang: dict, title: str,
         "common": COMMON[lang],
         "page_title": title,
         "page_desc": desc,
+        "ga_id": settings.GA_MEASUREMENT_ID,
+        "legal": {
+            "privacy": f"/{lang}/{LEGAL_SLUGS['privacy'][lang]}/",
+            "terms": f"/{lang}/{LEGAL_SLUGS['terms'][lang]}/",
+        },
         "org_schema": seo.json_ld(seo.organization_schema(org)),
         "website_schema": seo.json_ld(seo.website_schema(lang)),
         "breadcrumb_schema": crumb_schema,
@@ -131,21 +135,22 @@ async def _base_ctx(request: Request, lang: str, path_by_lang: dict, title: str,
     }
 
 
-def _service_cards(lang: str) -> list:
-    return [{"slug": SERVICE_SLUGS[k][lang], "nav": SERVICES[k][lang]["nav"],
-             "value": SERVICES[k][lang]["value"]} for k in SERVICE_KEYS]
+def _service_cards(lang: str, services: list) -> list:
+    return [{"slug": s["slugs"][lang], "nav": s[lang]["nav"], "value": s[lang]["value"]} for s in services]
 
 
-def _case_cards(lang: str, exclude: str | None = None) -> list:
-    return [{"slug": CASE_SLUGS[k][lang], **CASES[k][lang]}
-            for k in CASE_KEYS if k != exclude]
+def _case_cards(lang: str, cases: list, exclude: str | None = None) -> list:
+    return [{"slug": c["slugs"][lang], **c[lang]} for c in cases if c["key"] != exclude]
 
 
 # ══════════ XIZMATLAR ══════════
+# Kontent app/db.py Service jadvalidan (admin-tahrirlanadigan, TZ 19-bo'lim) —
+# app/services_store.py orqali xotira keshi bilan o'qiladi.
 
 @router.get("/{lang}/xizmatlar/", response_class=HTMLResponse)
 async def services_index(request: Request, lang: str):
     _check_lang(lang)
+    services = await services_store.get_services()
     path_by_lang = {l: f"/{l}/xizmatlar/" for l in LANGS}
     intro = {
         "uz": "Web va mobil ilovadan tortib, AI va CRM/ERP tizimlarigacha — biznesingiz uchun kerakli barcha raqamli yechimlar.",
@@ -156,27 +161,33 @@ async def services_index(request: Request, lang: str):
     ctx = await _base_ctx(request, lang, path_by_lang,
                      title=f"{title} — promtchi®", desc=intro,
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"), (NAV[lang]["services"], None)])
-    ctx.update(services=_service_cards(lang), t_h1=NAV[lang]["services"], t_intro=intro)
+    ctx.update(services=_service_cards(lang, services), t_h1=NAV[lang]["services"], t_intro=intro)
     return templates.TemplateResponse(request, "services_index.html", ctx)
 
 
 @router.get("/{lang}/xizmatlar/{slug}/", response_class=HTMLResponse)
 async def service_detail(request: Request, lang: str, slug: str):
     _check_lang(lang)
-    key = _key_for_slug(SERVICE_SLUGS, slug, lang)
-    if key is None:
+    services = await services_store.get_services()
+    match = next((s for s in services if s["slugs"][lang] == slug), None)
+    if match is None:
+        new_path = await services_store.find_redirect(f"/{lang}/xizmatlar/{slug}/")
+        if new_path:
+            return RedirectResponse(new_path, status_code=301)
         raise HTTPException(404, "Xizmat topilmadi")
-    s = SERVICES[key][lang]
-    path_by_lang = {l: f"/{l}/xizmatlar/{SERVICE_SLUGS[key][l]}/" for l in LANGS}
+    s = match[lang]
+    slugs = match["slugs"]
+    path_by_lang = {l: f"/{l}/xizmatlar/{slugs[l]}/" for l in LANGS}
     ctx = await _base_ctx(request, lang, path_by_lang, title=s["title"], desc=s["meta"],
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"),
                                   (NAV[lang]["services"], f"/{lang}/xizmatlar/"),
                                   (s["nav"], None)])
+    cases = await services_store.get_cases()
     canonical_url = seo.abs_url(path_by_lang[lang])
     ctx.update(
         s={**s, "slug": slug},
-        all_services=_service_cards(lang),
-        related_cases=_case_cards(lang)[:2],
+        all_services=_service_cards(lang, services),
+        related_cases=_case_cards(lang, cases)[:2],
         service_schema=seo.json_ld(seo.service_schema(s["h1"], s["value"], canonical_url, lang)),
         faq_schema=seo.json_ld(seo.faq_schema(s["faq"])) if s.get("faq") else None,
     )
@@ -215,9 +226,12 @@ async def solution_detail(request: Request, lang: str, slug: str):
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"),
                                   (NAV[lang]["solutions"], f"/{lang}/yechimlar/"),
                                   (s["nav"], None)])
-    related_services = [{"slug": SERVICE_SLUGS[k][lang], "nav": SERVICES[k][lang]["nav"]}
-                         for k in s.get("services_ref", [])]
-    related_cases = [{"slug": CASE_SLUGS[k][lang], **CASES[k][lang]} for k in s.get("case_ref", [])]
+    services_by_key = {sv["key"]: sv for sv in await services_store.get_services()}
+    cases_by_key = {c["key"]: c for c in await services_store.get_cases()}
+    related_services = [{"slug": services_by_key[k]["slugs"][lang], "nav": services_by_key[k][lang]["nav"]}
+                         for k in s.get("services_ref", []) if k in services_by_key]
+    related_cases = [{"slug": cases_by_key[k]["slugs"][lang], **cases_by_key[k][lang]}
+                      for k in s.get("case_ref", []) if k in cases_by_key]
     ctx.update(
         s=s, related_services=related_services, related_cases=related_cases,
         faq_schema=seo.json_ld(seo.faq_schema(s["faq"])) if s.get("faq") else None,
@@ -230,6 +244,7 @@ async def solution_detail(request: Request, lang: str, slug: str):
 @router.get("/{lang}/portfolio/", response_class=HTMLResponse)
 async def portfolio_index(request: Request, lang: str):
     _check_lang(lang)
+    cases = await services_store.get_cases()
     path_by_lang = {l: f"/{l}/portfolio/" for l in LANGS}
     intro = {
         "uz": "Real loyihalarimiz — muammo, yechim va natija bilan. Har biri haqiqiy mijoz uchun (yoki o'z mahsulotimiz sifatida) ishlab chiqilgan.",
@@ -239,23 +254,28 @@ async def portfolio_index(request: Request, lang: str):
     title = {"uz": "Portfolio", "ru": "Портфолио", "en": "Portfolio"}[lang]
     ctx = await _base_ctx(request, lang, path_by_lang, title=f"{title} — promtchi®", desc=intro,
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"), (NAV[lang]["portfolio"], None)])
-    ctx.update(cases=_case_cards(lang), t_h1=NAV[lang]["portfolio"], t_intro=intro)
+    ctx.update(cases=_case_cards(lang, cases), t_h1=NAV[lang]["portfolio"], t_intro=intro)
     return templates.TemplateResponse(request, "portfolio_index.html", ctx)
 
 
 @router.get("/{lang}/portfolio/{slug}/", response_class=HTMLResponse)
 async def portfolio_detail(request: Request, lang: str, slug: str):
     _check_lang(lang)
-    key = _key_for_slug(CASE_SLUGS, slug, lang)
-    if key is None:
+    cases = await services_store.get_cases()
+    match = next((c for c in cases if c["slugs"][lang] == slug), None)
+    if match is None:
+        new_path = await services_store.find_redirect(f"/{lang}/portfolio/{slug}/")
+        if new_path:
+            return RedirectResponse(new_path, status_code=301)
         raise HTTPException(404, "Loyiha topilmadi")
-    c = CASES[key][lang]
-    path_by_lang = {l: f"/{l}/portfolio/{CASE_SLUGS[key][l]}/" for l in LANGS}
+    c = match[lang]
+    slugs = match["slugs"]
+    path_by_lang = {l: f"/{l}/portfolio/{slugs[l]}/" for l in LANGS}
     ctx = await _base_ctx(request, lang, path_by_lang, title=f"{c['title']} — promtchi®", desc=c["meta"],
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"),
                                   (NAV[lang]["portfolio"], f"/{lang}/portfolio/"),
                                   (c["title"], None)])
-    ctx.update(c={**c, "slug": slug}, other_cases=_case_cards(lang, exclude=key))
+    ctx.update(c={**c, "slug": slug}, other_cases=_case_cards(lang, cases, exclude=match["key"]))
     return templates.TemplateResponse(request, "portfolio_detail.html", ctx)
 
 
@@ -312,6 +332,36 @@ async def contact_page(request: Request, lang: str):
            "en": "Write down your idea — we'll get back to you within 24 hours."}[lang]
     ctx.update(t_h1=title, t_sub=sub, project_types=PROJECT_TYPE_OPTIONS[lang])
     return templates.TemplateResponse(request, "contact.html", ctx)
+
+
+# ══════════ MAXFIYLIK SIYOSATI / FOYDALANISH SHARTLARI ══════════
+
+async def _legal_page(request: Request, lang: str, doc_key: str, docs: dict):
+    doc = docs[lang]
+    path_by_lang = {l: f"/{l}/{LEGAL_SLUGS[doc_key][l]}/" for l in LANGS}
+    ctx = await _base_ctx(request, lang, path_by_lang, title=doc["title"], desc=doc["meta"],
+                     breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"), (doc["h1"], None)])
+    ctx.update(doc=doc, legal_label=LEGAL_LABEL[lang], updated_label=UPDATED_LABEL[lang], updated_date=UPDATED_DATE)
+    return templates.TemplateResponse(request, "legal.html", ctx)
+
+
+# Har til o'z slug'iga ega (TZ 3.3) — {lang} path param emas, aks holda
+# masalan /ru/maxfiylik-siyosati/ noto'g'ri (uz) tilda render bo'lardi.
+for _l in LANGS:
+    def _mk_privacy(lang=_l):
+        async def handler(request: Request):
+            return await _legal_page(request, lang, "privacy", PRIVACY)
+        return handler
+
+    def _mk_terms(lang=_l):
+        async def handler(request: Request):
+            return await _legal_page(request, lang, "terms", TERMS)
+        return handler
+
+    router.add_api_route(f"/{_l}/{LEGAL_SLUGS['privacy'][_l]}/", _mk_privacy(),
+                          methods=["GET"], response_class=HTMLResponse)
+    router.add_api_route(f"/{_l}/{LEGAL_SLUGS['terms'][_l]}/", _mk_terms(),
+                          methods=["GET"], response_class=HTMLResponse)
 
 
 # ══════════ /{lang}/ ni majburiy trailing-slash'siz variantlar uchun redirect ══════════
@@ -389,26 +439,30 @@ async def blog_detail(request: Request, lang: str, slug: str):
 
 # ══════════ SITEMAP / ROBOTS ══════════
 
-def _all_urls() -> list[tuple[dict, str]]:
+async def _all_urls() -> list[tuple[dict, str]]:
     """[(path_by_lang, lastmod_hint), ...] — har biri uchun hreflang alternate qatorlari chiqadi."""
+    services = await services_store.get_services()
+    cases = await services_store.get_cases()
     urls = []
     for l in LANGS:
         urls.append(({lang: f"/{lang}/" for lang in LANGS}, None))
-    for k in SERVICE_KEYS:
+    for sv in services:
         urls.append(({l: f"/{l}/xizmatlar/" for l in LANGS}, None))
-    for k in SERVICE_KEYS:
-        urls.append(({l: f"/{l}/xizmatlar/{SERVICE_SLUGS[k][l]}/" for l in LANGS}, None))
+    for sv in services:
+        urls.append(({l: f"/{l}/xizmatlar/{sv['slugs'][l]}/" for l in LANGS}, None))
     for k in SOLUTION_KEYS:
         urls.append(({l: f"/{l}/yechimlar/" for l in LANGS}, None))
     for k in SOLUTION_KEYS:
         urls.append(({l: f"/{l}/yechimlar/{SOLUTION_SLUGS[k][l]}/" for l in LANGS}, None))
     urls.append(({l: f"/{l}/portfolio/" for l in LANGS}, None))
-    for k in CASE_KEYS:
-        urls.append(({l: f"/{l}/portfolio/{CASE_SLUGS[k][l]}/" for l in LANGS}, None))
+    for c in cases:
+        urls.append(({l: f"/{l}/portfolio/{c['slugs'][l]}/" for l in LANGS}, None))
     urls.append(({l: f"/{l}/faq/" for l in LANGS}, None))
     urls.append(({l: f"/{l}/biz-haqimizda/" for l in LANGS}, None))
     urls.append(({l: f"/{l}/aloqa/" for l in LANGS}, None))
     urls.append(({l: f"/{l}/blog/" for l in LANGS}, None))
+    urls.append(({l: f"/{l}/{LEGAL_SLUGS['privacy'][l]}/" for l in LANGS}, None))
+    urls.append(({l: f"/{l}/{LEGAL_SLUGS['terms'][l]}/" for l in LANGS}, None))
     # duplikatlarni olib tashlaymiz (services_index N marta qo'shildi — soddalik uchun)
     seen = set()
     uniq = []
@@ -426,7 +480,7 @@ async def sitemap(request: Request):
     parts = ['<?xml version="1.0" encoding="UTF-8"?>',
              '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
              'xmlns:xhtml="http://www.w3.org/1999/xhtml">']
-    for path_by_lang, _hint in _all_urls():
+    for path_by_lang, _hint in await _all_urls():
         for lang in LANGS:
             loc = seo.abs_url(path_by_lang[lang])
             alt_tags = "".join(
@@ -473,4 +527,5 @@ async def lang_404(request: Request, lang: str, full_path: str):
     ctx = await _base_ctx(request, lang, path_by_lang,
                      title=f"{COMMON[lang]['not_found_title']} — promtchi®",
                      desc=COMMON[lang]["not_found_body"])
+    ctx.update(is_404=True)
     return templates.TemplateResponse(request, "404.html", ctx, status_code=404)

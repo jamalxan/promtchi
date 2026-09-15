@@ -1,5 +1,11 @@
 """Real case'lar — /api/content orqali tasdiqlangan (2026-09-15), professional
-tarjima qilingan. Fake mijoz yoki fake ko'rsatkich yo'q — faqat haqiqiy natijalar."""
+tarjima qilingan. Fake mijoz yoki fake ko'rsatkich yo'q — faqat haqiqiy natijalar.
+
+DIQQAT: bu fayl endi RUNTIME'da o'qilmaydi — faqat app/services_store.py'ning
+bir martalik seed_if_empty()'i uchun manba (`portfolio_cases` jadvali bo'sh
+bo'lsa shu yerdagi qiymatlar bilan to'ldiriladi). Saytdagi haqiqiy kontent va
+admin CRUD app/db.py PortfolioCase jadvalida (TZ 4/19-bo'lim) — shu faylni
+tahrirlash saytga TA'SIR QILMAYDI, admin panel orqali o'zgartiring."""
 
 CASE_KEYS = ["chindan-group", "notiq-ai", "tizimly"]
 

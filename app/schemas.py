@@ -79,6 +79,109 @@ class FaqItemIn(BaseModel):
     answer: str = Field(min_length=1, max_length=2000)
 
 
+_SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+_KEY_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+
+
+def _validate_slug(v: str) -> str:
+    v = (v or "").strip().lower()
+    if not _SLUG_RE.match(v):
+        raise ValueError("Slug faqat lotin harf/raqam va '-' belgisidan iborat bo'lishi kerak")
+    return v
+
+
+def _validate_key(v: str) -> str:
+    v = (v or "").strip().lower()
+    if not _KEY_RE.match(v):
+        raise ValueError("Key faqat lotin harf/raqam va '-' belgisidan iborat bo'lishi kerak")
+    return v
+
+
+def _validate_faq_pairs(items: list) -> list[list[str]]:
+    """FAQ — [[savol, javob], ...] juftliklar shaklida (app/content/faq.py,
+    seo.faq_schema() va templates/*.html'dagi `for q, a in faq` bilan bir xil
+    shakl — bu yerda {"q":..,"a":..} obyekt EMAS, aynan 2 elementli ro'yxat)."""
+    out = []
+    for item in items:
+        if not isinstance(item, (list, tuple)) or len(item) != 2:
+            raise ValueError("FAQ juftligi [savol, javob] shaklida bo'lishi kerak")
+        q, a = (str(item[0]).strip(), str(item[1]).strip())
+        if not q or not a:
+            raise ValueError("Savol va javob bo'sh bo'lmasligi kerak")
+        if len(q) > 200 or len(a) > 2000:
+            raise ValueError("Savol yoki javob juda uzun")
+        out.append([q, a])
+    return out
+
+
+class ServiceLangIn(BaseModel):
+    """Bitta xizmat sahifasining bitta tildagi to'liq kontenti
+    (templates/service_detail.html shu maydonlarga tayanadi)."""
+
+    slug: str = Field(min_length=1, max_length=140)
+    nav: str = Field(min_length=1, max_length=60)
+    h1: str = Field(min_length=1, max_length=140)
+    title: str = Field(min_length=1, max_length=200)
+    meta: str = Field(min_length=1, max_length=300)
+    value: str = Field(min_length=1, max_length=600)
+    for_whom: str = Field(default="", max_length=600)
+    problem: str = Field(default="", max_length=1200)
+    solution: str = Field(default="", max_length=1200)
+    includes: list[str] = Field(default_factory=list, max_length=20)
+    features: list[str] = Field(default_factory=list, max_length=20)
+    tech: list[str] = Field(default_factory=list, max_length=20)
+    price_note: str = Field(default="", max_length=500)
+    faq: list[list[str]] = Field(default_factory=list, max_length=10)
+
+    _v_slug = field_validator("slug")(_validate_slug)
+    _v_faq = field_validator("faq")(_validate_faq_pairs)
+
+
+class ServiceIn(BaseModel):
+    """PUT/POST /api/admin/services[/{id}] — bitta xizmat, 3 tilda."""
+
+    key: str = Field(min_length=1, max_length=60)
+    order: int = 0
+    published: bool = True
+    uz: ServiceLangIn
+    ru: ServiceLangIn
+    en: ServiceLangIn
+
+    _v_key = field_validator("key")(_validate_key)
+
+
+class CaseLangIn(BaseModel):
+    """Bitta portfolio case'ning bitta tildagi to'liq kontenti
+    (templates/portfolio_detail.html shu maydonlarga tayanadi)."""
+
+    slug: str = Field(min_length=1, max_length=140)
+    title: str = Field(min_length=1, max_length=140)
+    cat: str = Field(min_length=1, max_length=60)
+    client: str = Field(default="", max_length=140)
+    duration: str = Field(default="", max_length=60)
+    short: str = Field(default="", max_length=600)
+    problem: str = Field(default="", max_length=2000)
+    solution: str = Field(default="", max_length=2000)
+    result: str = Field(default="", max_length=2000)
+    tech: str = Field(default="", max_length=400)
+    meta: str = Field(default="", max_length=300)
+
+    _v_slug = field_validator("slug")(_validate_slug)
+
+
+class PortfolioCaseIn(BaseModel):
+    """PUT/POST /api/admin/portfolio[/{id}] — bitta case, 3 tilda."""
+
+    key: str = Field(min_length=1, max_length=60)
+    order: int = 0
+    published: bool = True
+    uz: CaseLangIn
+    ru: CaseLangIn
+    en: CaseLangIn
+
+    _v_key = field_validator("key")(_validate_key)
+
+
 class ContactIn(BaseModel):
     """Aloqa havolasi — "Bog'lanish" bo'limida chiqadi."""
 

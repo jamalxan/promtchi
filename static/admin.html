@@ -341,6 +341,15 @@ tr:hover td{background:rgba(217,255,63,.08)}
         <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Arizalar <span class="nav-badge" id="navNewLeads" style="display:none">0</span>
       </a>
+      <div class="nav-label">SEO sahifalar</div>
+      <a href="#" data-page="services">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/><line x1="9" y1="11" x2="15" y2="11"/></svg>
+        Xizmatlar
+      </a>
+      <a href="#" data-page="portfolio">
+        <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        Portfolio
+      </a>
       <div class="nav-label">Landing sahifa</div>
       <a href="#" data-page="cases">
         <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
@@ -443,6 +452,8 @@ let CRM_META = null;  // {stages, project_types, sources} — /api/admin/crm/met
 let CRM_ACCOUNTS = []; // mas'ul biriktirish dropdown'i uchun
 let CRM_TG = null;    // CRM Telegram sozlamalari holati
 let POSTS = [];
+let SERVICES = [];   // /{lang}/xizmatlar/{slug}/ SEO sahifalari — /api/admin/services
+let PORTFOLIO = [];  // /{lang}/portfolio/{slug}/ SEO sahifalari — /api/admin/portfolio
 let REVIEWS = [];
 let RCODES = [];
 let TG = null; // {has_token, bot_token_masked, chat_id, active, subscribers, ...}
@@ -669,7 +680,7 @@ async function showApp() {
   $('loginPage').style.display = 'none';
   $('appPage').style.display = '';
   await loadAccount(); // rol boshqa hammasidan oldin ma'lum bo'lishi kerak (navigatsiya shunga bog'liq)
-  const tasks = [loadContent(), loadCrmMeta(), loadLeads(), loadPosts(), loadTelegram(), loadReviews()];
+  const tasks = [loadContent(), loadCrmMeta(), loadLeads(), loadPosts(), loadServices(), loadPortfolio(), loadTelegram(), loadReviews()];
   if (canAssign()) tasks.push(loadCrmAccounts());
   await Promise.all(tasks);
   applyRoleVisibility();
@@ -683,7 +694,7 @@ async function showApp() {
    tekshiradi (bu yerdagi yashirish faqat UX, xavfsizlik chegarasi emas). */
 const MANAGER_HIDDEN_PAGES = new Set([
   'dashboard', 'cases', 'packages', 'team', 'contacts', 'socials', 'faq',
-  'posts', 'telegram', 'crmtelegram', 'stats',
+  'posts', 'services', 'portfolio', 'telegram', 'crmtelegram', 'stats',
 ]);
 function applyRoleVisibility() {
   document.querySelectorAll('.sidebar nav a').forEach(a => {
@@ -748,6 +759,20 @@ async function loadPosts() {
   } catch (e) { /* silent */ }
 }
 
+async function loadServices() {
+  try {
+    const r = await apiFetch('/api/admin/services');
+    if (r.ok) SERVICES = await r.json();
+  } catch (e) { /* silent */ }
+}
+
+async function loadPortfolio() {
+  try {
+    const r = await apiFetch('/api/admin/portfolio');
+    if (r.ok) PORTFOLIO = await r.json();
+  } catch (e) { /* silent */ }
+}
+
 async function loadTelegram() {
   try {
     const r = await apiFetch('/api/admin/telegram');
@@ -790,6 +815,8 @@ function navigate(page) {
     faq: () => renderContentPage('faq', 'FAQ'),
     reviews: renderReviews,
     posts: renderPosts,
+    services: renderServices,
+    portfolio: renderPortfolioAdmin,
     telegram: renderTelegram,
     crmtelegram: renderCrmTelegram,
     stats: renderStats,
@@ -1910,6 +1937,355 @@ async function deletePost(id) {
       renderPosts();
       toast("Post o'chirildi");
     }
+  } catch (e) { toast('Xatolik yuz berdi', 'error'); }
+}
+
+/* ═══ XIZMATLAR (/{lang}/xizmatlar/{slug}/ SEO sahifalari, TZ 4/19-bo'lim) ═══ */
+const _LANGS3 = ['uz', 'ru', 'en'];
+const _LANG3_LABEL = { uz: 'UZ', ru: 'RU', en: 'EN' };
+let openSvcId = null;
+const svcLangTab = {};
+const _svcTimers = {};
+
+function renderServices() {
+  const sorted = [...SERVICES].sort((a, b) => a.order - b.order);
+  $('mainContent').innerHTML = `
+    <div class="main-header">
+      <h2>Xizmatlar <span style="font-family:var(--mono);font-size:1rem;opacity:.4">(${SERVICES.length})</span></h2>
+      <div class="actions">
+        <button class="btn btn-acid btn-sm" onclick="addService()">+ Yangi xizmat</button>
+      </div>
+    </div>
+    <p style="font-size:.86rem;opacity:.6;margin:-1.2rem 0 1.3rem">
+      /{lang}/xizmatlar/{slug}/ sahifalari — har biri 3 tilda. O'zgartirishlar ~0.7s ichida avtomatik saqlanadi.
+      Slug'ni o'zgartirsangiz eski havola avtomatik yangisiga 301 bilan yo'naltiriladi.</p>
+    <div class="card-list" id="serviceCards">
+      ${sorted.length ? '' : '<div class="empty-state"><p>Hali xizmat yo\'q — birinchisini qo\'shing!</p></div>'}
+    </div>
+  `;
+  const box = $('serviceCards');
+  sorted.forEach(s => box.appendChild(buildServiceCard(s)));
+}
+
+function buildServiceCard(s) {
+  const card = document.createElement('div');
+  card.className = 'edit-card';
+  const isOpen = openSvcId === s.id;
+  card.innerHTML = `
+    <div class="card-hd" style="cursor:pointer">
+      <span class="num">#${s.order} · <b>${esc(s.uz.h1 || s.key)}</b> <span style="opacity:.5;font-weight:400">(${esc(s.key)})</span></span>
+      <div style="display:flex;gap:.7rem;align-items:center">
+        <span style="font-size:.72rem;opacity:.7">${s.published ? 'Saytda ✓' : 'Yashirin'}</span>
+        <button class="del-btn" data-del="1" title="O'chirish">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </div>
+    </div>
+    ${isOpen ? buildServiceForm(s) : ''}
+  `;
+  card.querySelector('.card-hd').onclick = (e) => {
+    if (e.target.closest('[data-del]')) return;
+    openSvcId = isOpen ? null : s.id;
+    renderServices();
+  };
+  card.querySelector('[data-del]').onclick = async (e) => {
+    e.stopPropagation();
+    const ok = await confirm("O'chirish", `"${s.uz.h1 || s.key}" xizmatini butunlay o'chirishni xohlaysizmi? Sahifa 404 bo'lib qoladi.`, "Ha, o'chirish");
+    if (!ok) return;
+    try {
+      const r = await apiFetch('/api/admin/services/' + s.id, { method: 'DELETE' });
+      if (r.ok) { SERVICES = SERVICES.filter(x => x.id !== s.id); renderServices(); toast("Xizmat o'chirildi"); }
+      else toast('Xatolik', 'error');
+    } catch (err) { toast('Xatolik', 'error'); }
+  };
+  if (isOpen) bindServiceForm(card, s);
+  return card;
+}
+
+function buildServiceForm(s) {
+  const lang = svcLangTab[s.id] || 'uz';
+  const d = s[lang];
+  const tabBtns = _LANGS3.map(l =>
+    `<button type="button" class="btn btn-sm ${l === lang ? 'btn-acid' : 'btn-outline'}" data-langtab="${l}">${_LANG3_LABEL[l]}</button>`
+  ).join('');
+  return `
+    <div style="border-top:1px solid var(--border,#e5e5e5);margin-top:.8rem;padding-top:.8rem">
+      <div class="field-row">
+        <div class="field"><label>Key (ichki identifikator, o'zgartirish tavsiya etilmaydi)</label>
+          <input data-skey="key" value="${esc(s.key)}" maxlength="60"></div>
+        <div class="field"><label>Tartib raqami</label>
+          <input data-skey="order" type="number" value="${s.order}"></div>
+      </div>
+      <div class="field-check">
+        <input type="checkbox" data-skey="published" ${s.published ? 'checked' : ''}>
+        <span>Saytda ko'rinsin (xizmatlar ro'yxati va sitemap'da)</span>
+      </div>
+      <div style="display:flex;gap:.4rem;margin:.9rem 0">${tabBtns}
+        <a href="/${lang}/xizmatlar/${esc(d.slug)}/" target="_blank" rel="noopener"
+           style="margin-left:auto;font-size:.8rem;opacity:.7;align-self:center">↗ Sahifani ko'rish</a>
+      </div>
+      <div class="field"><label>Slug (${lang})</label>
+        <input data-lkey="slug" value="${esc(d.slug)}" maxlength="140"></div>
+      <div class="field-row">
+        <div class="field"><label>Nav nomi (menyu/kartochka)</label><input data-lkey="nav" value="${esc(d.nav)}" maxlength="60"></div>
+        <div class="field"><label>H1</label><input data-lkey="h1" value="${esc(d.h1)}" maxlength="140"></div>
+      </div>
+      <div class="field"><label>SEO title</label><input data-lkey="title" value="${esc(d.title)}" maxlength="200"></div>
+      <div class="field"><label>Meta description</label><textarea data-lkey="meta" maxlength="300">${esc(d.meta)}</textarea></div>
+      <div class="field"><label>Qisqa taklif (hero ostida)</label><textarea data-lkey="value">${esc(d.value)}</textarea></div>
+      <div class="field"><label>Kimlar uchun</label><textarea data-lkey="for_whom">${esc(d.for_whom)}</textarea></div>
+      <div class="field-row">
+        <div class="field"><label>Muammo</label><textarea data-lkey="problem">${esc(d.problem)}</textarea></div>
+        <div class="field"><label>Yechim</label><textarea data-lkey="solution">${esc(d.solution)}</textarea></div>
+      </div>
+      <div class="field"><label>Nima kiradi (har qatorda 1 ta)</label>
+        <textarea data-lkey="includes" data-list="1">${esc((d.includes || []).join('\n'))}</textarea></div>
+      <div class="field"><label>Xususiyatlar (har qatorda 1 ta)</label>
+        <textarea data-lkey="features" data-list="1">${esc((d.features || []).join('\n'))}</textarea></div>
+      <div class="field"><label>Texnologiyalar (har qatorda 1 ta)</label>
+        <textarea data-lkey="tech" data-list="1">${esc((d.tech || []).join('\n'))}</textarea></div>
+      <div class="field"><label>Narx eslatmasi</label><textarea data-lkey="price_note">${esc(d.price_note)}</textarea></div>
+      <div class="field"><label>FAQ — har qatorda "Savol :: Javob" shaklida</label>
+        <textarea data-lkey="faq" data-faq="1" style="min-height:100px">${esc((d.faq || []).map(p => p[0] + ' :: ' + p[1]).join('\n'))}</textarea></div>
+    </div>
+  `;
+}
+
+function bindServiceForm(card, s) {
+  card.querySelectorAll('[data-langtab]').forEach(btn => {
+    btn.onclick = (e) => { e.stopPropagation(); svcLangTab[s.id] = btn.dataset.langtab; renderServices(); };
+  });
+  card.querySelectorAll('[data-skey]').forEach(el => {
+    el.onclick = (e) => e.stopPropagation();
+    const handler = () => {
+      const key = el.dataset.skey;
+      if (key === 'published') s.published = el.checked;
+      else if (key === 'order') s.order = parseInt(el.value, 10) || 0;
+      else s[key] = el.value;
+      saveServiceDebounced(s);
+    };
+    el.oninput = handler;
+    el.onchange = handler;
+  });
+  const lang = svcLangTab[s.id] || 'uz';
+  card.querySelectorAll('[data-lkey]').forEach(el => {
+    el.onclick = (e) => e.stopPropagation();
+    el.oninput = () => {
+      const key = el.dataset.lkey;
+      if (el.dataset.list) {
+        s[lang][key] = el.value.split('\n').map(x => x.trim()).filter(Boolean);
+      } else if (el.dataset.faq) {
+        s[lang][key] = el.value.split('\n').map(x => x.trim()).filter(Boolean).map(line => {
+          const idx = line.indexOf('::');
+          if (idx === -1) return null;
+          return [line.slice(0, idx).trim(), line.slice(idx + 2).trim()];
+        }).filter(pair => pair && pair[0] && pair[1]);
+      } else {
+        s[lang][key] = el.value;
+      }
+      saveServiceDebounced(s);
+    };
+  });
+}
+
+function saveServiceDebounced(s) {
+  clearTimeout(_svcTimers[s.id]);
+  _svcTimers[s.id] = setTimeout(() => saveService(s), 700);
+}
+
+async function saveService(s) {
+  try {
+    const r = await apiFetch('/api/admin/services/' + s.id, {
+      method: 'PUT',
+      body: JSON.stringify({ key: s.key, order: s.order, published: s.published, uz: s.uz, ru: s.ru, en: s.en }),
+    });
+    if (r.ok) toast('Saqlandi ✓');
+    else { const d = await r.json().catch(() => ({})); toast((d.detail && d.detail[0] && d.detail[0].msg) || d.detail || 'Saqlashda xatolik', 'error'); }
+  } catch (e) { toast('Saqlashda xatolik', 'error'); }
+}
+
+async function addService() {
+  const key = 'yangi-xizmat-' + Date.now();
+  const blank = () => ({
+    slug: key, nav: 'Yangi xizmat', h1: 'Yangi xizmat', title: 'Yangi xizmat | promtchi',
+    meta: 'Tavsifni yozing', value: 'Qisqa taklifni yozing', for_whom: '', problem: '', solution: '',
+    includes: [], features: [], tech: [], price_note: '', faq: [],
+  });
+  const payload = { key, order: SERVICES.length, published: false, uz: blank(), ru: blank(), en: blank() };
+  try {
+    const r = await apiFetch('/api/admin/services', { method: 'POST', body: JSON.stringify(payload) });
+    if (r.ok) {
+      const svc = await r.json();
+      SERVICES.push(svc);
+      openSvcId = svc.id;
+      svcLangTab[svc.id] = 'uz';
+      renderServices();
+      toast("Xizmat qo'shildi — endi to'ldiring");
+    } else { const d = await r.json().catch(() => ({})); toast(d.detail || 'Xatolik', 'error'); }
+  } catch (e) { toast('Xatolik yuz berdi', 'error'); }
+}
+
+/* ═══ PORTFOLIO (/{lang}/portfolio/{slug}/ SEO sahifalari, TZ 4/19-bo'lim) ═══ */
+let openCaseId = null;
+const caseLangTab = {};
+const _caseTimers = {};
+
+function renderPortfolioAdmin() {
+  const sorted = [...PORTFOLIO].sort((a, b) => a.order - b.order);
+  $('mainContent').innerHTML = `
+    <div class="main-header">
+      <h2>Portfolio <span style="font-family:var(--mono);font-size:1rem;opacity:.4">(${PORTFOLIO.length})</span></h2>
+      <div class="actions">
+        <button class="btn btn-acid btn-sm" onclick="addCase()">+ Yangi case</button>
+      </div>
+    </div>
+    <p style="font-size:.86rem;opacity:.6;margin:-1.2rem 0 1.3rem">
+      /{lang}/portfolio/{slug}/ case-study sahifalari — har biri 3 tilda. Faqat real loyihalar/natijalar
+      (TZ 13-bo'lim: uydirilgan raqam yoki mijoz yozilmasin). O'zgartirishlar ~0.7s ichida avtomatik saqlanadi.</p>
+    <div class="card-list" id="caseCards">
+      ${sorted.length ? '' : '<div class="empty-state"><p>Hali case yo\'q — birinchisini qo\'shing!</p></div>'}
+    </div>
+  `;
+  const box = $('caseCards');
+  sorted.forEach(c => box.appendChild(buildCaseCard(c)));
+}
+
+function buildCaseCard(c) {
+  const card = document.createElement('div');
+  card.className = 'edit-card';
+  const isOpen = openCaseId === c.id;
+  card.innerHTML = `
+    <div class="card-hd" style="cursor:pointer">
+      <span class="num">#${c.order} · <b>${esc(c.uz.title || c.key)}</b> <span style="opacity:.5;font-weight:400">(${esc(c.key)})</span></span>
+      <div style="display:flex;gap:.7rem;align-items:center">
+        <span style="font-size:.72rem;opacity:.7">${c.published ? 'Saytda ✓' : 'Yashirin'}</span>
+        <button class="del-btn" data-del="1" title="O'chirish">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </div>
+    </div>
+    ${isOpen ? buildCaseForm(c) : ''}
+  `;
+  card.querySelector('.card-hd').onclick = (e) => {
+    if (e.target.closest('[data-del]')) return;
+    openCaseId = isOpen ? null : c.id;
+    renderPortfolioAdmin();
+  };
+  card.querySelector('[data-del]').onclick = async (e) => {
+    e.stopPropagation();
+    const ok = await confirm("O'chirish", `"${c.uz.title || c.key}" case'ini butunlay o'chirishni xohlaysizmi? Sahifa 404 bo'lib qoladi.`, "Ha, o'chirish");
+    if (!ok) return;
+    try {
+      const r = await apiFetch('/api/admin/portfolio/' + c.id, { method: 'DELETE' });
+      if (r.ok) { PORTFOLIO = PORTFOLIO.filter(x => x.id !== c.id); renderPortfolioAdmin(); toast("Case o'chirildi"); }
+      else toast('Xatolik', 'error');
+    } catch (err) { toast('Xatolik', 'error'); }
+  };
+  if (isOpen) bindCaseForm(card, c);
+  return card;
+}
+
+function buildCaseForm(c) {
+  const lang = caseLangTab[c.id] || 'uz';
+  const d = c[lang];
+  const tabBtns = _LANGS3.map(l =>
+    `<button type="button" class="btn btn-sm ${l === lang ? 'btn-acid' : 'btn-outline'}" data-langtab="${l}">${_LANG3_LABEL[l]}</button>`
+  ).join('');
+  return `
+    <div style="border-top:1px solid var(--border,#e5e5e5);margin-top:.8rem;padding-top:.8rem">
+      <div class="field-row">
+        <div class="field"><label>Key (ichki identifikator, o'zgartirish tavsiya etilmaydi)</label>
+          <input data-ckey="key" value="${esc(c.key)}" maxlength="60"></div>
+        <div class="field"><label>Tartib raqami</label>
+          <input data-ckey="order" type="number" value="${c.order}"></div>
+      </div>
+      <div class="field-check">
+        <input type="checkbox" data-ckey="published" ${c.published ? 'checked' : ''}>
+        <span>Saytda ko'rinsin (portfolio ro'yxati va sitemap'da)</span>
+      </div>
+      <div style="display:flex;gap:.4rem;margin:.9rem 0">${tabBtns}
+        <a href="/${lang}/portfolio/${esc(d.slug)}/" target="_blank" rel="noopener"
+           style="margin-left:auto;font-size:.8rem;opacity:.7;align-self:center">↗ Sahifani ko'rish</a>
+      </div>
+      <div class="field"><label>Slug (${lang})</label>
+        <input data-clkey="slug" value="${esc(d.slug)}" maxlength="140"></div>
+      <div class="field-row">
+        <div class="field"><label>Sarlavha</label><input data-clkey="title" value="${esc(d.title)}" maxlength="140"></div>
+        <div class="field"><label>Kategoriya</label><input data-clkey="cat" value="${esc(d.cat)}" maxlength="60"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Mijoz (ruxsat bo'lsa)</label><input data-clkey="client" value="${esc(d.client)}" maxlength="140"></div>
+        <div class="field"><label>Muddat</label><input data-clkey="duration" value="${esc(d.duration)}" maxlength="60"></div>
+      </div>
+      <div class="field"><label>Meta description</label><textarea data-clkey="meta" maxlength="300">${esc(d.meta)}</textarea></div>
+      <div class="field"><label>Qisqa tavsif</label><textarea data-clkey="short">${esc(d.short)}</textarea></div>
+      <div class="field"><label>Muammo</label><textarea data-clkey="problem">${esc(d.problem)}</textarea></div>
+      <div class="field"><label>Yechim</label><textarea data-clkey="solution">${esc(d.solution)}</textarea></div>
+      <div class="field"><label>Natija (faqat tekshirilgan real raqam/natija)</label><textarea data-clkey="result">${esc(d.result)}</textarea></div>
+      <div class="field"><label>Texnologiyalar (vergul bilan)</label><input data-clkey="tech" value="${esc(d.tech)}" maxlength="400"></div>
+    </div>
+  `;
+}
+
+function bindCaseForm(card, c) {
+  card.querySelectorAll('[data-langtab]').forEach(btn => {
+    btn.onclick = (e) => { e.stopPropagation(); caseLangTab[c.id] = btn.dataset.langtab; renderPortfolioAdmin(); };
+  });
+  card.querySelectorAll('[data-ckey]').forEach(el => {
+    el.onclick = (e) => e.stopPropagation();
+    const handler = () => {
+      const key = el.dataset.ckey;
+      if (key === 'published') c.published = el.checked;
+      else if (key === 'order') c.order = parseInt(el.value, 10) || 0;
+      else c[key] = el.value;
+      saveCaseDebounced(c);
+    };
+    el.oninput = handler;
+    el.onchange = handler;
+  });
+  const lang = caseLangTab[c.id] || 'uz';
+  card.querySelectorAll('[data-clkey]').forEach(el => {
+    el.onclick = (e) => e.stopPropagation();
+    el.oninput = () => {
+      c[lang][el.dataset.clkey] = el.value;
+      saveCaseDebounced(c);
+    };
+  });
+}
+
+function saveCaseDebounced(c) {
+  clearTimeout(_caseTimers[c.id]);
+  _caseTimers[c.id] = setTimeout(() => saveCase(c), 700);
+}
+
+async function saveCase(c) {
+  try {
+    const r = await apiFetch('/api/admin/portfolio/' + c.id, {
+      method: 'PUT',
+      body: JSON.stringify({ key: c.key, order: c.order, published: c.published, uz: c.uz, ru: c.ru, en: c.en }),
+    });
+    if (r.ok) toast('Saqlandi ✓');
+    else { const d = await r.json().catch(() => ({})); toast((d.detail && d.detail[0] && d.detail[0].msg) || d.detail || 'Saqlashda xatolik', 'error'); }
+  } catch (e) { toast('Saqlashda xatolik', 'error'); }
+}
+
+async function addCase() {
+  const key = 'yangi-loyiha-' + Date.now();
+  const blank = () => ({
+    slug: key, title: 'Yangi loyiha', cat: 'Web & ilova', client: '', duration: '',
+    short: '', problem: '', solution: '', result: '', tech: '', meta: '',
+  });
+  const payload = { key, order: PORTFOLIO.length, published: false, uz: blank(), ru: blank(), en: blank() };
+  try {
+    const r = await apiFetch('/api/admin/portfolio', { method: 'POST', body: JSON.stringify(payload) });
+    if (r.ok) {
+      const c = await r.json();
+      PORTFOLIO.push(c);
+      openCaseId = c.id;
+      caseLangTab[c.id] = 'uz';
+      renderPortfolioAdmin();
+      toast("Case qo'shildi — endi to'ldiring");
+    } else { const d = await r.json().catch(() => ({})); toast(d.detail || 'Xatolik', 'error'); }
   } catch (e) { toast('Xatolik yuz berdi', 'error'); }
 }
 

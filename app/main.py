@@ -29,6 +29,8 @@ Endpointlar:
   PATCH /api/admin/leads/{id}   — ariza holati: new/replied (Bearer)
   DELETE /api/admin/leads/{id}  — arizani o'chirish (Bearer)
   GET/POST/PUT/DELETE /api/admin/posts[/{id}] — postlar CRUD (Bearer)
+  GET/POST/PUT/DELETE /api/admin/services[/{id}] — xizmat sahifalari CRUD, 3 til (Bearer)
+  GET/POST/PUT/DELETE /api/admin/portfolio[/{id}] — portfolio case CRUD, 3 til (Bearer)
   GET/PUT /api/admin/telegram   — bot holati/boshqaruvi — BUTUNLAY faqat super admin (Bearer)
   POST /api/admin/telegram/test — test xabar yuborish (faqat super admin)
   GET/POST/DELETE /api/admin/telegram/admins[/{chat_id}] — Telegram admin(lar) ro'yxati
@@ -70,8 +72,9 @@ from .auth import (
 )
 from .config import settings
 from .db import (
-    Base, Content, Lead, LeadNote, LeadStageHistory, Post, Review, ReviewCode,
-    SessionLocal, Setting, engine, get_session, run_data_fixups, run_migrations,
+    Base, Content, Lead, LeadNote, LeadStageHistory, PortfolioCase, Post,
+    Review, ReviewCode, Service, SessionLocal, Setting, SlugRedirect, engine,
+    get_session, run_data_fixups, run_migrations,
 )
 from .email import (
     account_ready_email, confirm_email_email, new_account_email,
@@ -79,11 +82,11 @@ from .email import (
 )
 from .schemas import (
     DEFAULT_CONTENT, AddEmailRequestIn, ConfirmTokenIn, ContentDoc,
-    ForgotPasswordIn, LeadIn, LeadStatusIn, LoginIn, PostIn,
-    RemoveEmailRequestIn, ResetPasswordIn, ReviewCodeIn, ReviewIn,
+    ForgotPasswordIn, LeadIn, LeadStatusIn, LoginIn, PortfolioCaseIn, PostIn,
+    RemoveEmailRequestIn, ResetPasswordIn, ReviewCodeIn, ReviewIn, ServiceIn,
     SetPrimaryRequestIn, TelegramAdminIn, TelegramSettingsIn,
 )
-from . import crm_api, crm_service, crypto, pages
+from . import crm_api, crm_service, crypto, pages, services_store
 from . import crm_constants as crm
 from .telegram import bot
 from .security import (
@@ -143,6 +146,27 @@ reviews_cache = _ContentCache()
 # uni domendan alohida sahifa deb indekslamasligi uchun <meta robots noindex>
 # qo'shilgan ikkinchi variant ham oldindan tayyorlab qo'yiladi (har so'rovda
 # HTML qayta ishlanmasin — faqat Host header bo'yicha tayyor bayt tanlanadi).
+def _inject_ga(data: bytes, ga_id: str) -> bytes:
+    """GA4 gtag loader'ni </head> oldiga, analytics.js'ni </body> oldiga qo'shadi.
+
+    Statik bosh sahifalar (index*.html) Jinja orqali render qilinmaydi (yuqoridagi
+    perf izohiga qarang) — shuning uchun bu splice faqat fayl mtime o'zgarganda
+    bir marta ishlaydi, har so'rovda emas (noindex splice'iga o'xshash usul).
+    """
+    head_snippet = (
+        f'<script async src="https://www.googletagmanager.com/gtag/js?id={ga_id}"></script>\n'
+        "<script>window.dataLayer=window.dataLayer||[];"
+        "function gtag(){dataLayer.push(arguments);}"
+        f"gtag('js',new Date());gtag('config','{ga_id}');</script>\n"
+    ).encode("utf-8")
+    body_snippet = b'<script src="/static/analytics.js" defer></script>\n'
+    if b"</head>" in data:
+        data = data.replace(b"</head>", head_snippet + b"</head>", 1)
+    if b"</body>" in data:
+        data = data.replace(b"</body>", body_snippet + b"</body>", 1)
+    return data
+
+
 class _PageCache:
     __slots__ = (
         "path", "mtime", "raw", "gz", "etag",
@@ -167,6 +191,8 @@ class _PageCache:
             return False
         if st.st_mtime_ns != self.mtime:
             data = self.path.read_bytes()
+            if settings.GA_MEASUREMENT_ID:
+                data = _inject_ga(data, settings.GA_MEASUREMENT_ID)
             self.raw = data
             self.gz = gzip.compress(data, compresslevel=8)
             self.etag = '"%s"' % hashlib.sha256(data).hexdigest()[:32]
@@ -209,6 +235,8 @@ async def lifespan(app: FastAPI):
         await seed_admin_account(s)
     async with SessionLocal() as s:
         await run_data_fixups(s)
+    async with SessionLocal() as s:
+        await services_store.seed_if_empty(s)
 
     async with engine.begin() as conn:
         res = await conn.execute(select(Content.data, Content.version).where(Content.id == 1))
@@ -866,6 +894,177 @@ async def delete_post(
     await session.execute(delete(Post).where(Post.id == post_id))
     await session.commit()
     posts_cache.clear()
+    return {"ok": True}
+
+
+# ══════════ XIZMATLAR / PORTFOLIO CRUD (TZ 4/19-bo'lim) ══════════
+# Ilgari app/content/services.py va portfolio.py'da qattiq yozilgan edi —
+# endi DB (app/db.py Service/PortfolioCase) yagona manba; public sahifalar
+# app/pages.py orqali services_store keshidan o'qiydi.
+
+async def _sync_slug_redirects(
+    session: AsyncSession, path_prefix: str, old_slugs: dict, new_slugs: dict
+) -> None:
+    """Slug o'zgargan har bir til uchun 301 redirect yozuvini yaratadi/yangilaydi
+    (TZ 27-bo'lim: "Slugs o'zgarsa 301 redirect yaratiladi")."""
+    for lang in ("uz", "ru", "en"):
+        old_slug, new_slug = old_slugs[lang], new_slugs[lang]
+        if old_slug == new_slug:
+            continue
+        old_path = f"/{lang}/{path_prefix}/{old_slug}/"
+        new_path = f"/{lang}/{path_prefix}/{new_slug}/"
+        existing = await session.scalar(select(SlugRedirect).where(SlugRedirect.old_path == old_path))
+        if existing is not None:
+            existing.new_path = new_path
+        else:
+            session.add(SlugRedirect(old_path=old_path, new_path=new_path))
+
+
+@app.get("/api/admin/services")
+async def list_services_admin(
+    _: str = Depends(require_admin), session: AsyncSession = Depends(get_session)
+):
+    res = await session.execute(select(Service).order_by(Service.order, Service.id))
+    return [s.as_dict() for s in res.scalars().all()]
+
+
+@app.post("/api/admin/services", status_code=201)
+async def create_service(
+    payload: ServiceIn,
+    _: str = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    if await session.scalar(select(Service).where(Service.key == payload.key)) is not None:
+        raise HTTPException(400, "Bu key allaqachon mavjud")
+    svc = Service(
+        key=payload.key, order=payload.order, published=payload.published,
+        slug_uz=payload.uz.slug, slug_ru=payload.ru.slug, slug_en=payload.en.slug,
+        data_uz=payload.uz.model_dump(exclude={"slug"}),
+        data_ru=payload.ru.model_dump(exclude={"slug"}),
+        data_en=payload.en.model_dump(exclude={"slug"}),
+    )
+    session.add(svc)
+    await session.commit()
+    services_store.invalidate()
+    return svc.as_dict()
+
+
+@app.put("/api/admin/services/{service_id}")
+async def update_service(
+    service_id: int,
+    payload: ServiceIn,
+    _: str = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    svc = await session.get(Service, service_id)
+    if svc is None:
+        raise HTTPException(404, "Xizmat topilmadi")
+    if payload.key != svc.key:
+        dup = await session.scalar(
+            select(Service).where(Service.key == payload.key, Service.id != service_id)
+        )
+        if dup is not None:
+            raise HTTPException(400, "Bu key allaqachon mavjud")
+    await _sync_slug_redirects(
+        session, "xizmatlar",
+        {"uz": svc.slug_uz, "ru": svc.slug_ru, "en": svc.slug_en},
+        {"uz": payload.uz.slug, "ru": payload.ru.slug, "en": payload.en.slug},
+    )
+    svc.key = payload.key
+    svc.order = payload.order
+    svc.published = payload.published
+    svc.slug_uz, svc.slug_ru, svc.slug_en = payload.uz.slug, payload.ru.slug, payload.en.slug
+    svc.data_uz = payload.uz.model_dump(exclude={"slug"})
+    svc.data_ru = payload.ru.model_dump(exclude={"slug"})
+    svc.data_en = payload.en.model_dump(exclude={"slug"})
+    await session.commit()
+    services_store.invalidate()
+    return svc.as_dict()
+
+
+@app.delete("/api/admin/services/{service_id}")
+async def delete_service(
+    service_id: int,
+    _: str = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    await session.execute(delete(Service).where(Service.id == service_id))
+    await session.commit()
+    services_store.invalidate()
+    return {"ok": True}
+
+
+@app.get("/api/admin/portfolio")
+async def list_portfolio_admin(
+    _: str = Depends(require_admin), session: AsyncSession = Depends(get_session)
+):
+    res = await session.execute(select(PortfolioCase).order_by(PortfolioCase.order, PortfolioCase.id))
+    return [c.as_dict() for c in res.scalars().all()]
+
+
+@app.post("/api/admin/portfolio", status_code=201)
+async def create_portfolio_case(
+    payload: PortfolioCaseIn,
+    _: str = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    if await session.scalar(select(PortfolioCase).where(PortfolioCase.key == payload.key)) is not None:
+        raise HTTPException(400, "Bu key allaqachon mavjud")
+    case = PortfolioCase(
+        key=payload.key, order=payload.order, published=payload.published,
+        slug_uz=payload.uz.slug, slug_ru=payload.ru.slug, slug_en=payload.en.slug,
+        data_uz=payload.uz.model_dump(exclude={"slug"}),
+        data_ru=payload.ru.model_dump(exclude={"slug"}),
+        data_en=payload.en.model_dump(exclude={"slug"}),
+    )
+    session.add(case)
+    await session.commit()
+    services_store.invalidate()
+    return case.as_dict()
+
+
+@app.put("/api/admin/portfolio/{case_id}")
+async def update_portfolio_case(
+    case_id: int,
+    payload: PortfolioCaseIn,
+    _: str = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    case = await session.get(PortfolioCase, case_id)
+    if case is None:
+        raise HTTPException(404, "Loyiha topilmadi")
+    if payload.key != case.key:
+        dup = await session.scalar(
+            select(PortfolioCase).where(PortfolioCase.key == payload.key, PortfolioCase.id != case_id)
+        )
+        if dup is not None:
+            raise HTTPException(400, "Bu key allaqachon mavjud")
+    await _sync_slug_redirects(
+        session, "portfolio",
+        {"uz": case.slug_uz, "ru": case.slug_ru, "en": case.slug_en},
+        {"uz": payload.uz.slug, "ru": payload.ru.slug, "en": payload.en.slug},
+    )
+    case.key = payload.key
+    case.order = payload.order
+    case.published = payload.published
+    case.slug_uz, case.slug_ru, case.slug_en = payload.uz.slug, payload.ru.slug, payload.en.slug
+    case.data_uz = payload.uz.model_dump(exclude={"slug"})
+    case.data_ru = payload.ru.model_dump(exclude={"slug"})
+    case.data_en = payload.en.model_dump(exclude={"slug"})
+    await session.commit()
+    services_store.invalidate()
+    return case.as_dict()
+
+
+@app.delete("/api/admin/portfolio/{case_id}")
+async def delete_portfolio_case(
+    case_id: int,
+    _: str = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    await session.execute(delete(PortfolioCase).where(PortfolioCase.id == case_id))
+    await session.commit()
+    services_store.invalidate()
     return {"ok": True}
 
 

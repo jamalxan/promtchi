@@ -1,5 +1,11 @@
 """7 ta xizmat sahifasi — uz/ru/en. Har biri /​{lang}/xizmatlar/{slug}/ da chiqadi.
 
+DIQQAT: bu fayl endi RUNTIME'da o'qilmaydi — faqat app/services_store.py'ning
+bir martalik seed_if_empty()'i uchun manba (`services` jadvali bo'sh bo'lsa
+shu yerdagi qiymatlar bilan to'ldiriladi). Saytdagi haqiqiy kontent va admin
+CRUD app/db.py Service jadvalida (TZ 4/19-bo'lim) — shu faylni tahrirlash
+saytga TA'SIR QILMAYDI, admin panel orqali o'zgartiring.
+
 `key` — barcha tillarda bir xil (hreflang alternate va ichki bog'lanish uchun);
 `slug` — har til uchun SEO-friendly URL bo'lagi (TZ 2-bo'lim).
 """
