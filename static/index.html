@@ -101,6 +101,12 @@ header{position:fixed;top:0;left:0;right:0;z-index:1000;padding:clamp(14px,2.4vw
 .brand b{font-family:var(--anton);font-size:1.3rem;letter-spacing:.03em;text-transform:uppercase}
 .brand sup{font-family:var(--mono);font-size:.6rem}
 .h-right{display:flex;align-items:center;gap:1.2rem}
+.lang-mini{display:flex;gap:.5rem;font-family:var(--mono);font-size:.68rem;letter-spacing:.08em}
+.lang-mini a{opacity:.5;text-decoration:none;color:#fff;transition:opacity .2s}
+.lang-mini a.on{opacity:1;color:var(--acid);font-weight:700}
+.lang-mini a:hover{opacity:1}
+@media(max-width:680px){.header-lang{display:none}}
+.menu-lang{gap:1rem;font-size:.9rem;margin-bottom:1.2rem}
 .clock{font-family:var(--mono);font-size:.72rem;letter-spacing:.16em;color:rgba(255,255,255,.7)}
 .menu-btn{display:flex;align-items:center;gap:.6rem;background:none;border:0;color:#fff;
   font-family:var(--mono);font-size:.74rem;letter-spacing:.2em;text-transform:uppercase}
@@ -677,6 +683,9 @@ body.menu-open,body.modal-open{overflow:hidden}
   <a class="brand" href="#top"><img src="/static/logo.png" alt="promtchi" width="34" height="34" decoding="async"><b>promtchi</b><sup>®</sup></a>
   <nav class="topnav" id="topNav" aria-label="Asosiy navigatsiya"></nav>
   <div class="h-right">
+    <nav class="lang-mini header-lang" aria-label="Til">
+      <a href="/uz/" class="on">UZ</a><a href="/ru/">RU</a><a href="/en/">EN</a>
+    </nav>
     <span class="clock" id="clock">TAS 00:00:00</span>
     <button class="menu-btn" id="menuBtn" aria-label="Menyu"><span>Menyu</span><span class="mi"><i></i><i></i></span></button>
   </div>
@@ -685,6 +694,9 @@ body.menu-open,body.modal-open{overflow:hidden}
 <!-- FULLSCREEN MENYU -->
 <div id="menu" aria-hidden="true">
   <div id="menuLinks"></div>
+  <nav class="lang-mini menu-lang" aria-label="Til">
+    <a href="/uz/" class="on">UZ</a><a href="/ru/">RU</a><a href="/en/">EN</a>
+  </nav>
   <div class="m-foot"><span>Telegram — @promtchiuz</span><span>hello@promtchi.uz</span><span>Toshkent, O'zbekiston</span></div>
 </div>
 
@@ -858,16 +870,6 @@ body.menu-open,body.modal-open{overflow:hidden}
   </div>
 </section>
 
-<!-- NARX -->
-<section class="price-sec pad" id="narx">
-  <div class="wrap">
-    <div class="tag-line rv">Narxlar — 05</div>
-    <h2 class="h-xl rv">Shaffof <em style="color:var(--acid)">narxlar</em></h2>
-    <p class="body-l rv" style="opacity:.8;margin-top:.6rem">Loyiha hajmiga qarab moslashuvchan paketlar. Yashirin to'lovlar yo'q.</p>
-    <div class="pgrid" id="packages"></div>
-  </div>
-</section>
-
 <!-- STATS -->
 <div class="stats pad" style="padding-top:clamp(48px,6vw,72px);padding-bottom:clamp(48px,6vw,72px)">
   <div class="wrap">
@@ -915,18 +917,6 @@ body.menu-open,body.modal-open{overflow:hidden}
   </form>
 </div></div>
 
-<!-- JAMOA -->
-<section class="team-sec pad" id="jamoa">
-  <div class="wrap">
-    <div class="tag-line rv" style="color:var(--coral)">Jamoa — 07</div>
-    <h2 class="h-xl rv">Kimlar <em style="color:var(--coral)">ishlaydi</em></h2>
-    <div class="tgrid-lead" id="teamLead"></div>
-    <div class="team-divider" id="teamDivider"></div>
-    <div class="tgrid" id="team"></div>
-    <div class="stackrow rv" id="stackList"></div>
-  </div>
-</section>
-
 <!-- POSTLAR (postlar bo'lsa ko'rinadi) -->
 <section class="posts-sec pad" id="postlar" hidden>
   <div class="wrap">
@@ -941,14 +931,7 @@ body.menu-open,body.modal-open{overflow:hidden}
   <div class="wrap">
     <div class="tag-line rv" style="color:var(--acid)">FAQ</div>
     <h2 class="h-xl rv">Savol — <em style="color:var(--acid)">javob</em></h2>
-    <div class="faq">
-      <div class="fitem rv"><button class="fq"><span>To'lov qanday amalga oshiriladi?</span><span class="fx"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></button>
-        <div class="fa"><p>Texnik topshiriqdan so'ng 3 kun ichida taklif tayyorlanadi. Tasdiqlangach, 30% oldindan, qolgan qismi loyiha yakunlanganda to'lanadi.</p></div></div>
-      <div class="fitem rv"><button class="fq"><span>Kodning huquqi kimga tegishli bo'ladi?</span><span class="fx"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></button>
-        <div class="fa"><p>Koddan foydalanish huquqi to'liq mijozga tegishli bo'ladi.</p></div></div>
-      <div class="fitem rv"><button class="fq"><span>Loyihadan keyin qo'llab-quvvatlash bormi?</span><span class="fx"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></button>
-        <div class="fa"><p>Ha — doimiy qo'llab-quvvatlash, jumladan 3 oy davomida bepul o'zgartirishlar va texnik yordam.</p></div></div>
-    </div>
+    <div class="faq" id="faqList"></div>
   </div>
 </section>
 
@@ -1054,6 +1037,11 @@ const DEFAULTS={
      solution:"Foydalanuvchi prompt va token kiritadi — tizim botni o'zi generatsiya qilib, serverga joylaydi.",
      result:"Bot yaratish soatlab emas — daqiqalarda. Texnik bilimsiz foydalanuvchilar ham mustaqil ishlaydi.",
      tech:"Django DRF, aiogram 3, Docker, PostgreSQL, Redis",image:""}
+  ],
+  faq:[
+    {question:"To'lov qanday amalga oshiriladi?",answer:"Texnik topshiriqdan so'ng 3 kun ichida taklif tayyorlanadi. Tasdiqlangach, 30% oldindan, qolgan qismi loyiha yakunlanganda to'lanadi."},
+    {question:"Kodning huquqi kimga tegishli bo'ladi?",answer:"Koddan foydalanish huquqi to'liq mijozga tegishli bo'ladi."},
+    {question:"Loyihadan keyin qo'llab-quvvatlash bormi?",answer:"Ha — doimiy qo'llab-quvvatlash, jumladan 3 oy davomida bepul o'zgartirishlar va texnik yordam."}
   ]
 };
 const STACK=["Python","FastAPI","Flutter","JavaScript","TypeScript","Go","C++"];
@@ -1066,8 +1054,6 @@ const NAV_SECTIONS=[
   {id:'muddat',label:'Muddat'},
   {id:'jarayon',label:'Jarayon'},
   {id:'case',label:'Loyihalar'},
-  {id:'narx',label:'Narxlar'},
-  {id:'jamoa',label:'Jamoa'},
   {id:'aloqa',label:'Aloqa'}
 ];
 const pad2=n=>String(n).padStart(2,'0');
@@ -1667,15 +1653,22 @@ function renderSocials(){
     `<a href="${esc(s.url)}" target="_blank" rel="noopener" aria-label="${esc(s.name)}" title="${esc(s.name)}">
       ${icon(s.icon)}<span>${esc(s.name)}</span></a>`).join('');
 }
-function renderAll(){renderFilters();renderCases();renderPackages();renderTeam();renderTestimonials();renderStack();renderContacts();renderSocials();}
+function renderFaq(){
+  const list=(DATA.faq&&DATA.faq.length)?DATA.faq:DEFAULTS.faq;
+  document.getElementById('faqList').innerHTML=list.map(f=>
+    `<div class="fitem in"><button class="fq"><span>${esc(f.question)}</span><span class="fx"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></button>
+      <div class="fa"><p>${esc(f.answer)}</p></div></div>`).join('');
+}
+function renderAll(){renderFilters();renderCases();renderTestimonials();renderContacts();renderSocials();renderFaq();}
 renderAll();
 
-/* ══════════ FAQ ══════════ */
-document.querySelectorAll('.fitem .fq').forEach(q=>q.addEventListener('click',()=>{
+/* ══════════ FAQ — delegatsiya, chunki savollar DATA orqali dinamik chiqadi ══════════ */
+document.getElementById('faqList').addEventListener('click',e=>{
+  const q=e.target.closest('.fq');if(!q)return;
   const item=q.closest('.fitem'),a=item.querySelector('.fa'),open=item.classList.contains('open');
   document.querySelectorAll('.fitem.open').forEach(i=>{i.classList.remove('open');i.querySelector('.fa').style.maxHeight=null;});
   if(!open){item.classList.add('open');a.style.maxHeight=a.scrollHeight+'px';}
-}));
+});
 
 /* ══════════ FORMA ══════════ */
 document.getElementById('contactForm').addEventListener('submit',async e=>{

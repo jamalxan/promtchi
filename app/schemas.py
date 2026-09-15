@@ -72,6 +72,13 @@ class CaseIn(BaseModel):
     _v_image = field_validator("image")(_validate_media_url)
 
 
+class FaqItemIn(BaseModel):
+    """Bosh sahifadagi "Savol-javob" bo'limi — admin panel orqali boshqariladi."""
+
+    question: str = Field(min_length=1, max_length=200)
+    answer: str = Field(min_length=1, max_length=2000)
+
+
 class ContactIn(BaseModel):
     """Aloqa havolasi — "Bog'lanish" bo'limida chiqadi."""
 
@@ -102,6 +109,7 @@ class ContentDoc(BaseModel):
     cases: list[CaseIn] = Field(max_length=100)
     contacts: list[ContactIn] = Field(default_factory=list, max_length=12)
     socials: list[SocialIn] = Field(default_factory=list, max_length=12)
+    faq: list[FaqItemIn] = Field(default_factory=list, max_length=30)
 
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -446,6 +454,20 @@ DEFAULT_CONTENT: dict = {
     "socials": [
         {"name": "Telegram", "url": "https://t.me/promtchi", "icon": "telegram"},
         {"name": "Instagram", "url": "https://instagram.com/promtchi", "icon": "instagram"},
+    ],
+    "faq": [
+        {
+            "question": "To'lov qanday amalga oshiriladi?",
+            "answer": "Texnik topshiriqdan so'ng 3 kun ichida taklif tayyorlanadi. Tasdiqlangach, 30% oldindan, qolgan qismi loyiha yakunlanganda to'lanadi.",
+        },
+        {
+            "question": "Kodning huquqi kimga tegishli bo'ladi?",
+            "answer": "Koddan foydalanish huquqi to'liq mijozga tegishli bo'ladi.",
+        },
+        {
+            "question": "Loyihadan keyin qo'llab-quvvatlash bormi?",
+            "answer": "Ha — doimiy qo'llab-quvvatlash, jumladan 3 oy davomida bepul o'zgartirishlar va texnik yordam.",
+        },
     ],
     "team": [
         {"name": "G'iyosiddin Tursunxo'jayev", "role": "Founder", "photo": "", "role_type": "founder"},

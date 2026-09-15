@@ -362,6 +362,10 @@ tr:hover td{background:rgba(217,255,63,.08)}
         <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.6" x2="15.4" y2="6.4"/><line x1="8.6" y1="13.4" x2="15.4" y2="17.6"/></svg>
         Ijtimoiy tarmoqlar
       </a>
+      <a href="#" data-page="faq">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 1 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12" y2="17"/></svg>
+        FAQ
+      </a>
       <a href="#" data-page="reviews">
         <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         Fikrlar <span class="nav-badge" id="navNewRev" style="display:none">0</span>
@@ -678,7 +682,7 @@ async function showApp() {
 /* Rolga qarab yon menyuni cheklash — server ham har bir endpointda mustaqil
    tekshiradi (bu yerdagi yashirish faqat UX, xavfsizlik chegarasi emas). */
 const MANAGER_HIDDEN_PAGES = new Set([
-  'dashboard', 'cases', 'packages', 'team', 'contacts', 'socials',
+  'dashboard', 'cases', 'packages', 'team', 'contacts', 'socials', 'faq',
   'posts', 'telegram', 'crmtelegram', 'stats',
 ]);
 function applyRoleVisibility() {
@@ -783,6 +787,7 @@ function navigate(page) {
     team: () => renderContentPage('team', 'Jamoa'),
     contacts: () => renderContentPage('contacts', 'Aloqa havolalari'),
     socials: () => renderContentPage('socials', 'Ijtimoiy tarmoqlar'),
+    faq: () => renderContentPage('faq', 'FAQ'),
     reviews: renderReviews,
     posts: renderPosts,
     telegram: renderTelegram,
@@ -1343,7 +1348,7 @@ function saveContent() {
 
 const SECTION_TITLES = {
   cases: 'Loyihalar', packages: 'Paketlar', team: 'Jamoa',
-  contacts: 'Aloqa havolalari', socials: 'Ijtimoiy tarmoqlar'
+  contacts: 'Aloqa havolalari', socials: 'Ijtimoiy tarmoqlar', faq: 'FAQ'
 };
 function rerenderSection() { renderContentPage(contentTab, SECTION_TITLES[contentTab] || 'Kontent'); }
 
@@ -1353,7 +1358,8 @@ const SECTION_HINTS = {
   team: "Landing'dagi \"Jamoa\" bo'limi. Avtomatik saqlanadi.",
   testimonials: "Landing'dagi \"Mijozlar fikri\" bo'limi. Avtomatik saqlanadi.",
   contacts: "Landing'dagi \"Aloqa\" bo'limidagi havolalar (Telegram, Email, Telefon...). Bo'sh havola ko'rsatilmaydi.",
-  socials: "Footer pastidagi ijtimoiy tarmoq ikonkalari. Bo'sh yoki o'chirilgan havola ko'rsatilmaydi."
+  socials: "Footer pastidagi ijtimoiy tarmoq ikonkalari. Bo'sh yoki o'chirilgan havola ko'rsatilmaydi.",
+  faq: "Bosh sahifadagi \"Savol-javob\" bo'limi (o'zbekcha). Avtomatik saqlanadi va saytda darhol ko'rinadi."
 };
 
 function renderContentPage(tab, title) {
@@ -1448,6 +1454,10 @@ function renderContentCards() {
           ${makeField('Havola (url)', 'url', i, item.url)}
         </div>
         ${makeIconField(i, item.icon)}`;
+    } else if (contentTab === 'faq') {
+      fields = `
+        ${makeField('Savol', 'question', i, item.question)}
+        ${makeField('Javob', 'answer', i, item.answer, true)}`;
     }
 
     card.innerHTML = `
@@ -1608,7 +1618,8 @@ function addItem() {
     team: { name: "Yangi a'zo", role: 'Rol', photo: '', role_type: 'member' },
     testimonials: { text: 'Fikr matni', name: 'Ism', role: 'Rol', photo: '' },
     contacts: { label: 'Telegram', value: '', url: '', icon: 'telegram' },
-    socials: { name: 'Telegram', url: '', icon: 'telegram' }
+    socials: { name: 'Telegram', url: '', icon: 'telegram' },
+    faq: { question: 'Yangi savol', answer: 'Javob matni' }
   };
   DATA[contentTab].push(JSON.parse(JSON.stringify(templates[contentTab])));
   saveContent();

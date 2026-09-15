@@ -101,6 +101,12 @@ header{position:fixed;top:0;left:0;right:0;z-index:1000;padding:clamp(14px,2.4vw
 .brand b{font-family:var(--anton);font-size:1.3rem;letter-spacing:.03em;text-transform:uppercase}
 .brand sup{font-family:var(--mono);font-size:.6rem}
 .h-right{display:flex;align-items:center;gap:1.2rem}
+.lang-mini{display:flex;gap:.5rem;font-family:var(--mono);font-size:.68rem;letter-spacing:.08em}
+.lang-mini a{opacity:.5;text-decoration:none;color:#fff;transition:opacity .2s}
+.lang-mini a.on{opacity:1;color:var(--acid);font-weight:700}
+.lang-mini a:hover{opacity:1}
+@media(max-width:680px){.header-lang{display:none}}
+.menu-lang{gap:1rem;font-size:.9rem;margin-bottom:1.2rem}
 .clock{font-family:var(--mono);font-size:.72rem;letter-spacing:.16em;color:rgba(255,255,255,.7)}
 .menu-btn{display:flex;align-items:center;gap:.6rem;background:none;border:0;color:#fff;
   font-family:var(--mono);font-size:.74rem;letter-spacing:.2em;text-transform:uppercase}
@@ -677,6 +683,9 @@ body.menu-open,body.modal-open{overflow:hidden}
   <a class="brand" href="#top"><img src="/static/logo.png" alt="promtchi" width="34" height="34" decoding="async"><b>promtchi</b><sup>®</sup></a>
   <nav class="topnav" id="topNav" aria-label="Основная навигация"></nav>
   <div class="h-right">
+    <nav class="lang-mini header-lang" aria-label="Язык">
+      <a href="/uz/">UZ</a><a href="/ru/" class="on">RU</a><a href="/en/">EN</a>
+    </nav>
     <span class="clock" id="clock">TAS 00:00:00</span>
     <button class="menu-btn" id="menuBtn" aria-label="Меню"><span>Меню</span><span class="mi"><i></i><i></i></span></button>
   </div>
@@ -685,6 +694,9 @@ body.menu-open,body.modal-open{overflow:hidden}
 <!-- FULLSCREEN MENYU -->
 <div id="menu" aria-hidden="true">
   <div id="menuLinks"></div>
+  <nav class="lang-mini menu-lang" aria-label="Язык">
+    <a href="/uz/">UZ</a><a href="/ru/" class="on">RU</a><a href="/en/">EN</a>
+  </nav>
   <div class="m-foot"><span>Telegram — @promtchiuz</span><span>hello@promtchi.uz</span><span>Ташкент, Узбекистан</span></div>
 </div>
 
@@ -858,16 +870,6 @@ body.menu-open,body.modal-open{overflow:hidden}
   </div>
 </section>
 
-<!-- NARX -->
-<section class="price-sec pad" id="narx">
-  <div class="wrap">
-    <div class="tag-line rv">Цены — 05</div>
-    <h2 class="h-xl rv">Прозрачные <em style="color:var(--acid)">цены</em></h2>
-    <p class="body-l rv" style="opacity:.8;margin-top:.6rem">Гибкие пакеты в зависимости от объёма проекта. Без скрытых платежей.</p>
-    <div class="pgrid" id="packages"></div>
-  </div>
-</section>
-
 <!-- STATS -->
 <div class="stats pad" style="padding-top:clamp(48px,6vw,72px);padding-bottom:clamp(48px,6vw,72px)">
   <div class="wrap">
@@ -914,18 +916,6 @@ body.menu-open,body.modal-open{overflow:hidden}
     <div class="ok-msg" id="rvMsg" role="status" style="margin-top:.8rem"></div>
   </form>
 </div></div>
-
-<!-- JAMOA -->
-<section class="team-sec pad" id="jamoa">
-  <div class="wrap">
-    <div class="tag-line rv" style="color:var(--coral)">Команда — 07</div>
-    <h2 class="h-xl rv">Кто <em style="color:var(--coral)">работает</em></h2>
-    <div class="tgrid-lead" id="teamLead"></div>
-    <div class="team-divider" id="teamDivider"></div>
-    <div class="tgrid" id="team"></div>
-    <div class="stackrow rv" id="stackList"></div>
-  </div>
-</section>
 
 <!-- POSTLAR (postlar bo'lsa ko'rinadi) -->
 <section class="posts-sec pad" id="postlar" hidden>
@@ -1066,8 +1056,6 @@ const NAV_SECTIONS=[
   {id:'muddat',label:'Сроки'},
   {id:'jarayon',label:'Процесс'},
   {id:'case',label:'Проекты'},
-  {id:'narx',label:'Цены'},
-  {id:'jamoa',label:'Команда'},
   {id:'aloqa',label:'Контакты'}
 ];
 const pad2=n=>String(n).padStart(2,'0');
@@ -1644,7 +1632,7 @@ function renderSocials(){
     `<a href="${esc(s.url)}" target="_blank" rel="noopener" aria-label="${esc(s.name)}" title="${esc(s.name)}">
       ${icon(s.icon)}<span>${esc(s.name)}</span></a>`).join('');
 }
-function renderAll(){renderFilters();renderCases();renderPackages();renderTeam();renderTestimonials();renderStack();renderContacts();renderSocials();}
+function renderAll(){renderFilters();renderCases();renderTestimonials();renderContacts();renderSocials();}
 renderAll();
 
 /* ══════════ FAQ ══════════ */

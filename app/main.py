@@ -219,7 +219,18 @@ async def lifespan(app: FastAPI):
             )
             content_cache.set(DEFAULT_CONTENT, 1)
         else:
-            content_cache.set(row[0], row[1])
+            data, version = row[0], row[1]
+            # Bir martalik ko'chirish: `faq` maydoni sxemaga keyinroq
+            # qo'shilgani uchun eski saqlangan hujjatlarda yo'q bo'lishi
+            # mumkin — admin panel va bosh sahifa DATA.faq'ga tayanadi.
+            if "faq" not in data:
+                data = {**data, "faq": DEFAULT_CONTENT["faq"]}
+                version += 1
+                await conn.execute(
+                    Content.__table__.update().where(Content.id == 1)
+                    .values(data=data, version=version)
+                )
+            content_cache.set(data, version)
 
     index_cache.load()  # birinchi so'rov gzip narxini to'lamasin
 
@@ -1274,6 +1285,17 @@ async def admin_page():
     if f.exists():
         return FileResponse(f, headers={"Cache-Control": "no-store"})
     raise HTTPException(404, "static/admin.html topilmadi")
+
+
+@app.get("/{lang}/admin", include_in_schema=False)
+async def admin_page_lang(lang: str):
+    """Admin panel til prefiksisiz — /uz/admin, /ru/admin, /en/admin ham
+    ishlashi uchun (admin panelning o'zi ko'p tilli emas, canonical /admin'ga
+    yo'naltiradi). pages.router'dagi /{lang}/{full_path:path} 404-fallback'dan
+    OLDIN ro'yxatga olinishi kerak — shu joyda turgani shu sababdan."""
+    if lang not in ("uz", "ru", "en"):
+        raise HTTPException(404, "Sahifa topilmadi")
+    return RedirectResponse(url="/admin", status_code=301)
 
 
 @app.get("/reset-password.html", include_in_schema=False)
