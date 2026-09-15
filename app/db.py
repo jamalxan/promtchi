@@ -242,16 +242,32 @@ class LeadNote(Base):
 
 
 class Post(Base):
-    """Blog/yangilik postlari — landing'da alohida bo'limda chiqadi."""
+    """Blog/yangilik postlari — landing'da alohida bo'limda va /{lang}/blog/{slug}/
+    SEO sahifasida chiqadi (TZ 6-bo'lim: to'liq admin maydonlari).
+
+    `lang` — har post BITTA tilga tegishli (tarjima qilingan "bir xil maqola"
+    emas, mustaqil yozilgan maqola); shu sabab /{lang}/blog/ faqat o'sha tilga
+    tegishli postlarni ko'rsatadi va hreflang alternate faqat o'ziga (+ x-default,
+    agar uz bo'lsa) beriladi — boshqa tilda "tarjimasi bor" deb yolg'on da'vo
+    qilinmaydi.
+    """
 
     __tablename__ = "posts"
-    __table_args__ = (Index("ix_posts_created_at", "created_at"),)
+    __table_args__ = (Index("ix_posts_created_at", "created_at"), Index("ix_posts_lang", "lang"))
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     body: Mapped[str] = mapped_column(Text, default="")
+    excerpt: Mapped[str] = mapped_column(Text, default="")
     image: Mapped[str] = mapped_column(String(1000), default="")
     video: Mapped[str] = mapped_column(String(1000), default="")
+    category: Mapped[str] = mapped_column(String(80), default="")
+    tags: Mapped[str] = mapped_column(String(300), default="")  # vergul bilan ajratilgan
+    author: Mapped[str] = mapped_column(String(120), default="")
+    lang: Mapped[str] = mapped_column(String(2), default="uz", nullable=False)
+    seo_title: Mapped[str] = mapped_column(String(200), default="")
+    seo_description: Mapped[str] = mapped_column(String(300), default="")
+    noindex: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     published: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -270,8 +286,16 @@ class Post(Base):
             "id": self.id,
             "title": self.title,
             "body": self.body,
+            "excerpt": self.excerpt,
             "image": self.image,
             "video": self.video,
+            "category": self.category,
+            "tags": self.tags,
+            "author": self.author,
+            "lang": self.lang or "uz",
+            "seo_title": self.seo_title,
+            "seo_description": self.seo_description,
+            "noindex": bool(self.noindex),
             "published": bool(self.published),
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
@@ -580,6 +604,15 @@ _MIGRATIONS = [
     "ALTER TABLE leads ADD COLUMN stage_changed_at DATETIME",
     # ── CRM rollar (AdminAccount) ────────────────────────────────────────────
     "ALTER TABLE admin_accounts ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'manager'",
+    # ── Blog/Yangiliklar SEO maydonlari (TZ 6-bo'lim) ────────────────────────
+    "ALTER TABLE posts ADD COLUMN excerpt TEXT DEFAULT ''",
+    "ALTER TABLE posts ADD COLUMN category VARCHAR(80) DEFAULT ''",
+    "ALTER TABLE posts ADD COLUMN tags VARCHAR(300) DEFAULT ''",
+    "ALTER TABLE posts ADD COLUMN author VARCHAR(120) DEFAULT ''",
+    "ALTER TABLE posts ADD COLUMN lang VARCHAR(2) NOT NULL DEFAULT 'uz'",
+    "ALTER TABLE posts ADD COLUMN seo_title VARCHAR(200) DEFAULT ''",
+    "ALTER TABLE posts ADD COLUMN seo_description VARCHAR(300) DEFAULT ''",
+    "ALTER TABLE posts ADD COLUMN noindex BOOLEAN NOT NULL DEFAULT 0",
 ]
 
 

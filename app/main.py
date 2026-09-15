@@ -374,7 +374,9 @@ async def list_posts_public(request: Request):
                 select(Post).where(Post.published == True)  # noqa: E712
                 .order_by(Post.created_at.desc(), Post.id.desc()).limit(50)
             )
-            posts_cache.set([p.as_dict() for p in res.scalars().all()], 0)
+            posts_cache.set(
+                [{**p.as_dict(), "slug": pages._slugify(p.title, p.id)} for p in res.scalars().all()], 0
+            )
 
     headers = {
         "ETag": posts_cache.etag,
@@ -843,7 +845,7 @@ async def list_posts_admin(
     res = await session.execute(
         select(Post).order_by(Post.created_at.desc(), Post.id.desc())
     )
-    return [p.as_dict() for p in res.scalars().all()]
+    return [{**p.as_dict(), "slug": pages._slugify(p.title, p.id)} for p in res.scalars().all()]
 
 
 @app.post("/api/admin/posts", status_code=201)
@@ -855,14 +857,22 @@ async def create_post(
     post = Post(
         title=payload.title.strip(),
         body=payload.body.strip(),
+        excerpt=payload.excerpt.strip(),
         image=payload.image.strip(),
         video=payload.video.strip(),
+        category=payload.category.strip(),
+        tags=payload.tags.strip(),
+        author=payload.author.strip(),
+        lang=payload.lang,
+        seo_title=payload.seo_title.strip(),
+        seo_description=payload.seo_description.strip(),
+        noindex=payload.noindex,
         published=payload.published,
     )
     session.add(post)
     await session.commit()
     posts_cache.clear()
-    return post.as_dict()
+    return {**post.as_dict(), "slug": pages._slugify(post.title, post.id)}
 
 
 @app.put("/api/admin/posts/{post_id}")
@@ -877,12 +887,20 @@ async def update_post(
         raise HTTPException(404, "Post topilmadi")
     post.title = payload.title.strip()
     post.body = payload.body.strip()
+    post.excerpt = payload.excerpt.strip()
     post.image = payload.image.strip()
     post.video = payload.video.strip()
+    post.category = payload.category.strip()
+    post.tags = payload.tags.strip()
+    post.author = payload.author.strip()
+    post.lang = payload.lang
+    post.seo_title = payload.seo_title.strip()
+    post.seo_description = payload.seo_description.strip()
+    post.noindex = payload.noindex
     post.published = payload.published
     await session.commit()
     posts_cache.clear()
-    return post.as_dict()
+    return {**post.as_dict(), "slug": pages._slugify(post.title, post.id)}
 
 
 @app.delete("/api/admin/posts/{post_id}")

@@ -336,12 +336,22 @@ class LeadStatusIn(BaseModel):
 
 
 class PostIn(BaseModel):
-    """Blog/yangilik posti. video — yuklangan fayl yoki YouTube havolasi."""
+    """Blog/yangilik posti (TZ 6-bo'lim). video — yuklangan fayl yoki YouTube havolasi.
+    `lang` — post qaysi tilga tegishli (tarjima emas, mustaqil maqola);
+    /{lang}/blog/ faqat o'sha tilga tegishli postlarni ko'rsatadi."""
 
     title: str = Field(min_length=1, max_length=200)
     body: str = Field(default="", max_length=20000)
+    excerpt: str = Field(default="", max_length=300)
     image: str = Field(default="", max_length=1000)
     video: str = Field(default="", max_length=1000)
+    category: str = Field(default="", max_length=80)
+    tags: str = Field(default="", max_length=300)
+    author: str = Field(default="", max_length=120)
+    lang: Literal["uz", "ru", "en"] = "uz"
+    seo_title: str = Field(default="", max_length=200)
+    seo_description: str = Field(default="", max_length=300)
+    noindex: bool = False
     published: bool = True
 
     _v_image = field_validator("image")(_validate_media_url)

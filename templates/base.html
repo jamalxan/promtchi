@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#0B0B0E">
 <title>{{ page_title }}</title>
 <meta name="description" content="{{ page_desc }}">
+{% if noindex %}<meta name="robots" content="noindex,nofollow">{% endif %}
 <meta property="og:type" content="{{ og_type|default('website') }}">
 <meta property="og:site_name" content="promtchi">
 <meta property="og:title" content="{{ page_title }}">

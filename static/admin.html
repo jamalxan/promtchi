@@ -1845,8 +1845,8 @@ function renderPosts() {
       </div>
     </div>
     <p style="font-size:.86rem;opacity:.6;margin:-1.2rem 0 1.3rem">
-      Postlar landing'dagi "Yangiliklar" bo'limida chiqadi. "Saytda ko'rinsin" o'chirilgan post faqat shu yerda saqlanadi.
-      O'zgartirishlar avtomatik saqlanadi.</p>
+      Postlar landing'dagi "Yangiliklar" bo'limida va /{til}/blog/{slug}/ SEO sahifasida chiqadi.
+      "Saytda ko'rinsin" o'chirilgan post faqat shu yerda saqlanadi. O'zgartirishlar avtomatik saqlanadi.</p>
     <div class="card-list" id="postCards">
       ${POSTS.length ? '' : '<div class="empty-state"><p>Hali postlar yo\'q — birinchisini qo\'shing!</p></div>'}
     </div>
@@ -1857,20 +1857,52 @@ function renderPosts() {
     card.className = 'edit-card';
     card.innerHTML = `
       <div class="card-hd">
-        <span class="num">#${p.id} · ${formatDate(p.created_at)}</span>
-        <button class="del-btn" onclick="deletePost(${p.id})" title="O'chirish">
-          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-        </button>
+        <span class="num">#${p.id} · ${formatDate(p.created_at)} · ${(p.lang || 'uz').toUpperCase()}</span>
+        <div style="display:flex;gap:.7rem;align-items:center">
+          <a href="/${p.lang || 'uz'}/blog/${p.slug || ''}/" target="_blank" rel="noopener"
+             style="font-size:.8rem;opacity:.7" title="Sahifani ko'rish">↗</a>
+          <button class="del-btn" onclick="deletePost(${p.id})" title="O'chirish">
+            <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </div>
       </div>
-      <div class="field"><label>Sarlavha</label>
-        <input data-pid="${p.id}" data-key="title" value="${esc(p.title)}" maxlength="200"></div>
-      <div class="field"><label>Rasm URL (ixtiyoriy)</label>
-        <input data-pid="${p.id}" data-key="image" value="${esc(p.image)}" maxlength="1000" placeholder="https://..."></div>
+      <div class="field-row">
+        <div class="field"><label>Sarlavha</label>
+          <input data-pid="${p.id}" data-key="title" value="${esc(p.title)}" maxlength="200"></div>
+        <div class="field"><label>Til</label>
+          <select data-pid="${p.id}" data-key="lang">
+            <option value="uz" ${(p.lang || 'uz') === 'uz' ? 'selected' : ''}>UZ</option>
+            <option value="ru" ${p.lang === 'ru' ? 'selected' : ''}>RU</option>
+            <option value="en" ${p.lang === 'en' ? 'selected' : ''}>EN</option>
+          </select></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Kategoriya</label>
+          <input data-pid="${p.id}" data-key="category" value="${esc(p.category || '')}" maxlength="80" placeholder="CRM, AI, ..."></div>
+        <div class="field"><label>Teglar (vergul bilan)</label>
+          <input data-pid="${p.id}" data-key="tags" value="${esc(p.tags || '')}" maxlength="300" placeholder="crm, avtomatlashtirish"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Muallif</label>
+          <input data-pid="${p.id}" data-key="author" value="${esc(p.author || '')}" maxlength="120"></div>
+        <div class="field"><label>Rasm URL (ixtiyoriy)</label>
+          <input data-pid="${p.id}" data-key="image" value="${esc(p.image)}" maxlength="1000" placeholder="https://..."></div>
+      </div>
+      <div class="field"><label>Qisqa tavsif (excerpt — bo'sh bo'lsa matndan avtomatik olinadi)</label>
+        <textarea data-pid="${p.id}" data-key="excerpt" maxlength="300">${esc(p.excerpt || '')}</textarea></div>
       <div class="field"><label>Matn</label>
         <textarea data-pid="${p.id}" data-key="body" style="min-height:110px">${esc(p.body)}</textarea></div>
+      <div class="field"><label>SEO title (bo'sh bo'lsa sarlavhadan avtomatik olinadi)</label>
+        <input data-pid="${p.id}" data-key="seo_title" value="${esc(p.seo_title || '')}" maxlength="200"></div>
+      <div class="field"><label>SEO description (bo'sh bo'lsa excerpt'dan avtomatik olinadi)</label>
+        <textarea data-pid="${p.id}" data-key="seo_description" maxlength="300">${esc(p.seo_description || '')}</textarea></div>
       <div class="field-check">
         <input type="checkbox" id="pub_${p.id}" ${p.published ? 'checked' : ''}>
         <span>Saytda ko'rinsin</span>
+      </div>
+      <div class="field-check">
+        <input type="checkbox" id="noindex_${p.id}" ${p.noindex ? 'checked' : ''}>
+        <span>Noindex (qidiruv tizimlariga ko'rsatilmasin)</span>
       </div>
     `;
     box.appendChild(card);
@@ -1884,11 +1916,27 @@ function renderPosts() {
       savePostDebounced(p);
     };
   });
+  box.querySelectorAll('select[data-pid]').forEach(el => {
+    el.onchange = () => {
+      const p = POSTS.find(x => x.id === +el.dataset.pid);
+      if (!p) return;
+      p[el.dataset.key] = el.value;
+      savePost(p);
+    };
+  });
   box.querySelectorAll('input[type=checkbox][id^="pub_"]').forEach(el => {
     el.onchange = () => {
       const p = POSTS.find(x => x.id === +el.id.split('_')[1]);
       if (!p) return;
       p.published = el.checked;
+      savePost(p);
+    };
+  });
+  box.querySelectorAll('input[type=checkbox][id^="noindex_"]').forEach(el => {
+    el.onchange = () => {
+      const p = POSTS.find(x => x.id === +el.id.split('_')[1]);
+      if (!p) return;
+      p.noindex = el.checked;
       savePost(p);
     };
   });
@@ -1904,10 +1952,18 @@ async function savePost(p) {
   try {
     const r = await apiFetch('/api/admin/posts/' + p.id, {
       method: 'PUT',
-      body: JSON.stringify({ title: p.title, body: p.body, image: p.image, published: p.published })
+      body: JSON.stringify({
+        title: p.title, body: p.body, excerpt: p.excerpt || '', image: p.image, video: p.video || '',
+        category: p.category || '', tags: p.tags || '', author: p.author || '', lang: p.lang || 'uz',
+        seo_title: p.seo_title || '', seo_description: p.seo_description || '',
+        noindex: !!p.noindex, published: p.published,
+      })
     });
-    if (r.ok) toast('Saqlandi ✓');
-    else toast('Saqlashda xatolik', 'error');
+    if (r.ok) {
+      const updated = await r.json();
+      Object.assign(p, updated);
+      toast('Saqlandi ✓');
+    } else toast('Saqlashda xatolik', 'error');
   } catch (e) { toast('Saqlashda xatolik', 'error'); }
 }
 
@@ -1915,7 +1971,7 @@ async function addPost() {
   try {
     const r = await apiFetch('/api/admin/posts', {
       method: 'POST',
-      body: JSON.stringify({ title: 'Yangi post', body: '', image: '', published: false })
+      body: JSON.stringify({ title: 'Yangi post', body: '', image: '', lang: 'uz', published: false })
     });
     if (r.ok) {
       POSTS.unshift(await r.json());

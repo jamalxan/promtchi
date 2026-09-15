@@ -616,10 +616,23 @@ PROMTCHI.UZ — SEO / GEO / Technical TZ v2.0
    - `static/admin.html`: yangi "Xizmatlar" va "Portfolio" bo'limlari — har biri (key/order/published + 3 til tab: uz/ru/en) to'liq forma bilan, avtomatik saqlash (~0.7s debounce), qo'shish/o'chirish.
    - Test qilindi: barcha 7×3 xizmat va 3×3 portfolio sahifasi, yechim sahifalari, admin CRUD (create/update/slug-redirect/delete) — httpx orqali to'liq smoke-test o'tkazildi, hammasi ishlayapti.
    - **Team** — alohida DB jadvali qo'shilmadi: `Content.data.team` orqali CRUD allaqachon mavjud edi (admin panelda tab bor), faqat real a'zolar tasdiqlanmagani uchun saytda yashirilgan (0d42c7b) — TZ 19-band shu qismda avvaldan bajarilgan hisoblanadi.
+6. **Yangiliklar (blog) tizimi SEO fieldlar bilan kuchaytirildi** (TZ 6-bo'lim). Tafsilotlar:
+   - `app/db.py` Post jadvaliga qo'shildi: `lang` (post BITTA tilga tegishli — tarjima emas, mustaqil maqola), `excerpt`, `category`, `tags`, `author`, `seo_title`, `seo_description`, `noindex`.
+   - `/{lang}/blog/` va `/{lang}/blog/{slug}/` endi faqat SHU tilga tegishli postlarni ko'rsatadi (ilgari barcha 3 til bir xil postlarni — hatto tarjima qilinmagan holda — ko'rsatardi, bu duplicate-content xavfi edi). Boshqa tilda "tarjimasi bor" deb yolg'on hreflang berilmaydi — til almashtirgich shunchaki o'sha tilning blog ro'yxatiga tushadi (`app/pages.py::_base_ctx` yangi `hreflang_paths` parametri).
+   - `noindex` post — `<meta name="robots" content="noindex,nofollow">` (`templates/base.html`) va sitemap'dan chiqarib tashlanadi.
+   - `templates/blog_detail.html`: bo'sh `<img alt="">` tuzatildi (endi sarlavha bilan), kategoriya/muallif/teglar ko'rsatiladi.
+   - Bosh sahifa (`static/index.html/.ru.html/.en.html`): "Yangiliklar" bo'limi endi (a) faqat o'z tiliga tegishli postlarni ko'rsatadi (ilgari RU/EN sahifalarida bu bo'lim butunlay o'chirilgan edi — "hozircha faqat o'zbekcha" izohi bilan), (b) JS modal o'rniga TO'G'RIDAN-TO'G'RI `/​{lang}/blog/{slug}/` sahifasiga link beradi (ilgari kontent faqat modalda ko'rinardi, indekslanadigan sahifaga hech qanday havola yo'q edi — crawlability muammosi), (c) "Barcha maqolalar →" tugmasi qo'shildi (TZ 4.7).
+   - `static/admin.html` Postlar formasiga yangi maydonlar: Til (select), Kategoriya, Teglar, Muallif, Qisqa tavsif, SEO title/description, Noindex checkbox, "↗ Sahifani ko'rish" havolasi.
+   - Test qilindi: uz/ru/en alohida postlar, lang bo'yicha filtrlash, boshqa til yo'lida 404, noindex meta, sitemap'dan chiqarilishi — hammasi httpx orqali tasdiqlandi.
+7. **Jamoa/About/Expertise bloki to'g'rilandi** (TZ 12/19-bo'lim). Tafsilotlar:
+   - `app/pages.py::about_page()`dagi ISHLATILMAYDIGAN (dead code) 4 ta real ism/rol massivi olib tashlandi — bu ma'lumot `templates/about.html`da hech qachon render qilinmagan edi, lekin kodda turgani chalg'ituvchi edi. Real ismlar hamon KO'RSATILMAYDI (roziligi hali tasdiqlanmagan, TZ 29).
+   - O'rniga TZ 12'ning aniq ko'rsatmasi bajarildi: "profillar tayyor bo'lmasa — 'Bizning ekspertiza' blokini ko'rsatish". `app/content/about.py`dagi `team_title`/`team_lead` (ilgari yozilgan, lekin shablonda ISHLATILMAGAN edi) endi `/biz-haqimizda/` sahifasida haqiqatan chiqadi; sarlavha "Jamoa"/"Команда"/"Team" dan "Bizning ekspertiza"/"Наша экспертиза"/"Our expertise" ga o'zgartirildi (ism yo'qligini aniq ko'rsatish uchun).
+   - `facts_title` ("Raqamlarda" va h.k., ilgari yozilgan-lekin-ishlatilmagan) ham endi "Raqamlar" bloki ustida chiqadi.
+   - Test qilindi: barcha 3 tilda sahifa 200, real ismlar (masalan "Tursunxo'jayev") HTML'da yo'qligi tasdiqlandi.
 
 **Navbatda (audit asosida, ustuvorlik tartibida):**
-3. Business sign-off: statistika (32/24/98%/3yr), portfolio natijalari, FAQ javoblari, "3 oy bepul support" shartlari, jamoa bio/foto/LinkedIn.
-5. OG image/rasm format (webp/lazy-loading) auditi — boshlangan (`templates/blog_detail.html`dagi `<img alt="">` bo'sh, `og:image` barcha sahifada bitta umumiy `org.logo`'ga ishora qiladi — sahifaga xos emas).
+3. Business sign-off: statistika (32/24/98%/3yr), portfolio natijalari, FAQ javoblari, "3 oy bepul support" shartlari, jamoa bio/foto/LinkedIn — kelsa, `app/content/about.py`ga real profil qo'shish va Content.team'ni qayta yoqish mumkin.
+5. OG image/rasm format (webp/lazy-loading) auditi — boshlangan (`og:image` barcha sahifada bitta umumiy `org.logo`'ga ishora qiladi — sahifaga xos emas; blog posti uchun `p.image` ishlatilishi mumkin).
 
 **Audit orqali topilgan, hali ochiq qolgan boshqa masalalar:**
 - `/uz/jamoa/` alohida URL sifatida yo'q (hozir `/biz-haqimizda/` ichida).

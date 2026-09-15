@@ -96,9 +96,16 @@ async def _live_org() -> dict:
 
 
 async def _base_ctx(request: Request, lang: str, path_by_lang: dict, title: str, desc: str,
-                     breadcrumbs: list | None = None, og_type: str = "website") -> dict:
+                     breadcrumbs: list | None = None, og_type: str = "website",
+                     noindex: bool = False, hreflang_paths: dict | None = None) -> dict:
+    """`hreflang_paths` — faqat <head> hreflang teglari uchun (bo'lmasa path_by_lang
+    ishlatiladi). Bir tilda mavjud, boshqalarida yo'q kontent (masalan blog posti)
+    uchun ikkalasi FARQLANADI: `path_by_lang` header'dagi til almashtirgich uchun
+    (boshqa tilda mos indeks sahifasiga yo'naltiradi), `hreflang_paths` esa faqat
+    haqiqatan mavjud tarjimalarni e'lon qiladi — aks holda mavjud bo'lmagan
+    "tarjima"ni qidiruv tizimiga yolg'on va'da qilgan bo'lardik."""
     canonical = seo.abs_url(path_by_lang[lang])
-    alt = seo.alternates(path_by_lang)
+    alt = seo.alternates(hreflang_paths if hreflang_paths is not None else path_by_lang)
     crumb_schema = None
     crumbs_nav = None
     if breadcrumbs:
@@ -132,6 +139,7 @@ async def _base_ctx(request: Request, lang: str, path_by_lang: dict, title: str,
         "website_schema": seo.json_ld(seo.website_schema(lang)),
         "breadcrumb_schema": crumb_schema,
         "breadcrumbs": crumbs_nav,
+        "noindex": noindex,
     }
 
 
@@ -305,13 +313,12 @@ async def about_page(request: Request, lang: str):
     a = ABOUT[lang]
     ctx = await _base_ctx(request, lang, path_by_lang, title=a["title"], desc=a["meta"],
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"), (NAV[lang]["about"], None)])
-    team = [
-        {"name": "G'iyosiddin Tursunxo'jayev", "role": {"uz": "Founder", "ru": "Основатель", "en": "Founder"}[lang]},
-        {"name": "Jamolxon Yo'ldashaliyev", "role": {"uz": "Co-Founder", "ru": "Сооснователь", "en": "Co-Founder"}[lang]},
-        {"name": "Abbos Setdarov", "role": {"uz": "IT Specialist", "ru": "IT-специалист", "en": "IT Specialist"}[lang]},
-        {"name": "Samandar Orifjonov", "role": {"uz": "IT Specialist", "ru": "IT-специалист", "en": "IT Specialist"}[lang]},
-    ]
-    ctx.update(a=a, team=team)
+    # Real jamoa a'zolarining ism/rasm/bio'sini ko'rsatish uchun ularning roziligi
+    # biznes tomonidan hali tasdiqlanmagan (TZ 12/29-bo'lim) — shu sabab bu yerda
+    # ismlar EMAS, faqat umumiy "Bizning ekspertiza" bloki (a.team_title/team_lead,
+    # app/content/about.py) ko'rsatiladi. Rozilik kelgach shu yerga real profillar
+    # (TeamIn: name/role/photo) qo'shiladi.
+    ctx.update(a=a)
     return templates.TemplateResponse(request, "about.html", ctx)
 
 
@@ -394,14 +401,16 @@ async def blog_index(request: Request, lang: str):
             "en": "The promtchi blog — articles on AI, automation, CRM/ERP and software development."}[lang]
     async with SessionLocal() as session:
         res = await session.execute(
-            select(Post).where(Post.published == True).order_by(Post.created_at.desc(), Post.id.desc()).limit(50)  # noqa: E712
+            select(Post).where(Post.published == True, Post.lang == lang)  # noqa: E712
+            .order_by(Post.created_at.desc(), Post.id.desc()).limit(50)
         )
         rows = res.scalars().all()
     posts = [{
         "slug": _slugify(p.title, p.id),
         "title": p.title,
         "date": p.created_at.strftime("%Y-%m-%d"),
-        "excerpt": (p.body[:150] + "…") if len(p.body) > 150 else p.body,
+        "category": p.category,
+        "excerpt": p.excerpt or ((p.body[:150] + "…") if len(p.body) > 150 else p.body),
     } for p in rows]
     empty = {"uz": "Hozircha maqolalar yo'q — tez orada qo'shiladi.",
              "ru": "Пока нет статей — скоро появятся.",
@@ -420,17 +429,29 @@ async def blog_detail(request: Request, lang: str, slug: str):
         raise HTTPException(404, "Post topilmadi")
     async with SessionLocal() as session:
         p = await session.get(Post, post_id)
-    if p is None or not p.published or _slugify(p.title, p.id) != slug:
+    if p is None or not p.published or p.lang != lang or _slugify(p.title, p.id) != slug:
         raise HTTPException(404, "Post topilmadi")
-    path_by_lang = {l: f"/{l}/blog/{slug}/" for l in LANGS}
-    excerpt = (p.body[:160] + "…") if len(p.body) > 160 else p.body
-    ctx = await _base_ctx(request, lang, path_by_lang, title=f"{p.title} — promtchi®", desc=excerpt,
+    # Boshqa 2 til uchun mos tarjima yo'q — til almashtirgich o'sha tilning
+    # blog ro'yxatiga tushadi, lekin <head> hreflang faqat o'z tiliga beriladi
+    # (yolg'on "tarjima bor" da'vosi qilinmasin).
+    own_path = f"/{lang}/blog/{slug}/"
+    path_by_lang = {l: (own_path if l == lang else f"/{l}/blog/") for l in LANGS}
+    excerpt = p.excerpt or ((p.body[:160] + "…") if len(p.body) > 160 else p.body)
+    seo_title = p.seo_title or f"{p.title} — promtchi®"
+    seo_desc = p.seo_description or excerpt
+    ctx = await _base_ctx(request, lang, path_by_lang, title=seo_title, desc=seo_desc,
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"),
                                   (NAV[lang]["blog"], f"/{lang}/blog/"), (p.title, None)],
-                     og_type="article")
-    canonical_url = seo.abs_url(path_by_lang[lang])
+                     og_type="article", noindex=p.noindex, hreflang_paths={lang: own_path})
+    canonical_url = seo.abs_url(own_path)
     ctx.update(
-        p={"title": p.title, "body": p.body, "image": p.image, "date": p.created_at.strftime("%Y-%m-%d")},
+        p={
+            "title": p.title, "body": p.body, "image": p.image,
+            "date": p.created_at.strftime("%Y-%m-%d"),
+            "category": p.category,
+            "tags": [t.strip() for t in p.tags.split(",") if t.strip()],
+            "author": p.author,
+        },
         article_schema=seo.json_ld(seo.article_schema(
             p.title, excerpt, canonical_url, p.created_at.date().isoformat(), p.image, lang)),
     )
@@ -488,20 +509,22 @@ async def sitemap(request: Request):
                 for h, u in seo.alternates(path_by_lang)
             )
             parts.append(f"<url><loc>{loc}</loc>{alt_tags}</url>")
-    # blog postlari — real DB'dan
+    # blog postlari — real DB'dan; noindex postlar va boshqa tilning
+    # mavjud bo'lmagan "tarjimasi" (hreflang alternate) sitemap'ga qo'shilmaydi.
     async with SessionLocal() as session:
-        res = await session.execute(select(Post).where(Post.published == True))  # noqa: E712
+        res = await session.execute(
+            select(Post).where(Post.published == True, Post.noindex == False)  # noqa: E712
+        )
         for p in res.scalars().all():
             slug = _slugify(p.title, p.id)
-            path_by_lang = {l: f"/{l}/blog/{slug}/" for l in LANGS}
-            for lang in LANGS:
-                loc = seo.abs_url(path_by_lang[lang])
-                lastmod = (p.updated_at or p.created_at).date().isoformat()
-                alt_tags = "".join(
-                    f'<xhtml:link rel="alternate" hreflang="{h}" href="{u}"/>'
-                    for h, u in seo.alternates(path_by_lang)
-                )
-                parts.append(f"<url><loc>{loc}</loc><lastmod>{lastmod}</lastmod>{alt_tags}</url>")
+            own_path = f"/{p.lang}/blog/{slug}/"
+            loc = seo.abs_url(own_path)
+            lastmod = (p.updated_at or p.created_at).date().isoformat()
+            alt_tags = "".join(
+                f'<xhtml:link rel="alternate" hreflang="{h}" href="{u}"/>'
+                for h, u in seo.alternates({p.lang: own_path})
+            )
+            parts.append(f"<url><loc>{loc}</loc><lastmod>{lastmod}</lastmod>{alt_tags}</url>")
     parts.append("</urlset>")
     return Response("".join(parts), media_type="application/xml")
 

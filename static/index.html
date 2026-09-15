@@ -510,9 +510,11 @@ section{position:relative}
 .posts-sec{background:var(--blk)}
 .postgrid{display:grid;gap:1.4rem;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));margin-top:2.4rem}
 .pstcard{background:var(--cream);color:var(--blk);border:3px solid var(--blk);border-radius:18px;overflow:hidden;
-  text-align:left;display:flex;flex-direction:column;cursor:pointer;font-family:inherit;padding:0;
+  text-align:left;text-decoration:none;display:flex;flex-direction:column;cursor:pointer;font-family:inherit;padding:0;
   transition:transform .4s var(--ease),box-shadow .4s}
 .pstcard:hover{transform:translateY(-8px) rotate(-.5deg);box-shadow:0 30px 60px rgba(217,255,63,.14)}
+.pst-all{align-items:center;justify-content:center;padding:2rem 1.5rem;text-align:center;
+  font-family:var(--anton);font-size:1.15rem;text-transform:uppercase}
 .pst-img{height:170px;background-size:cover;background-position:center;border-bottom:3px solid var(--blk);
   position:relative;display:grid;place-items:center}
 .pst-noimg{background:var(--blue)}
@@ -1214,13 +1216,15 @@ document.getElementById('revModal').addEventListener('click',e=>{
 });
 
 /* ══════════ POSTLAR — bo'lsa bo'lim ochiladi ══════════ */
+const PAGE_LANG='uz';
 let POSTS=[];
 const pDate=iso=>{try{return new Date(iso).toLocaleDateString('uz-UZ',{day:'2-digit',month:'2-digit',year:'numeric'})}catch(e){return''}};
 (async()=>{
   try{
     const r=await fetch(API+'/api/posts');
     if(!r.ok)return;
-    POSTS=await r.json();
+    /* har post BITTA tilga tegishli — bosh sahifa faqat o'z tilidagi postlarni ko'rsatadi */
+    POSTS=(await r.json()).filter(p=>(p.lang||'uz')===PAGE_LANG).slice(0,6);
     if(!POSTS.length)return;
     renderPosts();
     document.getElementById('postlar').hidden=false;
@@ -1228,13 +1232,13 @@ const pDate=iso=>{try{return new Date(iso).toLocaleDateString('uz-UZ',{day:'2-di
   }catch(e){/* postlar bo'lmasa bo'lim ko'rinmaydi */}
 })();
 function renderPosts(){
-  document.getElementById('postGrid').innerHTML=POSTS.map((p,i)=>{
-    const ex=p.body.length>150?p.body.slice(0,150)+'…':p.body;
+  document.getElementById('postGrid').innerHTML=POSTS.map(p=>{
+    const ex=p.excerpt||(p.body.length>150?p.body.slice(0,150)+'…':p.body);
     /* videoli postda YouTube preview yoki video belgisi ko'rsatiladi */
     const yt=p.video?ytId(p.video):null;
     const cover=p.image||(yt?`https://i.ytimg.com/vi/${yt}/hqdefault.jpg`:'');
     const badge=p.video?'<span class="pst-play">▶</span>':'';
-    return `<button class="pstcard" onclick="openPost(${i})">
+    return `<a class="pstcard" href="/${PAGE_LANG}/blog/${esc(p.slug)}/">
       ${cover?`<div class="pst-img" style="background-image:url('${esc(cover)}')">${badge}</div>`
              :(p.video?`<div class="pst-img pst-noimg">${badge}</div>`:'')}
       <div class="pst-body">
@@ -1242,21 +1246,10 @@ function renderPosts(){
         <h3>${esc(p.title)}</h3>
         <p>${esc(ex)}</p>
         <span class="pst-more">O'qish →</span>
-      </div></button>`;
-  }).join('');
+      </div></a>`;
+  }).join('')+`<a class="pstcard pst-all" href="/${PAGE_LANG}/blog/">Barcha maqolalar →</a>`;
   staggerIn([...document.getElementById('postGrid').children],'gi');
 }
-function openPost(i){
-  const p=POSTS[i];if(!p)return;
-  document.getElementById('caseModalBody').innerHTML=
-   `<small style="font-family:var(--mono);font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;opacity:.55">${pDate(p.created_at)}</small>
-    <h3 style="margin-top:.5rem">${esc(p.title)}</h3>
-    ${mediaHtml(p.video,p.image)}
-    <p style="white-space:pre-wrap;margin-top:.9rem">${esc(p.body)}</p>`;
-  document.getElementById('caseModal').classList.add('show');
-  document.body.classList.add('modal-open');
-}
-
 /* ══════════ PRELOADER ══════════ */
 (function(){
   const L=document.getElementById('loader');

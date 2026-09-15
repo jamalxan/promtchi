@@ -9,7 +9,7 @@
   <div class="card-grid">
     {% for p in posts %}
     <a class="card" href="/{{ lang }}/blog/{{ p.slug }}/">
-      <span class="sub">{{ p.date }}</span>
+      <span class="sub">{{ p.category }}{% if p.category %} · {% endif %}{{ p.date }}</span>
       <h3>{{ p.title }}</h3>
       <p>{{ p.excerpt }}</p>
     </a>
