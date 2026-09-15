@@ -28,9 +28,10 @@
 {% block extra_schema %}{% endblock %}
 </head>
 <body>
+<a class="skip-link" href="#main-content">{{ common.skip_to_content }}</a>
 <header class="site-hd">
   <a class="brand" href="/{{ lang }}/"><img src="/static/logo.png" alt="promtchi" width="30" height="30"><b>promtchi</b><sup>&reg;</sup></a>
-  <nav class="site-nav" aria-label="{{ nav.services }}">
+  <nav class="site-nav" aria-label="{{ common.main_nav_label }}">
     <a href="/{{ lang }}/xizmatlar/">{{ nav.services }}</a>
     <a href="/{{ lang }}/yechimlar/">{{ nav.solutions }}</a>
     <a href="/{{ lang }}/portfolio/">{{ nav.portfolio }}</a>
@@ -52,7 +53,7 @@
 </nav>
 {% endif %}
 
-<main>
+<main id="main-content">
 {% block content %}{% endblock %}
 </main>
 

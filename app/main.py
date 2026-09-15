@@ -885,6 +885,10 @@ async def update_post(
     post = await session.get(Post, post_id)
     if post is None:
         raise HTTPException(404, "Post topilmadi")
+    # Slug sarlavhadan avtomatik hosil bo'ladi (pages._slugify) — sarlavha
+    # yoki til o'zgarsa, eski URL 404 bo'lib qolmasin deb 301 redirect
+    # yaratiladi (xuddi Services/Portfolio slug o'zgarishi kabi, TZ 27-bo'lim).
+    old_path = f"/{post.lang}/blog/{pages._slugify(post.title, post.id)}/"
     post.title = payload.title.strip()
     post.body = payload.body.strip()
     post.excerpt = payload.excerpt.strip()
@@ -898,6 +902,13 @@ async def update_post(
     post.seo_description = payload.seo_description.strip()
     post.noindex = payload.noindex
     post.published = payload.published
+    new_path = f"/{post.lang}/blog/{pages._slugify(post.title, post.id)}/"
+    if new_path != old_path:
+        existing = await session.scalar(select(SlugRedirect).where(SlugRedirect.old_path == old_path))
+        if existing is not None:
+            existing.new_path = new_path
+        else:
+            session.add(SlugRedirect(old_path=old_path, new_path=new_path))
     await session.commit()
     posts_cache.clear()
     return {**post.as_dict(), "slug": pages._slugify(post.title, post.id)}

@@ -439,11 +439,16 @@ async def blog_index(request: Request, lang: str):
 async def blog_detail(request: Request, lang: str, slug: str):
     _check_lang(lang)
     post_id = _post_id_from_slug(slug)
-    if post_id is None:
-        raise HTTPException(404, "Post topilmadi")
-    async with SessionLocal() as session:
-        p = await session.get(Post, post_id)
+    p = None
+    if post_id is not None:
+        async with SessionLocal() as session:
+            p = await session.get(Post, post_id)
     if p is None or not p.published or p.lang != lang or _slugify(p.title, p.id) != slug:
+        # Sarlavha/til o'zgarib eski slug ishlamay qolgan bo'lishi mumkin —
+        # 404'dan oldin redirect jadvalini tekshiramiz (TZ 27-bo'lim).
+        new_path = await services_store.find_redirect(f"/{lang}/blog/{slug}/")
+        if new_path:
+            return RedirectResponse(new_path, status_code=301)
         raise HTTPException(404, "Post topilmadi")
     # Boshqa 2 til uchun mos tarjima yo'q — til almashtirgich o'sha tilning
     # blog ro'yxatiga tushadi, lekin <head> hreflang faqat o'z tiliga beriladi

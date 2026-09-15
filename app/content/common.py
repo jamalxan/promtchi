@@ -143,6 +143,8 @@ COMMON = {
         "form_err_network": "Server bilan aloqa yo'q — Telegram orqali yozing",
         "form_consent_pre": "Yuborish orqali siz quyidagiga rozilik bildirasiz:",
         "form_consent_link": "Maxfiylik siyosati",
+        "skip_to_content": "Asosiy kontentga o'tish",
+        "main_nav_label": "Asosiy navigatsiya",
     },
     "ru": {
         "for_whom": "Кому подходит",
@@ -188,6 +190,8 @@ COMMON = {
         "form_err_network": "Нет связи с сервером — напишите нам в Telegram",
         "form_consent_pre": "Отправляя форму, вы соглашаетесь с",
         "form_consent_link": "Политикой конфиденциальности",
+        "skip_to_content": "Перейти к основному содержанию",
+        "main_nav_label": "Основная навигация",
     },
     "en": {
         "for_whom": "Who it's for",
@@ -233,6 +237,8 @@ COMMON = {
         "form_err_network": "No connection to server — please message us on Telegram",
         "form_consent_pre": "By submitting, you agree to our",
         "form_consent_link": "Privacy Policy",
+        "skip_to_content": "Skip to main content",
+        "main_nav_label": "Main navigation",
     },
 }
 
