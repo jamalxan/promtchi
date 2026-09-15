@@ -81,7 +81,20 @@
   <div class="wrap ft-meta">
     <span>&copy; {{ org.founded }}&ndash;2026 promtchi&reg;</span>
     <span>{{ footer.rights }}</span>
+    <a href="{{ legal.privacy }}">{{ footer.privacy }}</a>
+    <a href="{{ legal.terms }}">{{ footer.terms }}</a>
   </div>
 </footer>
+{% if ga_id %}
+<script async src="https://www.googletagmanager.com/gtag/js?id={{ ga_id }}"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', '{{ ga_id }}');
+{% if is_404 %}gtag('event', 'page_not_found', {page_path: '{{ request.url.path }}'});{% endif %}
+</script>
+<script src="/static/analytics.js" defer></script>
+{% endif %}
 </body>
 </html>

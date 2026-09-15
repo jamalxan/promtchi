@@ -964,6 +964,7 @@ body.menu-open,body.modal-open{overflow:hidden}
       <div><label for="fM">Ваша идея</label><textarea id="fM" placeholder="Кратко опишите свой проект..." maxlength="4000"></textarea></div>
       <button class="btn btn-blk" id="sendBtn" type="submit" style="width:100%;justify-content:center">Отправить
         <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      <p style="font-size:.76rem;opacity:.55;margin:-.4rem 0 0">Отправляя форму, вы соглашаетесь с <a href="/ru/politika-konfidentsialnosti/" style="color:inherit;text-decoration:underline">Политикой конфиденциальности</a></p>
       <div class="ok-msg" id="okMsg" role="status"></div>
     </form>
   </div>
@@ -982,6 +983,8 @@ body.menu-open,body.modal-open{overflow:hidden}
   <div class="f-social" id="fSocial"></div>
   <div class="f-meta">
     <span>© 2026 promtchi®</span><span id="fClock">Ташкент — 00:00</span><span>Все права защищены</span>
+    <a href="/ru/politika-konfidentsialnosti/" style="color:inherit;text-decoration:none">Политика конфиденциальности</a>
+    <a href="/ru/usloviya-ispolzovaniya/" style="color:inherit;text-decoration:none">Условия использования</a>
   </div>
   <div class="f-word" aria-hidden="true"><span>P</span><span>R</span><span>O</span><span>M</span><span>T</span><span>C</span><span>H</span><span>I</span></div>
 </footer>
@@ -1670,7 +1673,7 @@ document.getElementById('contactForm').addEventListener('submit',async e=>{
   try{
     const r=await fetch(API+'/api/leads',{method:'POST',
       headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    if(r.ok){ok.textContent="Спасибо! Скоро свяжемся \u2713";e.target.reset();}
+    if(r.ok){ok.textContent="Спасибо! Скоро свяжемся \u2713";e.target.reset();if(typeof gtag==='function')gtag('event','generate_lead',{project_type:body.project_type});}
     else if(r.status===429){ok.textContent="Слишком часто \u2014 попробуйте чуть позже";}
     else{ok.textContent="Ошибка \u2014 напишите нам в Telegram";}
   }catch(err){ok.textContent="Нет связи с сервером \u2014 напишите нам в Telegram";}

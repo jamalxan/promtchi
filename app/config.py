@@ -93,6 +93,10 @@ class Settings:
         o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",") if o.strip()
     ]
 
+    # Google Analytics 4 (GA4) o'lchov ID'si (masalan G-XXXXXXXXXX). Bo'sh bo'lsa
+    # gtag/analytics.js hech qaysi sahifaga qo'shilmaydi — hodisalar kuzatilmaydi.
+    GA_MEASUREMENT_ID: str = os.getenv("GA_MEASUREMENT_ID", "").strip()
+
     # Saytning haqiqiy domeni (canonical/OG teglarda ishlatiladi). Shu domendan
     # boshqa Host bilan (masalan to'g'ridan-to'g'ri IP orqali) kirilsa, bosh
     # sahifa <meta name="robots" content="noindex"> bilan qaytariladi.

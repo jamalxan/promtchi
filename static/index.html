@@ -957,6 +957,7 @@ body.menu-open,body.modal-open{overflow:hidden}
       <div><label for="fM">G'oyangiz</label><textarea id="fM" placeholder="Loyihangizni qisqacha yozing..." maxlength="4000"></textarea></div>
       <button class="btn btn-blk" id="sendBtn" type="submit" style="width:100%;justify-content:center">Yuborish
         <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      <p style="font-size:.76rem;opacity:.55;margin:-.4rem 0 0">Yuborish orqali siz quyidagiga rozilik bildirasiz: <a href="/uz/maxfiylik-siyosati/" style="color:inherit;text-decoration:underline">Maxfiylik siyosati</a></p>
       <div class="ok-msg" id="okMsg" role="status"></div>
     </form>
   </div>
@@ -975,6 +976,8 @@ body.menu-open,body.modal-open{overflow:hidden}
   <div class="f-social" id="fSocial"></div>
   <div class="f-meta">
     <span>© 2026 promtchi®</span><span id="fClock">Toshkent — 00:00</span><span>Barcha huquqlar himoyalangan</span>
+    <a href="/uz/maxfiylik-siyosati/" style="color:inherit;text-decoration:none">Maxfiylik siyosati</a>
+    <a href="/uz/foydalanish-shartlari/" style="color:inherit;text-decoration:none">Foydalanish shartlari</a>
   </div>
   <div class="f-word" aria-hidden="true"><span>P</span><span>R</span><span>O</span><span>M</span><span>T</span><span>C</span><span>H</span><span>I</span></div>
 </footer>
@@ -1698,7 +1701,7 @@ document.getElementById('contactForm').addEventListener('submit',async e=>{
   try{
     const r=await fetch(API+'/api/leads',{method:'POST',
       headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    if(r.ok){ok.textContent="Rahmat! Tez orada bog'lanamiz \u2713";e.target.reset();}
+    if(r.ok){ok.textContent="Rahmat! Tez orada bog'lanamiz \u2713";e.target.reset();if(typeof gtag==='function')gtag('event','generate_lead',{project_type:body.project_type});}
     else if(r.status===429){ok.textContent="Juda tez-tez \u2014 birozdan so'ng urining";}
     else{ok.textContent="Xatolik \u2014 Telegram orqali yozing";}
   }catch(err){ok.textContent="Server bilan aloqa yo'q \u2014 Telegram orqali yozing";}

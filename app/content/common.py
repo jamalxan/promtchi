@@ -72,6 +72,8 @@ FOOTER = {
         "rights": "Barcha huquqlar himoyalangan",
         "nav_title": "Sahifalar",
         "contact_title": "Aloqa",
+        "privacy": "Maxfiylik siyosati",
+        "terms": "Foydalanish shartlari",
     },
     "ru": {
         "tagline": "Следующий проект будет вашим.",
@@ -79,6 +81,8 @@ FOOTER = {
         "rights": "Все права защищены",
         "nav_title": "Страницы",
         "contact_title": "Контакты",
+        "privacy": "Политика конфиденциальности",
+        "terms": "Условия использования",
     },
     "en": {
         "tagline": "The next project will be yours.",
@@ -86,6 +90,8 @@ FOOTER = {
         "rights": "All rights reserved",
         "nav_title": "Pages",
         "contact_title": "Contact",
+        "privacy": "Privacy Policy",
+        "terms": "Terms of Use",
     },
 }
 
@@ -135,6 +141,8 @@ COMMON = {
         "form_err_ratelimit": "Juda tez-tez — birozdan so'ng urining",
         "form_err_generic": "Xatolik — Telegram orqali yozing",
         "form_err_network": "Server bilan aloqa yo'q — Telegram orqali yozing",
+        "form_consent_pre": "Yuborish orqali siz quyidagiga rozilik bildirasiz:",
+        "form_consent_link": "Maxfiylik siyosati",
     },
     "ru": {
         "for_whom": "Кому подходит",
@@ -178,6 +186,8 @@ COMMON = {
         "form_err_ratelimit": "Слишком часто — попробуйте чуть позже",
         "form_err_generic": "Ошибка — напишите нам в Telegram",
         "form_err_network": "Нет связи с сервером — напишите нам в Telegram",
+        "form_consent_pre": "Отправляя форму, вы соглашаетесь с",
+        "form_consent_link": "Политикой конфиденциальности",
     },
     "en": {
         "for_whom": "Who it's for",
@@ -221,6 +231,8 @@ COMMON = {
         "form_err_ratelimit": "Too many requests — please try again shortly",
         "form_err_generic": "Error — please message us on Telegram",
         "form_err_network": "No connection to server — please message us on Telegram",
+        "form_consent_pre": "By submitting, you agree to our",
+        "form_consent_link": "Privacy Policy",
     },
 }
 

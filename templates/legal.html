@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-in wrap">
+  <span class="eyebrow">{{ legal_label }}</span>
+  <h1>{{ doc.h1 }}</h1>
+  <p class="lead">{{ doc.intro }}</p>
+  <p class="legal-updated">{{ updated_label }}: {{ updated_date }}</p>
+</section>
+<section class="sec wrap legal-body">
+  {% for heading, body in doc.sections %}
+  <h2>{{ heading }}</h2>
+  <p>{{ body }}</p>
+  {% endfor %}
+</section>
+<section class="cta-band wrap">
+  <h2>{{ common.cta_title }}</h2>
+  <p>{{ common.cta_sub }}</p>
+  <a class="btn btn-acid" href="/{{ lang }}/aloqa/">{{ common.cta_button }}</a>
+</section>
+{% endblock %}

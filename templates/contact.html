@@ -34,6 +34,7 @@
       <textarea id="cf-msg" placeholder="{{ common.form_message_ph }}" maxlength="4000"></textarea>
     </div>
     <button class="btn btn-acid" id="cf-submit" type="submit">{{ common.form_submit }}</button>
+    <p class="consent-note">{{ common.form_consent_pre }} <a href="{{ legal.privacy }}">{{ common.form_consent_link }}</a></p>
     <div class="ok-msg" id="cf-msgline" role="status"></div>
   </form>
 </section>
@@ -59,7 +60,7 @@
     btn.disabled=true; btn.style.opacity='.6'; out.textContent='{{ common.form_sending }}';
     try{
       var r=await fetch('/api/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-      if(r.ok){ out.textContent='{{ common.form_ok }}'; form.reset(); }
+      if(r.ok){ out.textContent='{{ common.form_ok }}'; form.reset(); if(typeof gtag==='function') gtag('event','generate_lead',{project_type:body.project_type}); }
       else if(r.status===429){ out.textContent='{{ common.form_err_ratelimit }}'; }
       else { out.textContent='{{ common.form_err_generic }}'; }
     }catch(err){ out.textContent='{{ common.form_err_network }}'; }
