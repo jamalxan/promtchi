@@ -6,6 +6,12 @@
   <p class="lead">{{ c.short }}</p>
 </section>
 
+{% if c.image %}
+<section class="wrap">
+  <img src="{{ c.image }}" alt="{{ c.title }}" loading="lazy" decoding="async" style="width:100%;border-radius:16px">
+</section>
+{% endif %}
+
 <section class="sec wrap">
   <div class="case-meta">
     <div><small>{{ common.client }}</small>{{ c.client }}</div>

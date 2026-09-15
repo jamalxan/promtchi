@@ -1029,7 +1029,7 @@ async def create_portfolio_case(
     if await session.scalar(select(PortfolioCase).where(PortfolioCase.key == payload.key)) is not None:
         raise HTTPException(400, "Bu key allaqachon mavjud")
     case = PortfolioCase(
-        key=payload.key, order=payload.order, published=payload.published,
+        key=payload.key, order=payload.order, published=payload.published, image=payload.image.strip(),
         slug_uz=payload.uz.slug, slug_ru=payload.ru.slug, slug_en=payload.en.slug,
         data_uz=payload.uz.model_dump(exclude={"slug"}),
         data_ru=payload.ru.model_dump(exclude={"slug"}),
@@ -1065,6 +1065,7 @@ async def update_portfolio_case(
     case.key = payload.key
     case.order = payload.order
     case.published = payload.published
+    case.image = payload.image.strip()
     case.slug_uz, case.slug_ru, case.slug_en = payload.uz.slug, payload.ru.slug, payload.en.slug
     case.data_uz = payload.uz.model_dump(exclude={"slug"})
     case.data_ru = payload.ru.model_dump(exclude={"slug"})

@@ -95,9 +95,21 @@ async def _live_org() -> dict:
     return org
 
 
+def _abs_image(image: str) -> str | None:
+    """og:image mutlaq URL bo'lishi kerak. `image` — admin panelda tasdiqlangan
+    ikkita shakldan biri (schemas._validate_media_url): to'liq http(s):// havola
+    yoki /static/uploads/... nisbiy yo'l — faqat ikkinchisiga SITE_URL qo'shiladi
+    (seo.abs_url ni to'g'ridan-to'g'ri chaqirish allaqachon mutlaq havolani
+    ikki marta prefikslab, buzib qo'yishi mumkin edi)."""
+    if not image:
+        return None
+    return image if image.startswith("http") else seo.abs_url(image)
+
+
 async def _base_ctx(request: Request, lang: str, path_by_lang: dict, title: str, desc: str,
                      breadcrumbs: list | None = None, og_type: str = "website",
-                     noindex: bool = False, hreflang_paths: dict | None = None) -> dict:
+                     noindex: bool = False, hreflang_paths: dict | None = None,
+                     og_image: str | None = None) -> dict:
     """`hreflang_paths` — faqat <head> hreflang teglari uchun (bo'lmasa path_by_lang
     ishlatiladi). Bir tilda mavjud, boshqalarida yo'q kontent (masalan blog posti)
     uchun ikkalasi FARQLANADI: `path_by_lang` header'dagi til almashtirgich uchun
@@ -124,6 +136,7 @@ async def _base_ctx(request: Request, lang: str, path_by_lang: dict, title: str,
         "alt_links": alt,
         "og_type": og_type,
         "og_locale": seo.hreflang_code(lang).replace("-", "_"),
+        "og_image": og_image or org["logo"],
         "org": org,
         "nav": NAV[lang],
         "footer": FOOTER[lang],
@@ -282,8 +295,9 @@ async def portfolio_detail(request: Request, lang: str, slug: str):
     ctx = await _base_ctx(request, lang, path_by_lang, title=f"{c['title']} — promtchi®", desc=c["meta"],
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"),
                                   (NAV[lang]["portfolio"], f"/{lang}/portfolio/"),
-                                  (c["title"], None)])
-    ctx.update(c={**c, "slug": slug}, other_cases=_case_cards(lang, cases, exclude=match["key"]))
+                                  (c["title"], None)],
+                     og_image=_abs_image(match["image"]))
+    ctx.update(c={**c, "slug": slug, "image": match["image"]}, other_cases=_case_cards(lang, cases, exclude=match["key"]))
     return templates.TemplateResponse(request, "portfolio_detail.html", ctx)
 
 
@@ -442,7 +456,8 @@ async def blog_detail(request: Request, lang: str, slug: str):
     ctx = await _base_ctx(request, lang, path_by_lang, title=seo_title, desc=seo_desc,
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"),
                                   (NAV[lang]["blog"], f"/{lang}/blog/"), (p.title, None)],
-                     og_type="article", noindex=p.noindex, hreflang_paths={lang: own_path})
+                     og_type="article", noindex=p.noindex, hreflang_paths={lang: own_path},
+                     og_image=_abs_image(p.image))
     canonical_url = seo.abs_url(own_path)
     ctx.update(
         p={

@@ -629,10 +629,14 @@ PROMTCHI.UZ — SEO / GEO / Technical TZ v2.0
    - O'rniga TZ 12'ning aniq ko'rsatmasi bajarildi: "profillar tayyor bo'lmasa — 'Bizning ekspertiza' blokini ko'rsatish". `app/content/about.py`dagi `team_title`/`team_lead` (ilgari yozilgan, lekin shablonda ISHLATILMAGAN edi) endi `/biz-haqimizda/` sahifasida haqiqatan chiqadi; sarlavha "Jamoa"/"Команда"/"Team" dan "Bizning ekspertiza"/"Наша экспертиза"/"Our expertise" ga o'zgartirildi (ism yo'qligini aniq ko'rsatish uchun).
    - `facts_title` ("Raqamlarda" va h.k., ilgari yozilgan-lekin-ishlatilmagan) ham endi "Raqamlar" bloki ustida chiqadi.
    - Test qilindi: barcha 3 tilda sahifa 200, real ismlar (masalan "Tursunxo'jayev") HTML'da yo'qligi tasdiqlandi.
+5. **OG image sahifaga xos qilindi + Portfolio'ga Screenshot maydoni qo'shildi** (TZ 5/13/15-bo'lim; foydalanuvchi bilan kelishilgan qaror — "yangi bog'liqlik (Pillow/WebP) qo'shmasdan, mavjudni tuzatish" tanlandi, avtomatik WebP konvertatsiya keyingi bosqichga qoldirildi). Tafsilotlar:
+   - `app/pages.py::_base_ctx()` yangi `og_image` parametri — berilmasa `org.logo`ga qaytadi (`templates/base.html`). Blog posti (`p.image`) va Portfolio case (yangi `image` ustuni) endi o'z rasmini e'lon qiladi.
+   - `PortfolioCase`ga `image` ustuni qo'shildi (TZ 13: "Screenshots" — ilgari BUTUNLAY yo'q edi). Tilga bog'liq emas (bitta case — bitta rasm, 3 marta kiritilmaydi). `templates/portfolio_detail.html`da ko'rsatiladi (`loading="lazy"`), admin.html'da "Screenshot rasm URL" maydoni.
+   - `templates/blog_detail.html` rasmi endi `loading="lazy" decoding="async"` bilan.
+   - **Yon-ta'sirda topilgan haqiqiy xato tuzatildi**: `Service`/`PortfolioCase.as_dict()` `slug`ni faqat top-level `slugs{}`da qaytarardi, har tilning o'z dict'i ichida EMAS — lekin `static/admin.html`dagi forma (`d.slug`) va `app/pages.py` ikkalasi ham `s[lang]["slug"]`ga tayanadi. Bu www admin panelda slug maydoni bo'sh ko'rinishi va saqlashda 422 xatosiga olib kelardi — httpx bilan to'g'ridan-to'g'ri API sinovi buni yashirgan edi (qo'lda to'g'ri payload yuborilgan), faqat admin.html'ning HAQIQIY oqimini (GET → mutatsiya → xom obyektni PUT) simulyatsiya qilgan sinov paytida topildi. Endi `as_dict()` slug'ni ikkala joyga ham qo'yadi.
 
 **Navbatda (audit asosida, ustuvorlik tartibida):**
 3. Business sign-off: statistika (32/24/98%/3yr), portfolio natijalari, FAQ javoblari, "3 oy bepul support" shartlari, jamoa bio/foto/LinkedIn — kelsa, `app/content/about.py`ga real profil qo'shish va Content.team'ni qayta yoqish mumkin.
-5. OG image/rasm format (webp/lazy-loading) auditi — boshlangan (`og:image` barcha sahifada bitta umumiy `org.logo`'ga ishora qiladi — sahifaga xos emas; blog posti uchun `p.image` ishlatilishi mumkin).
 
 **Audit orqali topilgan, hali ochiq qolgan boshqa masalalar:**
 - `/uz/jamoa/` alohida URL sifatida yo'q (hozir `/biz-haqimizda/` ichida).

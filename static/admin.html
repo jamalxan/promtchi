@@ -2259,6 +2259,8 @@ function buildCaseForm(c) {
         <input type="checkbox" data-ckey="published" ${c.published ? 'checked' : ''}>
         <span>Saytda ko'rinsin (portfolio ro'yxati va sitemap'da)</span>
       </div>
+      <div class="field"><label>Screenshot rasm URL (3 tilda umumiy, TZ 13-bo'lim)</label>
+        <input data-ckey="image" value="${esc(c.image || '')}" maxlength="1000" placeholder="https://... yoki /static/uploads/..."></div>
       <div style="display:flex;gap:.4rem;margin:.9rem 0">${tabBtns}
         <a href="/${lang}/portfolio/${esc(d.slug)}/" target="_blank" rel="noopener"
            style="margin-left:auto;font-size:.8rem;opacity:.7;align-self:center">↗ Sahifani ko'rish</a>
@@ -2318,7 +2320,7 @@ async function saveCase(c) {
   try {
     const r = await apiFetch('/api/admin/portfolio/' + c.id, {
       method: 'PUT',
-      body: JSON.stringify({ key: c.key, order: c.order, published: c.published, uz: c.uz, ru: c.ru, en: c.en }),
+      body: JSON.stringify({ key: c.key, order: c.order, published: c.published, image: c.image || '', uz: c.uz, ru: c.ru, en: c.en }),
     });
     if (r.ok) toast('Saqlandi ✓');
     else { const d = await r.json().catch(() => ({})); toast((d.detail && d.detail[0] && d.detail[0].msg) || d.detail || 'Saqlashda xatolik', 'error'); }

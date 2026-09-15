@@ -55,7 +55,7 @@ async def seed_if_empty(session: AsyncSession) -> None:
             langs = SEED_CASES[key]
             slugs = SEED_CASE_SLUGS[key]
             session.add(PortfolioCase(
-                key=key, order=i, published=True,
+                key=key, order=i, published=True, image="",
                 slug_uz=slugs["uz"], slug_ru=slugs["ru"], slug_en=slugs["en"],
                 data_uz=dict(langs["uz"]), data_ru=dict(langs["ru"]), data_en=dict(langs["en"]),
             ))

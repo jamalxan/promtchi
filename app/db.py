@@ -401,15 +401,19 @@ class Service(Base):
     )
 
     def as_dict(self) -> dict:
+        # `slug` har tilning o'z dict'i ICHIDA ham takrorlanadi (data_{lang}'da
+        # saqlanmasa ham) — admin.html forma va app/pages.py::service_detail
+        # ikkalasi ham `s[lang]["slug"]`ga tayanadi, bitta joyda o'zgarsa
+        # ikkalasi ham sinxron qolishi uchun shu yerda birlashtiriladi.
         return {
             "id": self.id,
             "key": self.key,
             "order": self.order,
             "published": bool(self.published),
             "slugs": {"uz": self.slug_uz, "ru": self.slug_ru, "en": self.slug_en},
-            "uz": self.data_uz,
-            "ru": self.data_ru,
-            "en": self.data_en,
+            "uz": {**self.data_uz, "slug": self.slug_uz},
+            "ru": {**self.data_ru, "slug": self.slug_ru},
+            "en": {**self.data_en, "slug": self.slug_en},
         }
 
 
@@ -418,6 +422,11 @@ class PortfolioCase(Base):
 
     `data_{lang}` shakli app/content/portfolio.py'dagi eski Python dict bilan
     bir xil: title/cat/client/duration/short/problem/solution/result/tech/meta.
+
+    `image` — case'ning skrinshoti (TZ 13-bo'lim: "Screenshots"); tilga bog'liq
+    EMAS (bitta loyiha uchun bitta rasm, 3 tilda takror kiritilmasin) — shu
+    sabab top-level ustun, data_{lang} ichida emas. Bo'sh bo'lsa <head>dagi
+    og:image umumiy org.logo'ga qaytadi (app/pages.py::_base_ctx).
     """
 
     __tablename__ = "portfolio_cases"
@@ -427,6 +436,7 @@ class PortfolioCase(Base):
     key: Mapped[str] = mapped_column(String(60), unique=True, nullable=False)
     order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     published: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    image: Mapped[str] = mapped_column(String(1000), default="")
     slug_uz: Mapped[str] = mapped_column(String(140), nullable=False)
     slug_ru: Mapped[str] = mapped_column(String(140), nullable=False)
     slug_en: Mapped[str] = mapped_column(String(140), nullable=False)
@@ -444,15 +454,17 @@ class PortfolioCase(Base):
     )
 
     def as_dict(self) -> dict:
+        # slug takrorlanishi haqida Service.as_dict()dagi izohga qarang.
         return {
             "id": self.id,
             "key": self.key,
             "order": self.order,
             "published": bool(self.published),
+            "image": self.image,
             "slugs": {"uz": self.slug_uz, "ru": self.slug_ru, "en": self.slug_en},
-            "uz": self.data_uz,
-            "ru": self.data_ru,
-            "en": self.data_en,
+            "uz": {**self.data_uz, "slug": self.slug_uz},
+            "ru": {**self.data_ru, "slug": self.slug_ru},
+            "en": {**self.data_en, "slug": self.slug_en},
         }
 
 
@@ -613,6 +625,8 @@ _MIGRATIONS = [
     "ALTER TABLE posts ADD COLUMN seo_title VARCHAR(200) DEFAULT ''",
     "ALTER TABLE posts ADD COLUMN seo_description VARCHAR(300) DEFAULT ''",
     "ALTER TABLE posts ADD COLUMN noindex BOOLEAN NOT NULL DEFAULT 0",
+    # ── Portfolio screenshot (TZ 5/13-bo'lim) ────────────────────────────────
+    "ALTER TABLE portfolio_cases ADD COLUMN image VARCHAR(1000) DEFAULT ''",
 ]
 
 

@@ -170,16 +170,20 @@ class CaseLangIn(BaseModel):
 
 
 class PortfolioCaseIn(BaseModel):
-    """PUT/POST /api/admin/portfolio[/{id}] — bitta case, 3 tilda."""
+    """PUT/POST /api/admin/portfolio[/{id}] — bitta case, 3 tilda.
+
+    `image` — skrinshot (TZ 13-bo'lim), tilga bog'liq emas — bitta umumiy URL."""
 
     key: str = Field(min_length=1, max_length=60)
     order: int = 0
     published: bool = True
+    image: str = Field(default="", max_length=1000)
     uz: CaseLangIn
     ru: CaseLangIn
     en: CaseLangIn
 
     _v_key = field_validator("key")(_validate_key)
+    _v_image = field_validator("image")(_validate_media_url)
 
 
 class ContactIn(BaseModel):
