@@ -42,29 +42,34 @@ def json_ld(data: dict) -> str:
     return json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c")
 
 
-def organization_schema() -> dict:
+def organization_schema(org: dict | None = None) -> dict:
+    """`org` — admin panelda tahrirlanadigan aloqa ma'lumotlari bilan
+    yangilangan dict (app/pages.py::_live_org) berilsa ishlatiladi; aks
+    holda statik ORG fallback (bu funksiya main.py'dagi bosh sahifa
+    JSON-LD'i uchun ham to'g'ridan-to'g'ri chaqiriladi)."""
+    o = org or ORG
     return {
         "@context": "https://schema.org",
         "@type": "Organization",
-        "name": ORG["name"],
+        "name": o["name"],
         "url": SITE_URL + "/",
-        "logo": ORG["logo"],
-        "foundingDate": ORG["founded"],
+        "logo": o["logo"],
+        "foundingDate": o["founded"],
         "address": {
             "@type": "PostalAddress",
-            "addressLocality": ORG["city_en"],
+            "addressLocality": o["city_en"],
             "addressCountry": "UZ",
         },
         "contactPoint": [{
             "@type": "ContactPoint",
             "contactType": "customer service",
-            "email": ORG["email"],
-            "telephone": ORG["phone"],
-            "url": ORG["telegram_url"],
+            "email": o["email"],
+            "telephone": o["phone"],
+            "url": o["telegram_url"],
             "areaServed": "UZ",
             "availableLanguage": ["uz", "ru", "en"],
         }],
-        "sameAs": [ORG["telegram_url"], ORG["instagram_url"]],
+        "sameAs": [o["telegram_url"], o["instagram_url"]],
     }
 
 

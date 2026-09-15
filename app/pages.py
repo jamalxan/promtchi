@@ -8,6 +8,7 @@ saqlangan, real faktlarga asoslangan trilingual kontentni (app/content/*)
 render qiladi — TZ v1.0 (15.09.2026), 2/5/6/8/9/13-bo'limlar.
 """
 import re
+import time
 import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
@@ -26,7 +27,7 @@ from .content.faq import FAQ
 from .content.portfolio import CASE_KEYS, CASES, SLUGS as CASE_SLUGS
 from .content.services import SERVICES, SERVICE_KEYS, SLUGS as SERVICE_SLUGS
 from .content.solutions import SLUGS as SOLUTION_SLUGS, SOLUTION_KEYS, SOLUTIONS
-from .db import Post, SessionLocal
+from .db import Content, Post, SessionLocal
 
 router = APIRouter()
 
@@ -51,8 +52,52 @@ def _key_for_slug(slugs_map: dict, slug: str, lang: str) -> str | None:
     return None
 
 
-def _base_ctx(request: Request, lang: str, path_by_lang: dict, title: str, desc: str,
-              breadcrumbs: list | None = None, og_type: str = "website") -> dict:
+# Statik ORG (app/content/common.py) — admin panelda o'zgartiriladigan
+# aloqa ma'lumotlari (Telegram/Email/Telefon/Instagram) bilan sinxron
+# turishi uchun har 60s'da /api/content dagi `contacts`/`socials`'dan
+# yengil kesh orqali yangilanadi (bosh sahifadagi katta trafikga
+# mo'ljallangan content_cache'dan alohida — bu yerda faqat aloqa
+# maydonlari kerak, ichki sahifalar kamroq so'raladi).
+_live_org_cache: dict = {"org": None, "ts": 0.0}
+_LIVE_ORG_TTL = 60.0
+
+
+async def _live_org() -> dict:
+    now = time.monotonic()
+    cached = _live_org_cache["org"]
+    if cached is not None and (now - _live_org_cache["ts"]) < _LIVE_ORG_TTL:
+        return cached
+    org = dict(ORG)
+    try:
+        async with SessionLocal() as session:
+            row = await session.get(Content, 1)
+        data = row.data if row else {}
+        contacts = {c.get("label"): c for c in data.get("contacts", [])}
+        tg = contacts.get("Telegram")
+        if tg and tg.get("value"):
+            org["telegram_handle"] = tg["value"]
+            org["telegram_url"] = tg.get("url") or org["telegram_url"]
+        email = contacts.get("Email")
+        if email and email.get("value"):
+            org["email"] = email["value"]
+        phone = contacts.get("Telefon") or contacts.get("Phone")
+        if phone and phone.get("value"):
+            org["phone"] = phone["value"]
+            url = phone.get("url", "")
+            if url.startswith("tel:"):
+                org["phone_tel"] = url[len("tel:"):]
+        ig = next((s for s in data.get("socials", []) if s.get("icon") == "instagram"), None)
+        if ig and ig.get("url"):
+            org["instagram_url"] = ig["url"]
+    except Exception:
+        pass  # DB vaqtincha ishlamasa — statik ORG bilan davom etadi
+    _live_org_cache["org"] = org
+    _live_org_cache["ts"] = now
+    return org
+
+
+async def _base_ctx(request: Request, lang: str, path_by_lang: dict, title: str, desc: str,
+                     breadcrumbs: list | None = None, og_type: str = "website") -> dict:
     canonical = seo.abs_url(path_by_lang[lang])
     alt = seo.alternates(path_by_lang)
     crumb_schema = None
@@ -60,6 +105,7 @@ def _base_ctx(request: Request, lang: str, path_by_lang: dict, title: str, desc:
     if breadcrumbs:
         crumbs_nav = breadcrumbs
         crumb_schema = seo.json_ld(seo.breadcrumb_schema(breadcrumbs))
+    org = await _live_org()
     return {
         "request": request,
         "lang": lang,
@@ -72,13 +118,13 @@ def _base_ctx(request: Request, lang: str, path_by_lang: dict, title: str, desc:
         "alt_links": alt,
         "og_type": og_type,
         "og_locale": seo.hreflang_code(lang).replace("-", "_"),
-        "org": ORG,
+        "org": org,
         "nav": NAV[lang],
         "footer": FOOTER[lang],
         "common": COMMON[lang],
         "page_title": title,
         "page_desc": desc,
-        "org_schema": seo.json_ld(seo.organization_schema()),
+        "org_schema": seo.json_ld(seo.organization_schema(org)),
         "website_schema": seo.json_ld(seo.website_schema(lang)),
         "breadcrumb_schema": crumb_schema,
         "breadcrumbs": crumbs_nav,
@@ -107,7 +153,7 @@ async def services_index(request: Request, lang: str):
         "en": "From web and mobile apps to AI and CRM/ERP systems — every digital solution your business needs.",
     }[lang]
     title = {"uz": "Xizmatlar", "ru": "Услуги", "en": "Services"}[lang]
-    ctx = _base_ctx(request, lang, path_by_lang,
+    ctx = await _base_ctx(request, lang, path_by_lang,
                      title=f"{title} — promtchi®", desc=intro,
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"), (NAV[lang]["services"], None)])
     ctx.update(services=_service_cards(lang), t_h1=NAV[lang]["services"], t_intro=intro)
@@ -122,7 +168,7 @@ async def service_detail(request: Request, lang: str, slug: str):
         raise HTTPException(404, "Xizmat topilmadi")
     s = SERVICES[key][lang]
     path_by_lang = {l: f"/{l}/xizmatlar/{SERVICE_SLUGS[key][l]}/" for l in LANGS}
-    ctx = _base_ctx(request, lang, path_by_lang, title=s["title"], desc=s["meta"],
+    ctx = await _base_ctx(request, lang, path_by_lang, title=s["title"], desc=s["meta"],
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"),
                                   (NAV[lang]["services"], f"/{lang}/xizmatlar/"),
                                   (s["nav"], None)])
@@ -149,7 +195,7 @@ async def solutions_index(request: Request, lang: str):
         "en": "A digital solution for your industry — CRM/ERP/automation grounded in real experience for sales, logistics and manufacturing.",
     }[lang]
     title = {"uz": "Yechimlar", "ru": "Решения", "en": "Solutions"}[lang]
-    ctx = _base_ctx(request, lang, path_by_lang, title=f"{title} — promtchi®", desc=intro,
+    ctx = await _base_ctx(request, lang, path_by_lang, title=f"{title} — promtchi®", desc=intro,
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"), (NAV[lang]["solutions"], None)])
     solutions = [{"slug": SOLUTION_SLUGS[k][lang], "nav": SOLUTIONS[k][lang]["nav"],
                   "intro": SOLUTIONS[k][lang]["intro"]} for k in SOLUTION_KEYS]
@@ -165,7 +211,7 @@ async def solution_detail(request: Request, lang: str, slug: str):
         raise HTTPException(404, "Yechim topilmadi")
     s = SOLUTIONS[key][lang]
     path_by_lang = {l: f"/{l}/yechimlar/{SOLUTION_SLUGS[key][l]}/" for l in LANGS}
-    ctx = _base_ctx(request, lang, path_by_lang, title=s["title"], desc=s["meta"],
+    ctx = await _base_ctx(request, lang, path_by_lang, title=s["title"], desc=s["meta"],
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"),
                                   (NAV[lang]["solutions"], f"/{lang}/yechimlar/"),
                                   (s["nav"], None)])
@@ -191,7 +237,7 @@ async def portfolio_index(request: Request, lang: str):
         "en": "Our real projects — with the problem, solution and result. Each was built for a real client (or as our own product).",
     }[lang]
     title = {"uz": "Portfolio", "ru": "Портфолио", "en": "Portfolio"}[lang]
-    ctx = _base_ctx(request, lang, path_by_lang, title=f"{title} — promtchi®", desc=intro,
+    ctx = await _base_ctx(request, lang, path_by_lang, title=f"{title} — promtchi®", desc=intro,
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"), (NAV[lang]["portfolio"], None)])
     ctx.update(cases=_case_cards(lang), t_h1=NAV[lang]["portfolio"], t_intro=intro)
     return templates.TemplateResponse(request, "portfolio_index.html", ctx)
@@ -205,7 +251,7 @@ async def portfolio_detail(request: Request, lang: str, slug: str):
         raise HTTPException(404, "Loyiha topilmadi")
     c = CASES[key][lang]
     path_by_lang = {l: f"/{l}/portfolio/{CASE_SLUGS[key][l]}/" for l in LANGS}
-    ctx = _base_ctx(request, lang, path_by_lang, title=f"{c['title']} — promtchi®", desc=c["meta"],
+    ctx = await _base_ctx(request, lang, path_by_lang, title=f"{c['title']} — promtchi®", desc=c["meta"],
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"),
                                   (NAV[lang]["portfolio"], f"/{lang}/portfolio/"),
                                   (c["title"], None)])
@@ -224,7 +270,7 @@ async def faq_page(request: Request, lang: str):
             "ru": "Часто задаваемые вопросы о promtchi: цена, сроки, оплата, техподдержка и услуги.",
             "en": "Frequently asked questions about promtchi: pricing, timelines, payment, support and services."}[lang]
     title = {"uz": "Savol-javob (FAQ)", "ru": "Вопросы и ответы (FAQ)", "en": "FAQ"}[lang]
-    ctx = _base_ctx(request, lang, path_by_lang, title=f"{title} — promtchi®", desc=desc,
+    ctx = await _base_ctx(request, lang, path_by_lang, title=f"{title} — promtchi®", desc=desc,
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"), (NAV[lang]["faq"], None)])
     ctx.update(items=items, t_h1=title, faq_schema=seo.json_ld(seo.faq_schema(items)))
     return templates.TemplateResponse(request, "faq.html", ctx)
@@ -237,7 +283,7 @@ async def about_page(request: Request, lang: str):
     _check_lang(lang)
     path_by_lang = {l: f"/{l}/biz-haqimizda/" for l in LANGS}
     a = ABOUT[lang]
-    ctx = _base_ctx(request, lang, path_by_lang, title=a["title"], desc=a["meta"],
+    ctx = await _base_ctx(request, lang, path_by_lang, title=a["title"], desc=a["meta"],
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"), (NAV[lang]["about"], None)])
     team = [
         {"name": "G'iyosiddin Tursunxo'jayev", "role": {"uz": "Founder", "ru": "Основатель", "en": "Founder"}[lang]},
@@ -259,7 +305,7 @@ async def contact_page(request: Request, lang: str):
     desc = {"uz": "promtchi bilan bog'laning — Telegram, email yoki forma orqali. 24 soat ichida javob beramiz.",
             "ru": "Свяжитесь с promtchi — через Telegram, email или форму. Ответим в течение 24 часов.",
             "en": "Get in touch with promtchi — via Telegram, email or the form. We reply within 24 hours."}[lang]
-    ctx = _base_ctx(request, lang, path_by_lang, title=f"{title} — promtchi®", desc=desc,
+    ctx = await _base_ctx(request, lang, path_by_lang, title=f"{title} — promtchi®", desc=desc,
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"), (NAV[lang]["contact"], None)])
     sub = {"uz": "G'oyangizni yozing — 24 soat ichida bog'lanamiz.",
            "ru": "Опишите идею — свяжемся с вами в течение 24 часов.",
@@ -310,7 +356,7 @@ async def blog_index(request: Request, lang: str):
     empty = {"uz": "Hozircha maqolalar yo'q — tez orada qo'shiladi.",
              "ru": "Пока нет статей — скоро появятся.",
              "en": "No articles yet — coming soon."}[lang]
-    ctx = _base_ctx(request, lang, path_by_lang, title=f"{title} — promtchi®", desc=desc,
+    ctx = await _base_ctx(request, lang, path_by_lang, title=f"{title} — promtchi®", desc=desc,
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"), (NAV[lang]["blog"], None)])
     ctx.update(posts=posts, t_h1=title, t_empty=empty)
     return templates.TemplateResponse(request, "blog_index.html", ctx)
@@ -328,7 +374,7 @@ async def blog_detail(request: Request, lang: str, slug: str):
         raise HTTPException(404, "Post topilmadi")
     path_by_lang = {l: f"/{l}/blog/{slug}/" for l in LANGS}
     excerpt = (p.body[:160] + "…") if len(p.body) > 160 else p.body
-    ctx = _base_ctx(request, lang, path_by_lang, title=f"{p.title} — promtchi®", desc=excerpt,
+    ctx = await _base_ctx(request, lang, path_by_lang, title=f"{p.title} — promtchi®", desc=excerpt,
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"),
                                   (NAV[lang]["blog"], f"/{lang}/blog/"), (p.title, None)],
                      og_type="article")
@@ -424,7 +470,7 @@ async def robots():
 async def lang_404(request: Request, lang: str, full_path: str):
     lang = lang if lang in LANGS else "uz"
     path_by_lang = {l: f"/{l}/" for l in LANGS}
-    ctx = _base_ctx(request, lang, path_by_lang,
+    ctx = await _base_ctx(request, lang, path_by_lang,
                      title=f"{COMMON[lang]['not_found_title']} — promtchi®",
                      desc=COMMON[lang]["not_found_body"])
     return templates.TemplateResponse(request, "404.html", ctx, status_code=404)
