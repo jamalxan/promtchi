@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block extra_schema %}<script type="application/ld+json">{{ service_schema|safe }}</script>
+{% if faq_schema %}<script type="application/ld+json">{{ faq_schema|safe }}</script>{% endif %}{% endblock %}
+{% block content %}
+<section class="hero-in wrap">
+  <span class="eyebrow">{{ nav.services }}</span>
+  <h1>{{ s.h1 }}</h1>
+  <p class="lead">{{ s.value }}</p>
+  <a class="btn btn-acid" href="/{{ lang }}/aloqa/" style="margin-top:1rem">{{ common.cta_button }}</a>
+</section>
+
+<section class="sec wrap two-col">
+  <div>
+    <h2>{{ common.for_whom }}</h2>
+    <p>{{ s.for_whom }}</p>
+    <h2 style="margin-top:1.6rem">{{ common.problem_solution }}</h2>
+    <p><b>{{ common.problem }}:</b> {{ s.problem }}</p>
+    <p><b>{{ common.solution }}:</b> {{ s.solution }}</p>
+  </div>
+  <div>
+    <h2>{{ common.what_included }}</h2>
+    <ul class="check-list">
+      {% for item in s.includes %}<li>{{ item }}</li>{% endfor %}
+    </ul>
+  </div>
+</section>
+
+<section class="sec alt wrap">
+  <h2>{{ common.features }}</h2>
+  <ul class="check-list" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));display:grid">
+    {% for f in s.features %}<li>{{ f }}</li>{% endfor %}
+  </ul>
+  <div class="tag-row" style="margin-top:1.4rem">
+    <span class="eyebrow" style="margin:0">{{ common.tech }}:</span>
+    {% for tch in s.tech %}<span>{{ tch }}</span>{% endfor %}
+  </div>
+  <div class="note-box">{{ s.price_note }}</div>
+</section>
+
+{% if related_cases %}
+<section class="sec wrap">
+  <h2>{{ common.portfolio_examples }}</h2>
+  <div class="card-grid">
+    {% for c in related_cases %}
+    <a class="card" href="/{{ lang }}/portfolio/{{ c.slug }}/">
+      <span class="sub">{{ c.cat }}</span>
+      <h3>{{ c.title }}</h3>
+      <p>{{ c.short }}</p>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if s.faq %}
+<section class="sec alt wrap">
+  <h2>{{ common.faq_title }}</h2>
+  <div class="faq-list">
+    {% for q, a in s.faq %}
+    <details><summary>{{ q }}</summary><div class="fa-body">{{ a }}</div></details>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="sec wrap">
+  <h2>{{ common.all_services }}</h2>
+  <div class="tag-row">
+    {% for other in all_services %}{% if other.slug != s.slug %}<a class="btn btn-outline" href="/{{ lang }}/xizmatlar/{{ other.slug }}/">{{ other.nav }}</a>{% endif %}{% endfor %}
+  </div>
+</section>
+
+<section class="cta-band wrap">
+  <h2>{{ common.cta_title }}</h2>
+  <p>{{ common.cta_sub }}</p>
+  <a class="btn btn-acid" href="/{{ lang }}/aloqa/">{{ common.cta_button }}</a>
+</section>
+{% endblock %}

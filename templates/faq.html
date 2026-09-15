@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block extra_schema %}<script type="application/ld+json">{{ faq_schema|safe }}</script>{% endblock %}
+{% block content %}
+<section class="hero-in wrap">
+  <span class="eyebrow">FAQ</span>
+  <h1>{{ t_h1 }}</h1>
+</section>
+<section class="sec wrap">
+  <div class="faq-list">
+    {% for q, a in items %}
+    <details><summary>{{ q }}</summary><div class="fa-body">{{ a }}</div></details>
+    {% endfor %}
+  </div>
+</section>
+<section class="cta-band wrap">
+  <h2>{{ common.cta_title }}</h2>
+  <p>{{ common.cta_sub }}</p>
+  <a class="btn btn-acid" href="/{{ lang }}/aloqa/">{{ common.cta_button }}</a>
+</section>
+{% endblock %}

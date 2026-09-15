@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="{{ html_lang }}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0B0B0E">
+<title>{{ page_title }}</title>
+<meta name="description" content="{{ page_desc }}">
+<meta property="og:type" content="{{ og_type|default('website') }}">
+<meta property="og:site_name" content="promtchi">
+<meta property="og:title" content="{{ page_title }}">
+<meta property="og:description" content="{{ page_desc }}">
+<meta property="og:url" content="{{ canonical }}">
+<meta property="og:image" content="{{ org.logo }}">
+<meta property="og:locale" content="{{ og_locale }}">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="{{ canonical }}">
+{% for hreflang, href in alt_links %}<link rel="alternate" hreflang="{{ hreflang }}" href="{{ href }}">
+{% endfor %}<link rel="icon" href="/static/logo.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/site.css">
+<script type="application/ld+json">{{ org_schema|safe }}</script>
+<script type="application/ld+json">{{ website_schema|safe }}</script>
+{% if breadcrumb_schema %}<script type="application/ld+json">{{ breadcrumb_schema|safe }}</script>{% endif %}
+{% block extra_schema %}{% endblock %}
+</head>
+<body>
+<header class="site-hd">
+  <a class="brand" href="/{{ lang }}/"><img src="/static/logo.png" alt="promtchi" width="30" height="30"><b>promtchi</b><sup>&reg;</sup></a>
+  <nav class="site-nav" aria-label="{{ nav.services }}">
+    <a href="/{{ lang }}/xizmatlar/">{{ nav.services }}</a>
+    <a href="/{{ lang }}/yechimlar/">{{ nav.solutions }}</a>
+    <a href="/{{ lang }}/portfolio/">{{ nav.portfolio }}</a>
+    <a href="/{{ lang }}/blog/">{{ nav.blog }}</a>
+    <a href="/{{ lang }}/faq/">{{ nav.faq }}</a>
+    <a href="/{{ lang }}/biz-haqimizda/">{{ nav.about }}</a>
+  </nav>
+  <div class="site-hd-right">
+    <div class="lang-switch">
+      {% for l in langs %}<a href="{{ lang_urls[l] }}" class="{{ 'on' if l==lang else '' }}" {{ 'aria-current="true"' if l==lang else '' }}>{{ lang_short[l] }}</a>{% endfor %}
+    </div>
+    <a class="btn btn-acid" href="/{{ lang }}/aloqa/">{{ nav.contact }}</a>
+  </div>
+</header>
+
+{% if breadcrumbs %}
+<nav class="crumbs wrap" aria-label="Breadcrumb">
+  {% for name, url in breadcrumbs %}{% if not loop.last %}<a href="{{ url }}">{{ name }}</a><span class="sep">/</span>{% else %}<span aria-current="page">{{ name }}</span>{% endif %}{% endfor %}
+</nav>
+{% endif %}
+
+<main>
+{% block content %}{% endblock %}
+</main>
+
+<footer class="site-ft">
+  <div class="wrap ft-grid">
+    <div class="ft-cta">
+      <h2>{{ footer.tagline }}</h2>
+      <a href="/{{ lang }}/aloqa/" class="btn btn-acid">{{ footer.cta }}</a>
+    </div>
+    <div class="ft-col">
+      <b>{{ footer.nav_title }}</b>
+      <a href="/{{ lang }}/xizmatlar/">{{ nav.services }}</a>
+      <a href="/{{ lang }}/yechimlar/">{{ nav.solutions }}</a>
+      <a href="/{{ lang }}/portfolio/">{{ nav.portfolio }}</a>
+      <a href="/{{ lang }}/blog/">{{ nav.blog }}</a>
+      <a href="/{{ lang }}/faq/">{{ nav.faq }}</a>
+      <a href="/{{ lang }}/biz-haqimizda/">{{ nav.about }}</a>
+    </div>
+    <div class="ft-col">
+      <b>{{ footer.contact_title }}</b>
+      <a href="{{ org.telegram_url }}" target="_blank" rel="noopener">Telegram — {{ org.telegram_handle }}</a>
+      <a href="mailto:{{ org.email }}">{{ org.email }}</a>
+      <a href="tel:{{ org.phone_tel }}">{{ org.phone }}</a>
+      <a href="{{ org.instagram_url }}" target="_blank" rel="noopener">Instagram</a>
+    </div>
+  </div>
+  <div class="wrap ft-meta">
+    <span>&copy; {{ org.founded }}&ndash;2026 promtchi&reg;</span>
+    <span>{{ footer.rights }}</span>
+  </div>
+</footer>
+</body>
+</html>

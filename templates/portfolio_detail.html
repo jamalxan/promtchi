@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-in wrap">
+  <span class="eyebrow">{{ c.cat }}</span>
+  <h1>{{ c.title }}</h1>
+  <p class="lead">{{ c.short }}</p>
+</section>
+
+<section class="sec wrap">
+  <div class="case-meta">
+    <div><small>{{ common.client }}</small>{{ c.client }}</div>
+    <div><small>{{ common.duration }}</small>{{ c.duration }}</div>
+    <div><small>{{ common.category }}</small>{{ c.cat }}</div>
+    <div><small>{{ common.tech }}</small>{{ c.tech }}</div>
+  </div>
+
+  <div class="case-block"><span class="lab">{{ common.problem }}</span><p>{{ c.problem }}</p></div>
+  <div class="case-block"><span class="lab">{{ common.solution }}</span><p>{{ c.solution }}</p></div>
+  <div class="case-block"><span class="lab">{{ common.result }}</span><p>{{ c.result }}</p></div>
+
+  <a class="btn btn-acid" href="/{{ lang }}/aloqa/">{{ common.cta_button }}</a>
+</section>
+
+{% if other_cases %}
+<section class="sec alt wrap">
+  <h2>{{ common.all_cases }}</h2>
+  <div class="card-grid">
+    {% for oc in other_cases %}
+    <a class="card" href="/{{ lang }}/portfolio/{{ oc.slug }}/">
+      <span class="sub">{{ oc.cat }}</span>
+      <h3>{{ oc.title }}</h3>
+      <p>{{ oc.short }}</p>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-in wrap">
+  <span class="eyebrow">{{ nav.about }}</span>
+  <h1>{{ a.h1 }}</h1>
+  <p class="lead">{{ a.lead }}</p>
+</section>
+
+<section class="sec wrap two-col">
+  <div>
+    <h2>{{ a.what_we_do_title }}</h2>
+    <ul class="check-list">
+      {% for item in a.what_we_do %}<li>{{ item }}</li>{% endfor %}
+    </ul>
+  </div>
+  <div>
+    <p>{{ a.mission }}</p>
+    <div class="tag-row">
+      {% for num, label in a.facts %}<span style="display:flex;flex-direction:column;align-items:flex-start;padding:.7rem 1rem"><b style="font-family:var(--anton);font-size:1.3rem;color:var(--acid)">{{ num }}</b><small style="font-family:var(--mono);opacity:.6">{{ label }}</small></span>{% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="sec alt wrap">
+  <h2>{{ a.team_title }}</h2>
+  <p class="lead" style="max-width:70ch">{{ a.team_lead }}</p>
+  <div class="card-grid">
+    {% for m in team %}
+    <div class="card">
+      <h3>{{ m.name }}</h3>
+      <p>{{ m.role }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="cta-band wrap">
+  <h2>{{ common.cta_title }}</h2>
+  <p>{{ common.cta_sub }}</p>
+  <a class="btn btn-acid" href="/{{ lang }}/aloqa/">{{ common.cta_button }}</a>
+</section>
+{% endblock %}

@@ -55,7 +55,7 @@ from fastapi import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -83,7 +83,7 @@ from .schemas import (
     RemoveEmailRequestIn, ResetPasswordIn, ReviewCodeIn, ReviewIn,
     SetPrimaryRequestIn, TelegramAdminIn, TelegramSettingsIn,
 )
-from . import crm_api, crm_service, crypto
+from . import crm_api, crm_service, crypto, pages
 from . import crm_constants as crm
 from .telegram import bot
 from .security import (
@@ -1192,20 +1192,30 @@ async def delete_review_code(
     return {"ok": True}
 
 
-# ══════════ STATIC SAYT ══════════
+# ══════════ STATIC SAYT — bosh sahifa (UZ/RU/EN) ══════════
+# 3 tilli TZ (2026-09-15): promtchi.uz/uz/, /ru/, /en/ — har biri mustaqil
+# indekslanadigan til versiyasi. RU/EN static/index.{ru,en}.html — uz bilan
+# bir xil dizayn/JS, faqat matn tarjima qilingan (admin-tahrirlanadigan
+# packages/team/testimonials/cases uchun DB fetch o'chirilgan — statik,
+# tarjima qilingan DEFAULTS ko'rsatiladi; kelajakda to'liq trilingual CMS
+# kerak bo'lsa app/content/ dagi qolgan sahifalar namunasidan foydalanish
+# mumkin). Ichki SEO sahifalari (xizmatlar/portfolio/faq/...) app/pages.py'da.
 
 _PAGE_CACHE = f"public, max-age={settings.STATIC_CACHE_SECONDS}, must-revalidate"
 
+ru_cache = _PageCache(STATIC_DIR / "index.ru.html")
+en_cache = _PageCache(STATIC_DIR / "index.en.html")
+_LANG_CACHES = {"uz": index_cache, "ru": ru_cache, "en": en_cache}
 
-@app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
-async def index(request: Request):
-    """Bosh sahifa — xotiradan, oldindan gzip qilingan holda.
+
+async def _serve_lang_home(request: Request, cache: "_PageCache"):
+    """Til bo'yicha bosh sahifa — xotiradan, oldindan gzip qilingan holda.
 
     Diskka faqat mtime tekshiruvi uchun murojaat qilinadi; GZip middleware ham
     ishga tushmaydi (Content-Encoding allaqachon qo'yilgan bo'ladi).
     """
-    if not index_cache.load():
-        raise HTTPException(404, "static/index.html topilmadi")
+    if not cache.load():
+        raise HTTPException(404, "Sahifa topilmadi")
 
     # IP yoki boshqa host orqali kirilsa — noindex variant (canonical/OG teglar
     # baribir haqiqiy domenga ishora qiladi, faqat qidiruv tizimlari bu nusxani
@@ -1214,7 +1224,7 @@ async def index(request: Request):
     canonical = settings.CANONICAL_HOST.lower()
     is_canonical = not canonical or host in (canonical, f"www.{canonical}")
 
-    etag = index_cache.etag if is_canonical else index_cache.etag_noindex
+    etag = cache.etag if is_canonical else cache.etag_noindex
     headers = {
         "ETag": etag,
         "Cache-Control": _PAGE_CACHE,
@@ -1227,10 +1237,42 @@ async def index(request: Request):
 
     if "gzip" in request.headers.get("accept-encoding", ""):
         headers["Content-Encoding"] = "gzip"
-        body = index_cache.gz if is_canonical else index_cache.gz_noindex
+        body = cache.gz if is_canonical else cache.gz_noindex
         return Response(body, media_type="text/html", headers=headers)
-    body = index_cache.raw if is_canonical else index_cache.raw_noindex
+    body = cache.raw if is_canonical else cache.raw_noindex
     return Response(body, media_type="text/html", headers=headers)
+
+
+@app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
+async def root_redirect():
+    """`/` — o'zbek (asosiy bozor) versiyasiga 301 bilan yo'naltiradi.
+
+    promtchi.uz/uz/ endi canonical URL (TZ 2-bo'lim). 301 (doimiy) tanlandi —
+    `/` allaqachon Google'da indekslangan, shu havola og'irligini saqlab qoladi.
+    """
+    return RedirectResponse(url="/uz/", status_code=301)
+
+
+@app.api_route("/uz/", methods=["GET", "HEAD"], include_in_schema=False)
+async def home_uz(request: Request):
+    return await _serve_lang_home(request, index_cache)
+
+
+@app.api_route("/ru/", methods=["GET", "HEAD"], include_in_schema=False)
+async def home_ru(request: Request):
+    return await _serve_lang_home(request, ru_cache)
+
+
+@app.api_route("/en/", methods=["GET", "HEAD"], include_in_schema=False)
+async def home_en(request: Request):
+    return await _serve_lang_home(request, en_cache)
+
+
+# Ichki SEO sahifalari (xizmatlar/yechimlar/portfolio/faq/blog/...) + sitemap/robots.
+# /uz/,/ru/,/en/ dan KEYIN qo'shiladi — pages.router'dagi /{lang}/{full_path:path}
+# 404-fallback ulardan keyin tekshirilishi kerak (Starlette marshrutlarni
+# ro'yxatga olingan tartibda mos keladi).
+app.include_router(pages.router)
 
 
 @app.get("/admin", include_in_schema=False)

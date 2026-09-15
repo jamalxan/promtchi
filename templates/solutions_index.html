@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-in wrap">
+  <span class="eyebrow">{{ nav.solutions }}</span>
+  <h1>{{ t_h1 }}</h1>
+  <p class="lead">{{ t_intro }}</p>
+</section>
+<section class="sec wrap">
+  <div class="card-grid">
+    {% for sol in solutions %}
+    <a class="card" href="/{{ lang }}/yechimlar/{{ sol.slug }}/">
+      <span class="no">/{{ '%02d'|format(loop.index) }}</span>
+      <h3>{{ sol.nav }}</h3>
+      <p>{{ sol.intro }}</p>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+<section class="cta-band wrap">
+  <h2>{{ common.cta_title }}</h2>
+  <p>{{ common.cta_sub }}</p>
+  <a class="btn btn-acid" href="/{{ lang }}/aloqa/">{{ common.cta_button }}</a>
+</section>
+{% endblock %}

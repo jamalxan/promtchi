@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="err-page wrap">
+  <div class="code">404</div>
+  <h1>{{ common.not_found_title }}</h1>
+  <p class="lead" style="margin:0 auto 1.4rem">{{ common.not_found_body }}</p>
+  <a class="btn btn-acid" href="/{{ lang }}/">{{ nav.home_url }}</a>
+</section>
+{% endblock %}

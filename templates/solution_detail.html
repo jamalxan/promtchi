@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block extra_schema %}{% if faq_schema %}<script type="application/ld+json">{{ faq_schema|safe }}</script>{% endif %}{% endblock %}
+{% block content %}
+<section class="hero-in wrap">
+  <span class="eyebrow">{{ nav.solutions }}</span>
+  <h1>{{ s.h1 }}</h1>
+  <p class="lead">{{ s.intro }}</p>
+  <a class="btn btn-acid" href="/{{ lang }}/aloqa/" style="margin-top:1rem">{{ common.cta_button }}</a>
+</section>
+
+<section class="sec wrap two-col">
+  <div>
+    <h2>{{ common.problem }}</h2>
+    <ul class="check-list">
+      {% for c in s.challenges %}<li>{{ c }}</li>{% endfor %}
+    </ul>
+  </div>
+  <div>
+    <h2>{{ common.solution }}</h2>
+    <p>{{ s.approach }}</p>
+  </div>
+</section>
+
+{% if related_services %}
+<section class="sec alt wrap">
+  <h2>{{ common.related_services }}</h2>
+  <div class="tag-row">
+    {% for sv in related_services %}<a class="btn btn-outline" href="/{{ lang }}/xizmatlar/{{ sv.slug }}/">{{ sv.nav }}</a>{% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if related_cases %}
+<section class="sec wrap">
+  <h2>{{ common.portfolio_examples }}</h2>
+  <div class="card-grid">
+    {% for c in related_cases %}
+    <a class="card" href="/{{ lang }}/portfolio/{{ c.slug }}/">
+      <span class="sub">{{ c.cat }}</span>
+      <h3>{{ c.title }}</h3>
+      <p>{{ c.short }}</p>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if s.faq %}
+<section class="sec alt wrap">
+  <h2>{{ common.faq_title }}</h2>
+  <div class="faq-list">
+    {% for q, a in s.faq %}
+    <details><summary>{{ q }}</summary><div class="fa-body">{{ a }}</div></details>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="cta-band wrap">
+  <h2>{{ common.cta_title }}</h2>
+  <p>{{ common.cta_sub }}</p>
+  <a class="btn btn-acid" href="/{{ lang }}/aloqa/">{{ common.cta_button }}</a>
+</section>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-in wrap">
+  <span class="eyebrow">{{ nav.contact }}</span>
+  <h1>{{ t_h1 }}</h1>
+  <p class="lead">{{ t_sub }}</p>
+</section>
+<section class="sec wrap two-col">
+  <div>
+    <div class="contact-links">
+      <a href="{{ org.telegram_url }}" target="_blank" rel="noopener">Telegram — {{ org.telegram_handle }}</a>
+      <a href="mailto:{{ org.email }}">{{ org.email }}</a>
+      <a href="tel:{{ org.phone_tel }}">{{ org.phone }}</a>
+    </div>
+  </div>
+  <form class="cform" id="cform">
+    <input type="text" name="website" id="cf-hp" autocomplete="off" tabindex="-1" style="position:absolute;left:-9999px" aria-hidden="true">
+    <div>
+      <label for="cf-name">{{ common.form_name }}</label>
+      <input id="cf-name" type="text" placeholder="{{ common.form_name_ph }}" maxlength="120" autocomplete="name" required>
+    </div>
+    <div>
+      <label for="cf-contact">{{ common.form_contact }}</label>
+      <input id="cf-contact" type="text" placeholder="{{ common.form_contact_ph }}" maxlength="120" autocomplete="tel" required>
+    </div>
+    <div>
+      <label for="cf-type">{{ common.form_type }}</label>
+      <select id="cf-type">
+        {% for value, label in project_types %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="cf-msg">{{ common.form_message }}</label>
+      <textarea id="cf-msg" placeholder="{{ common.form_message_ph }}" maxlength="4000"></textarea>
+    </div>
+    <button class="btn btn-acid" id="cf-submit" type="submit">{{ common.form_submit }}</button>
+    <div class="ok-msg" id="cf-msgline" role="status"></div>
+  </form>
+</section>
+<script>
+(function(){
+  var form=document.getElementById('cform');
+  form.addEventListener('submit', async function(e){
+    e.preventDefault();
+    var out=document.getElementById('cf-msgline'), btn=document.getElementById('cf-submit');
+    if(btn.disabled) return;
+    if(document.getElementById('cf-hp').value){ out.textContent='{{ common.form_ok }}'; form.reset(); return; }
+    var name=document.getElementById('cf-name').value.trim();
+    if(!name){ out.textContent='{{ common.form_err_name }}'; return; }
+    var contact=document.getElementById('cf-contact').value.trim();
+    var clean=contact.replace(/[\s\-()]/g,'');
+    if(!/^@[A-Za-z0-9_]{5,32}$/.test(clean) && !/^\+?\d{7,15}$/.test(clean)){
+      out.textContent='{{ common.form_err_contact }}';
+      document.getElementById('cf-contact').focus();
+      return;
+    }
+    var body={name:name, phone:contact, project_type:document.getElementById('cf-type').value,
+      message:document.getElementById('cf-msg').value.trim(), website:''};
+    btn.disabled=true; btn.style.opacity='.6'; out.textContent='{{ common.form_sending }}';
+    try{
+      var r=await fetch('/api/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      if(r.ok){ out.textContent='{{ common.form_ok }}'; form.reset(); }
+      else if(r.status===429){ out.textContent='{{ common.form_err_ratelimit }}'; }
+      else { out.textContent='{{ common.form_err_generic }}'; }
+    }catch(err){ out.textContent='{{ common.form_err_network }}'; }
+    finally{ btn.disabled=false; btn.style.opacity=''; }
+  });
+})();
+</script>
+{% endblock %}

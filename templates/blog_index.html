@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-in wrap">
+  <span class="eyebrow">{{ nav.blog }}</span>
+  <h1>{{ t_h1 }}</h1>
+</section>
+<section class="sec wrap">
+  {% if posts %}
+  <div class="card-grid">
+    {% for p in posts %}
+    <a class="card" href="/{{ lang }}/blog/{{ p.slug }}/">
+      <span class="sub">{{ p.date }}</span>
+      <h3>{{ p.title }}</h3>
+      <p>{{ p.excerpt }}</p>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="lead">{{ t_empty }}</p>
+  {% endif %}
+</section>
+{% endblock %}
