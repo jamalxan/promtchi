@@ -1268,13 +1268,6 @@ async def home_en(request: Request):
     return await _serve_lang_home(request, en_cache)
 
 
-# Ichki SEO sahifalari (xizmatlar/yechimlar/portfolio/faq/blog/...) + sitemap/robots.
-# /uz/,/ru/,/en/ dan KEYIN qo'shiladi — pages.router'dagi /{lang}/{full_path:path}
-# 404-fallback ulardan keyin tekshirilishi kerak (Starlette marshrutlarni
-# ro'yxatga olingan tartibda mos keladi).
-app.include_router(pages.router)
-
-
 @app.get("/admin", include_in_schema=False)
 async def admin_page():
     f = STATIC_DIR / "admin.html"
@@ -1309,3 +1302,12 @@ async def tg_super_confirm_page():
 
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+# Ichki SEO sahifalari (xizmatlar/yechimlar/portfolio/faq/blog/...) + sitemap/robots.
+# /static mount'idan KEYIN qo'shiladi — pages.router'dagi /{lang}/{full_path:path}
+# 404-fallback ikkita segmentli har qanday GET yo'lga (masalan /static/site.css)
+# mos kelib ketadi, shuning uchun bu yerda joylashtirilmasa /static/* fayllari
+# (CSS, rasm, yuklamalar) GET so'rovlarida 404 qaytaradi (Starlette marshrutlarni
+# ro'yxatga olingan tartibda mos keladi — HEAD ishlab, GET ishlamasligi shu
+# sababdan edi: pages.router'da faqat GET ro'yxatga olingan).
+app.include_router(pages.router)
