@@ -355,10 +355,6 @@ tr:hover td{background:rgba(217,255,63,.08)}
         FAQ sahifasi
       </a>
       <div class="nav-label">Landing sahifa</div>
-      <a href="#" data-page="cases">
-        <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-        Loyihalar
-      </a>
       <a href="#" data-page="packages">
         <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
         Paketlar
@@ -366,6 +362,10 @@ tr:hover td{background:rgba(217,255,63,.08)}
       <a href="#" data-page="team">
         <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         Jamoa
+      </a>
+      <a href="#" data-page="testimonials">
+        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Fikrlar (zaxira)
       </a>
       <a href="#" data-page="contacts">
         <svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .6 2.9a2 2 0 0 1-.5 2.1L7.9 10a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.9.5 2.9.6a2 2 0 0 1 1.7 2z"/></svg>
@@ -698,8 +698,8 @@ async function showApp() {
 /* Rolga qarab yon menyuni cheklash — server ham har bir endpointda mustaqil
    tekshiradi (bu yerdagi yashirish faqat UX, xavfsizlik chegarasi emas). */
 const MANAGER_HIDDEN_PAGES = new Set([
-  'dashboard', 'cases', 'packages', 'team', 'contacts', 'socials', 'faq',
-  'posts', 'services', 'portfolio', 'telegram', 'crmtelegram', 'stats',
+  'dashboard', 'packages', 'team', 'testimonials', 'contacts', 'socials', 'faq',
+  'posts', 'services', 'portfolio', 'faqpage', 'telegram', 'crmtelegram', 'stats',
 ]);
 function applyRoleVisibility() {
   document.querySelectorAll('.sidebar nav a').forEach(a => {
@@ -728,7 +728,7 @@ function updateNavBadge() {
 
 async function loadContent() {
   try {
-    const r = await apiFetch('/api/content');
+    const r = await apiFetch('/api/admin/content');
     if (r.ok) {
       DATA = await r.json();
       CONTENT_VERSION = r.headers.get('X-Content-Version') || '—';
@@ -819,9 +819,9 @@ function navigate(page) {
   const renderers = {
     dashboard: renderDashboard,
     leads: renderLeads,
-    cases: () => renderContentPage('cases', 'Loyihalar'),
     packages: () => renderContentPage('packages', 'Paketlar'),
     team: () => renderContentPage('team', 'Jamoa'),
+    testimonials: () => renderContentPage('testimonials', 'Fikrlar (zaxira)'),
     contacts: () => renderContentPage('contacts', 'Aloqa havolalari'),
     socials: () => renderContentPage('socials', 'Ijtimoiy tarmoqlar'),
     faq: () => renderContentPage('faq', 'FAQ (bosh sahifa, qisqa)'),
@@ -880,7 +880,7 @@ function renderDashboard() {
     const now = new Date();
     return d.toDateString() === now.toDateString();
   }).length;
-  const totalCases = DATA ? DATA.cases.length : 0;
+  const totalCases = PORTFOLIO.length;
   const totalPosts = POSTS.length;
 
   const recentLeads = LEADS.slice(0, 5);
@@ -1369,8 +1369,20 @@ async function renderStats() {
 }
 
 /* ═══ CONTENT EDITOR ═══ */
-let contentTab = 'cases';
+/* packages/team/testimonials/faq — endi til bo'yicha saqlanadi ({uz:[],ru:[],en:[]},
+   TZ 1-bo'lim: RU/EN bosh sahifasi ham admin o'zgarishlarini avtomatik ko'rishi
+   uchun); contacts/socials tilga bog'liq EMAS (bitta umumiy ro'yxat). */
+const LANG_TAB_SECTIONS = new Set(['packages', 'team', 'testimonials', 'faq']);
+let contentTab = 'packages';
+let contentLangTab = 'uz';
 let _saveTimer = null;
+
+/* joriy bo'lim + til uchun tahrirlanadigan ro'yxatning O'ZI (reference,
+   nusxa emas) — shu yerga yozilgan o'zgarish to'g'ridan-to'g'ri DATA'ni
+   o'zgartiradi. */
+function curList() {
+  return LANG_TAB_SECTIONS.has(contentTab) ? DATA[contentTab][contentLangTab] : DATA[contentTab];
+}
 
 function saveContent() {
   clearTimeout(_saveTimer);
@@ -1387,24 +1399,29 @@ function saveContent() {
 }
 
 const SECTION_TITLES = {
-  cases: 'Loyihalar', packages: 'Paketlar', team: 'Jamoa',
-  contacts: 'Aloqa havolalari', socials: 'Ijtimoiy tarmoqlar', faq: 'FAQ'
+  packages: 'Paketlar', team: 'Jamoa', testimonials: 'Fikrlar (zaxira)',
+  contacts: 'Aloqa havolalari', socials: 'Ijtimoiy tarmoqlar', faq: 'FAQ (bosh sahifa, qisqa)'
 };
 function rerenderSection() { renderContentPage(contentTab, SECTION_TITLES[contentTab] || 'Kontent'); }
 
 const SECTION_HINTS = {
-  cases: "Landing'dagi \"Loyihalar\" bo'limi — portfolio. O'zgartirishlar 0.6s ichida avtomatik saqlanadi va saytda darhol ko'rinadi.",
-  packages: "Landing'dagi \"Narxlar\" bo'limi paketlari. Avtomatik saqlanadi.",
-  team: "Landing'dagi \"Jamoa\" bo'limi. Avtomatik saqlanadi.",
-  testimonials: "Landing'dagi \"Mijozlar fikri\" bo'limi. Avtomatik saqlanadi.",
-  contacts: "Landing'dagi \"Aloqa\" bo'limidagi havolalar (Telegram, Email, Telefon...). Bo'sh havola ko'rsatilmaydi.",
-  socials: "Footer pastidagi ijtimoiy tarmoq ikonkalari. Bo'sh yoki o'chirilgan havola ko'rsatilmaydi.",
-  faq: "Bosh sahifadagi \"Savol-javob\" bo'limi (o'zbekcha). Avtomatik saqlanadi va saytda darhol ko'rinadi."
+  packages: "Landing'dagi \"Narxlar\" bo'limi paketlari — 3 tilda. Avtomatik saqlanadi.",
+  team: "Landing'dagi \"Jamoa\" bo'limi — 3 tilda (ism/rasm har tilda takrorlanadi, faqat lavozim tarjima qilinadi). Avtomatik saqlanadi.",
+  testimonials: "Landing'dagi \"Mijozlar fikri\" bo'limining ZAXIRA matni — 3 tilda. Real mijoz fikrlari (Review tizimi, \"Fikrlar\" menyusi) mavjud bo'lsa, ular ko'rsatiladi; bu faqat ular hali yo'q bo'lganda ko'rinadi.",
+  contacts: "Landing'dagi \"Aloqa\" bo'limidagi havolalar (Telegram, Email, Telefon...) — barcha 3 tilda BIR XIL (telefon raqami tilga qarab o'zgarmaydi). Bo'sh havola ko'rsatilmaydi.",
+  socials: "Footer pastidagi ijtimoiy tarmoq ikonkalari — barcha 3 tilda bir xil. Bo'sh yoki o'chirilgan havola ko'rsatilmaydi.",
+  faq: "Bosh sahifadagi qisqa \"Savol-javob\" bo'limi — 3 tilda (to'liq 24 ta savol-javob uchun \"FAQ sahifasi\" bo'limiga qarang). Avtomatik saqlanadi va saytda darhol ko'rinadi."
 };
 
 function renderContentPage(tab, title) {
   contentTab = tab;
-  const count = DATA ? DATA[tab].length : 0;
+  const isLangTab = LANG_TAB_SECTIONS.has(tab);
+  const list = curList();
+  const count = list ? list.length : 0;
+  const langTabs = isLangTab ? `
+    <div style="display:flex;gap:.4rem;margin:-.4rem 0 1.1rem">
+      ${_LANGS3.map(l => `<button type="button" class="btn btn-sm ${l === contentLangTab ? 'btn-acid' : 'btn-outline'}" data-contentlang="${l}">${_LANG3_LABEL[l]}</button>`).join('')}
+    </div>` : '';
   $('mainContent').innerHTML = `
     <div class="main-header">
       <h2>${title} <span style="font-family:var(--mono);font-size:1rem;opacity:.4">(${count})</span></h2>
@@ -1415,15 +1432,19 @@ function renderContentPage(tab, title) {
       </div>
     </div>
     <p style="font-size:.86rem;opacity:.6;margin:-1.2rem 0 1.3rem">${SECTION_HINTS[tab] || ''}</p>
+    ${langTabs}
     <div class="card-list" id="editorCards"></div>
   `;
   renderContentCards();
   $('importFile').onchange = importContent;
+  document.querySelectorAll('[data-contentlang]').forEach(btn => {
+    btn.onclick = () => { contentLangTab = btn.dataset.contentlang; renderContentPage(tab, title); };
+  });
 }
 
 function renderContentCards() {
   if (!DATA) return;
-  const list = DATA[contentTab];
+  const list = curList();
   const box = $('editorCards');
   box.innerHTML = '';
 
@@ -1432,25 +1453,7 @@ function renderContentCards() {
     card.className = 'edit-card';
 
     let fields = '';
-    if (contentTab === 'cases') {
-      fields = `
-        <div class="field-row">
-          ${makeField('Sarlavha', 'title', i, item.title)}
-          ${makeField('Kategoriya', 'cat', i, item.cat)}
-        </div>
-        <div class="field-row">
-          ${makeField('Mijoz', 'client', i, item.client)}
-          ${makeField('Muddat', 'duration', i, item.duration)}
-        </div>
-        ${makeField('Qisqa tavsif', 'short', i, item.short, true)}
-        ${makeField('Muammo', 'problem', i, item.problem, true)}
-        ${makeField('Yechim', 'solution', i, item.solution, true)}
-        ${makeField('Natija', 'result', i, item.result, true)}
-        <div class="field-row">
-          ${makeField('Texnologiyalar', 'tech', i, item.tech)}
-          ${makeField('Rasm URL', 'image', i, item.image)}
-        </div>`;
-    } else if (contentTab === 'packages') {
+    if (contentTab === 'packages') {
       fields = `
         <div class="field-row">
           ${makeField('Nomi', 'name', i, item.name)}
@@ -1524,7 +1527,7 @@ function renderContentCards() {
     btn.onclick = async () => {
       const idx = +btn.dataset.idx;
       const ok = await confirm("O'chirish", `#${idx + 1} elementni o'chirishni xohlaysizmi?`, "Ha, o'chirish");
-      if (ok) { DATA[contentTab].splice(idx, 1); saveContent(); rerenderSection(); }
+      if (ok) { deleteItem(idx); }
     };
   });
 
@@ -1532,10 +1535,11 @@ function renderContentCards() {
     el.oninput = () => {
       const idx = +el.dataset.idx;
       const key = el.dataset.key;
+      const l = curList();
       if (key === 'features') {
-        DATA[contentTab][idx][key] = el.value.split('\n').filter(x => x.trim());
+        l[idx][key] = el.value.split('\n').filter(x => x.trim());
       } else {
-        DATA[contentTab][idx][key] = el.value;
+        l[idx][key] = el.value;
       }
       saveContent();
     };
@@ -1544,8 +1548,13 @@ function renderContentCards() {
   box.querySelectorAll('.field-check input[type=checkbox]').forEach(el => {
     el.onchange = () => {
       const idx = +el.id.split('_')[1];
-      DATA.packages.forEach(p => p.popular = false);
-      DATA.packages[idx].popular = el.checked;
+      // "OMMABOP" bitta paket — barcha 3 tilda BIR XIL index'ga qo'yiladi
+      // (tillar orasida indeks bo'yicha moslashadi), aks holda ko'rinish
+      // tilga qarab boshqa-boshqa paketni "ommabop" deb ko'rsatgan bo'lardi.
+      _LANGS3.forEach(l => {
+        (DATA.packages[l] || []).forEach(p => p.popular = false);
+        if (DATA.packages[l][idx]) DATA.packages[l][idx].popular = el.checked;
+      });
       saveContent();
       renderContentCards();
     };
@@ -1554,12 +1563,27 @@ function renderContentCards() {
   box.querySelectorAll('.field select').forEach(el => {
     el.onchange = () => {
       const idx = +el.dataset.idx;
-      DATA[contentTab][idx][el.dataset.key] = el.value;
+      const key = el.dataset.key;
+      curList()[idx][key] = el.value;
+      if (key === 'role_type') syncFieldAcrossLangs(idx, key, el.value);
       saveContent();
     };
   });
 
   bindMediaFields(box);
+}
+
+/* Til bo'yicha bo'limlarda o'chirish barcha 3 tildan BIR XIL indeksda olib
+   tashlaydi — aks holda tillar orasidagi indeks moslashuvi buzilib, masalan
+   uz'dagi 2-paket ru'dagi 3-paketga mos kelib qolardi. */
+function deleteItem(idx) {
+  if (LANG_TAB_SECTIONS.has(contentTab)) {
+    _LANGS3.forEach(l => { if (DATA[contentTab][l]) DATA[contentTab][l].splice(idx, 1); });
+  } else {
+    DATA[contentTab].splice(idx, 1);
+  }
+  saveContent();
+  rerenderSection();
 }
 
 function makeField(label, key, idx, value, isTextarea) {
@@ -1610,6 +1634,15 @@ function makeMediaField(label, key, idx, value) {
     </div></div>`;
 }
 
+/* photo/role_type — bitta odam/paket uchun tilga bog'liq EMAS (rasm yoki
+   founder/co-founder holati tarjima bilan o'zgarmaydi) — shu sabab bitta
+   tilda o'zgartirilsa, xuddi shu index'dagi qolgan 2 tilga ham ko'chiriladi
+   (aks holda admin har rasmni 3 marta yuklashi kerak bo'lardi). */
+function syncFieldAcrossLangs(idx, key, value) {
+  if (!LANG_TAB_SECTIONS.has(contentTab)) return;
+  _LANGS3.forEach(l => { if (DATA[contentTab][l][idx]) DATA[contentTab][l][idx][key] = value; });
+}
+
 async function uploadMediaFile(file, idx, key) {
   const fd = new FormData();
   fd.append('file', file);
@@ -1621,7 +1654,8 @@ async function uploadMediaFile(file, idx, key) {
     return;
   }
   const data = await r.json();
-  DATA[contentTab][idx][key] = data.url;
+  curList()[idx][key] = data.url;
+  syncFieldAcrossLangs(idx, key, data.url);
   saveContent();
   rerenderSection();
   toast('Yuklandi ✓');
@@ -1644,7 +1678,8 @@ function bindMediaFields(box) {
       inp.click();
     };
     clearBtn.onclick = () => {
-      DATA[contentTab][idx][key] = '';
+      curList()[idx][key] = '';
+      syncFieldAcrossLangs(idx, key, '');
       saveContent();
       rerenderSection();
     };
@@ -1653,7 +1688,6 @@ function bindMediaFields(box) {
 
 function addItem() {
   const templates = {
-    cases: { title: 'Yangi loyiha', cat: 'Web & ilova', client: '', short: '', problem: '', solution: '', result: '', tech: '', duration: '', image: '' },
     packages: { name: 'Yangi paket', price: '0$', popular: false, features: ['Xususiyat'] },
     team: { name: "Yangi a'zo", role: 'Rol', photo: '', role_type: 'member' },
     testimonials: { text: 'Fikr matni', name: 'Ism', role: 'Rol', photo: '' },
@@ -1661,7 +1695,14 @@ function addItem() {
     socials: { name: 'Telegram', url: '', icon: 'telegram' },
     faq: { question: 'Yangi savol', answer: 'Javob matni' }
   };
-  DATA[contentTab].push(JSON.parse(JSON.stringify(templates[contentTab])));
+  const tpl = templates[contentTab];
+  if (LANG_TAB_SECTIONS.has(contentTab)) {
+    // barcha 3 tilga BIR XIL indeksga qo'shiladi — index bo'yicha til
+    // moslashuvini saqlab qolish uchun (admin keyin har birini tarjima qiladi)
+    _LANGS3.forEach(l => DATA[contentTab][l].push(JSON.parse(JSON.stringify(tpl))));
+  } else {
+    DATA[contentTab].push(JSON.parse(JSON.stringify(tpl)));
+  }
   saveContent();
   rerenderSection();
   const cards = document.querySelectorAll('.edit-card');
@@ -1684,7 +1725,7 @@ function importContent(e) {
   reader.onload = () => {
     try {
       const parsed = JSON.parse(reader.result);
-      if (parsed.packages && parsed.team && parsed.testimonials && parsed.cases) {
+      if (parsed.packages && parsed.team && parsed.testimonials && parsed.faq) {
         DATA = parsed;
         saveContent();
         rerenderSection();
@@ -1701,7 +1742,7 @@ function importContent(e) {
 async function resetContent() {
   const ok = await confirm(
     'Reset',
-    "Barcha kontent (paketlar, jamoa, loyihalar, fikrlar) boshlang'ich holatga qaytariladi. Bu qaytarib bo'lmaydi.",
+    "Barcha kontent (paketlar, jamoa, fikrlar, FAQ — 3 tilda) boshlang'ich holatga qaytariladi. Loyihalar/Portfolio bunga kirmaydi (alohida boshqariladi). Bu qaytarib bo'lmaydi.",
     'Ha, qaytarish', 'RESET'
   );
   if (!ok) return;
@@ -2896,9 +2937,10 @@ function renderSettings() {
       <div class="field">
         <label>Kontent bo'limlari</label>
         <div style="padding:.7rem 0;font-size:.88rem">
-          Loyihalar: ${DATA ? DATA.cases.length : 0} ·
-          Paketlar: ${DATA ? DATA.packages.length : 0} ·
-          Jamoa: ${DATA ? DATA.team.length : 0} ·
+          Loyihalar: ${PORTFOLIO.length} ·
+          Paketlar: ${DATA ? DATA.packages.uz.length : 0} ·
+          Jamoa: ${DATA ? DATA.team.uz.length : 0} ·
+          FAQ sahifasi: ${FAQITEMS.length} ·
           Fikrlar: ${REVIEWS.filter(r => r.approved).length}/${REVIEWS.length} ·
           Postlar: ${POSTS.length}
         </div>

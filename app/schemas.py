@@ -34,15 +34,6 @@ def _validate_slug(v: str) -> str:
     return v
 
 
-def _validate_optional_slug(v: str) -> str:
-    """CaseIn.slug — bo'sh bo'lishi mumkin (bosh sahifadagi teaser loyiha
-    hali alohida /portfolio/{slug}/ sahifasiga ega bo'lmasligi mumkin)."""
-    v = (v or "").strip().lower()
-    if v and not _SLUG_RE.match(v):
-        raise ValueError("Slug faqat lotin harf/raqam va '-' belgisidan iborat bo'lishi kerak")
-    return v
-
-
 class PackageIn(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     price: str = Field(min_length=1, max_length=60)
@@ -67,31 +58,6 @@ class TestimonialIn(BaseModel):
     photo: str = Field(default="", max_length=1000)
 
     _v_photo = field_validator("photo")(_validate_media_url)
-
-
-class CaseIn(BaseModel):
-    """Loyiha + uning case-study tafsilotlari (bitta yozuvda).
-
-    video — yuklangan fayl yo'li yoki YouTube/Vimeo havolasi; loyiha
-    modalida rasm o'rniga/rasmdan keyin ko'rsatiladi.
-    """
-
-    title: str = Field(min_length=1, max_length=140)
-    cat: str = Field(min_length=1, max_length=60)
-    client: str = Field(default="", max_length=140)
-    duration: str = Field(default="", max_length=60)
-    short: str = Field(default="", max_length=600)
-    problem: str = Field(default="", max_length=2000)
-    solution: str = Field(default="", max_length=2000)
-    result: str = Field(default="", max_length=2000)
-    tech: str = Field(default="", max_length=400)
-    image: str = Field(default="", max_length=1000)
-    video: str = Field(default="", max_length=1000)
-    link: str = Field(default="", max_length=500)  # jonli loyiha havolasi
-    slug: str = Field(default="", max_length=140)  # bo'lsa /{lang}/portfolio/{slug}/ ga bog'lanadi
-
-    _v_image = field_validator("image")(_validate_media_url)
-    _v_slug = field_validator("slug")(_validate_optional_slug)
 
 
 class FaqItemIn(BaseModel):
@@ -234,20 +200,60 @@ class SocialIn(BaseModel):
     icon: str = Field(default="link", max_length=24)     # telegram/instagram/…
 
 
+class PackagesByLang(BaseModel):
+    """Paketlar — 3 tilda, RU/EN bosh sahifasi endi shu yerdan avtomatik
+    o'qiydi (ilgari alohida qattiq yozilgan edi — TZ 1-bo'lim: admin panel
+    orqali 3 til kontentini boshqarish)."""
+
+    uz: list[PackageIn] = Field(default_factory=list, max_length=12)
+    ru: list[PackageIn] = Field(default_factory=list, max_length=12)
+    en: list[PackageIn] = Field(default_factory=list, max_length=12)
+
+
+class TeamByLang(BaseModel):
+    """Jamoa/ekspertiza kartalari — rol/lavozim 3 tilda tarjima qilinadi,
+    ism/rasm har tilda takrorlanadi (soddalik uchun)."""
+
+    uz: list[TeamIn] = Field(default_factory=list, max_length=30)
+    ru: list[TeamIn] = Field(default_factory=list, max_length=30)
+    en: list[TeamIn] = Field(default_factory=list, max_length=30)
+
+
+class TestimonialsByLang(BaseModel):
+    """Mijozlar fikri (kontentdagi zaxira, real fikrlar Review orqali) — 3 tilda."""
+
+    uz: list[TestimonialIn] = Field(default_factory=list, max_length=50)
+    ru: list[TestimonialIn] = Field(default_factory=list, max_length=50)
+    en: list[TestimonialIn] = Field(default_factory=list, max_length=50)
+
+
+class FaqTeaserByLang(BaseModel):
+    """Bosh sahifadagi qisqa FAQ (to'liq ro'yxat — FaqItem/app/faq_store.py) — 3 tilda."""
+
+    uz: list[FaqItemIn] = Field(default_factory=list, max_length=30)
+    ru: list[FaqItemIn] = Field(default_factory=list, max_length=30)
+    en: list[FaqItemIn] = Field(default_factory=list, max_length=30)
+
+
 class ContentDoc(BaseModel):
     """To'liq kontent hujjati — PUT /api/admin/content shu shaklni kutadi.
 
-    contacts/socials ixtiyoriy: eski mijozlar (yoki eski saqlangan hujjat)
-    ularsiz yuborsa ham qabul qilinadi.
+    `packages`/`team`/`testimonials`/`faq` endi til bo'yicha saqlanadi
+    (uz/ru/en) — TZ 1-bo'lim: "kontentni admin panel orqali... 3 tilda"
+    talabi RU/EN bosh sahifalariga ham tegishli, ilgari faqat UZ saqlanardi.
+    `cases` ATAYLAB yo'q — homepage "Loyihalar" gridi endi to'g'ridan-to'g'ri
+    Portfolio bazasidan (app/services_store.py) o'qiydi, admin uni "Portfolio"
+    bo'limidan boshqaradi (ikkita parallel manba TZ audit'ida topilgan edi).
+    contacts/socials tilga bog'liq EMAS (bitta umumiy ro'yxat, TZ 4.6/4.9-bo'lim
+    — telefon/telegram/email raqami tilga qarab o'zgarmaydi).
     """
 
-    packages: list[PackageIn] = Field(max_length=12)
-    team: list[TeamIn] = Field(max_length=30)
-    testimonials: list[TestimonialIn] = Field(max_length=50)
-    cases: list[CaseIn] = Field(max_length=100)
+    packages: PackagesByLang
+    team: TeamByLang
+    testimonials: TestimonialsByLang
     contacts: list[ContactIn] = Field(default_factory=list, max_length=12)
     socials: list[SocialIn] = Field(default_factory=list, max_length=12)
-    faq: list[FaqItemIn] = Field(default_factory=list, max_length=30)
+    faq: FaqTeaserByLang
 
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -541,59 +547,104 @@ class CrmTelegramSettingsIn(BaseModel):
 
 
 # ── Boshlang'ich kontent (saytdagi bilan bir xil) ─────────────────────────────
+# `packages`/`team`/`testimonials`/`faq` — 3 tilda (uz/ru/en). RU/EN matnlar
+# ilgira static/index.ru.html/.en.html'da qattiq yozilgan professional
+# tarjimalar edi (TZ 22-bo'lim: avtomatik tarjima emas) — shu yerga ko'chirildi,
+# endi admin panel orqali barcha 3 til bitta joydan boshqariladi.
+# `cases` ATAYLAB yo'q — homepage "Loyihalar" gridi Portfolio bazasidan o'qiydi.
 DEFAULT_CONTENT: dict = {
-    "packages": [
-        {
-            "name": "Boshlang'ich",
-            "price": "300$ dan",
-            "popular": False,
-            "features": [
-                "Landing sahifa",
-                "Oddiy Telegram bot",
-                "Avto javob beruvchi",
-                "Umumiy kichik loyihalar",
-                "14 kunlik texnik yordam",
-            ],
-        },
-        {
-            "name": "Standart",
-            "price": "800$ dan",
-            "popular": True,
-            "features": [
-                "Ko'p sahifali korporativ veb-sayt yoki web-app",
-                "Professional Telegram bot",
-                "Admin panel",
-                "Mijozlar bazasi",
-                "Buyurtma va arizalarni boshqarish",
-                "Foydalanuvchilarni ro'yxatdan o'tkazish",
-                "Telegram, email yoki SMS bildirishnomalari",
-                "CRM integratsiyasi",
-                "To'lov tizimi integratsiyasi",
-                "Asosiy statistika va hisobotlar",
-                "Domen, hosting va serverga joylashtirish",
-                "30 kunlik texnik yordam",
-            ],
-        },
-        {
-            "name": "Maxsus",
-            "price": "Kelishilgan holda",
-            "popular": False,
-            "features": [
-                "Individual CRM yoki ERP tizimi",
-                "Kompaniya jarayonlariga mos admin panel",
-                "Sotuv bo'limini boshqarish",
-                "Mijozlar va xodimlar boshqaruvi",
-                "Moliya, tushum, xarajat va ish haqi modullari",
-                "KPI va bonuslarni avtomatik hisoblash",
-                "Ombor va mahsulotlar nazorati",
-                "Real vaqt rejimidagi dashboard",
-                "API ishlab chiqish",
-                "Ma'lumotlarni himoyalash va zaxiralash",
-                "Serverga joylashtirish va texnik sozlash",
-                "90 kunlik texnik yordam",
-            ],
-        },
-    ],
+    "packages": {
+        "uz": [
+            {
+                "name": "Boshlang'ich", "price": "300$ dan", "popular": False,
+                "features": [
+                    "Landing sahifa", "Oddiy Telegram bot", "Avto javob beruvchi",
+                    "Umumiy kichik loyihalar", "14 kunlik texnik yordam",
+                ],
+            },
+            {
+                "name": "Standart", "price": "800$ dan", "popular": True,
+                "features": [
+                    "Ko'p sahifali korporativ veb-sayt yoki web-app", "Professional Telegram bot",
+                    "Admin panel", "Mijozlar bazasi", "Buyurtma va arizalarni boshqarish",
+                    "Foydalanuvchilarni ro'yxatdan o'tkazish", "Telegram, email yoki SMS bildirishnomalari",
+                    "CRM integratsiyasi", "To'lov tizimi integratsiyasi", "Asosiy statistika va hisobotlar",
+                    "Domen, hosting va serverga joylashtirish", "30 kunlik texnik yordam",
+                ],
+            },
+            {
+                "name": "Maxsus", "price": "Kelishilgan holda", "popular": False,
+                "features": [
+                    "Individual CRM yoki ERP tizimi", "Kompaniya jarayonlariga mos admin panel",
+                    "Sotuv bo'limini boshqarish", "Mijozlar va xodimlar boshqaruvi",
+                    "Moliya, tushum, xarajat va ish haqi modullari", "KPI va bonuslarni avtomatik hisoblash",
+                    "Ombor va mahsulotlar nazorati", "Real vaqt rejimidagi dashboard", "API ishlab chiqish",
+                    "Ma'lumotlarni himoyalash va zaxiralash", "Serverga joylashtirish va texnik sozlash",
+                    "90 kunlik texnik yordam",
+                ],
+            },
+        ],
+        "ru": [
+            {
+                "name": "Стартовый", "price": "от $300", "popular": False,
+                "features": [
+                    "Лендинг", "Простой Telegram-бот", "Автоответчик",
+                    "Небольшие типовые проекты", "14 дней техподдержки",
+                ],
+            },
+            {
+                "name": "Стандарт", "price": "от $800", "popular": True,
+                "features": [
+                    "Многостраничный корпоративный сайт или веб-приложение", "Профессиональный Telegram-бот",
+                    "Админ-панель", "База клиентов", "Управление заказами и заявками",
+                    "Регистрация пользователей", "Уведомления в Telegram, email или SMS",
+                    "Интеграция с CRM", "Интеграция платёжной системы", "Базовая статистика и отчёты",
+                    "Домен, хостинг и развёртывание на сервере", "30 дней техподдержки",
+                ],
+            },
+            {
+                "name": "Индивидуальный", "price": "По договорённости", "popular": False,
+                "features": [
+                    "Индивидуальная CRM или ERP-система", "Админ-панель под процессы компании",
+                    "Управление отделом продаж", "Управление клиентами и сотрудниками",
+                    "Модули финансов, доходов, расходов и зарплаты", "Автоматический расчёт KPI и бонусов",
+                    "Контроль склада и товаров", "Дашборд в реальном времени", "Разработка API",
+                    "Защита и резервное копирование данных", "Развёртывание на сервере и техническая настройка",
+                    "90 дней техподдержки",
+                ],
+            },
+        ],
+        "en": [
+            {
+                "name": "Starter", "price": "from $300", "popular": False,
+                "features": [
+                    "Landing page", "Basic Telegram bot", "Auto-responder",
+                    "Small standard projects", "14-day technical support",
+                ],
+            },
+            {
+                "name": "Standard", "price": "from $800", "popular": True,
+                "features": [
+                    "Multi-page corporate website or web app", "Professional Telegram bot",
+                    "Admin panel", "Client database", "Order and request management",
+                    "User registration", "Telegram, email or SMS notifications",
+                    "CRM integration", "Payment system integration", "Basic analytics and reports",
+                    "Domain, hosting and server deployment", "30-day technical support",
+                ],
+            },
+            {
+                "name": "Custom", "price": "By agreement", "popular": False,
+                "features": [
+                    "Custom CRM or ERP system", "Admin panel matching company processes",
+                    "Sales team management", "Client and staff management",
+                    "Finance, revenue, expense and payroll modules", "Automatic KPI and bonus calculation",
+                    "Inventory and stock control", "Real-time dashboard", "API development",
+                    "Data protection and backups", "Server deployment and technical setup",
+                    "90-day technical support",
+                ],
+            },
+        ],
+    },
     "contacts": [
         {"label": "Telegram", "value": "@promtchi", "url": "https://t.me/promtchi", "icon": "telegram"},
         {"label": "Email", "value": "hello@promtchi.uz", "url": "mailto:hello@promtchi.uz", "icon": "email"},
@@ -603,82 +654,112 @@ DEFAULT_CONTENT: dict = {
         {"name": "Telegram", "url": "https://t.me/promtchi", "icon": "telegram"},
         {"name": "Instagram", "url": "https://instagram.com/promtchi", "icon": "instagram"},
     ],
-    "faq": [
-        {
-            "question": "To'lov qanday amalga oshiriladi?",
-            "answer": "Texnik topshiriqdan so'ng 3 kun ichida taklif tayyorlanadi. Tasdiqlangach, 30% oldindan, qolgan qismi loyiha yakunlanganda to'lanadi.",
-        },
-        {
-            "question": "Kodning huquqi kimga tegishli bo'ladi?",
-            "answer": "Loyiha kodidan foydalanish huquqlari shartnomada belgilanadi — odatda mijoz o'z loyihasidan foydalanish huquqiga ega bo'ladi, uchinchi tomon kutubxonalar esa o'z litsenziyasiga bo'ysunadi.",
-        },
-        {
-            "question": "Loyihadan keyin qo'llab-quvvatlash bormi?",
-            "answer": "Ha — tanlangan paketga qarab 14, 30 yoki 90 kunlik bepul texnik yordam beriladi; undan keyin ham qo'llab-quvvatlashni alohida kelishuv asosida davom ettirish mumkin.",
-        },
-    ],
-    "team": [
-        {"name": "G'iyosiddin Tursunxo'jayev", "role": "Founder", "photo": "", "role_type": "founder"},
-        {"name": "Jamolxon Yo'ldashaliyev", "role": "Co-Founder", "photo": "", "role_type": "co_founder"},
-        {"name": "Abbos Setdarov", "role": "IT Specialist", "photo": "", "role_type": "member"},
-        {"name": "Samandar Orifjonov", "role": "IT Specialist", "photo": "", "role_type": "member"},
-    ],
-    "testimonials": [
-        {
-            "text": "Jamoa g'oyani tez tushundi va MVP'ni kelishilgan muddatda yetkazdi. Aloqa doim ochiq edi.",
-            "name": "Rustam A.",
-            "role": "Startap asoschisi",
-            "photo": "",
-        },
-        {
-            "text": "Avtomatlashtirish orqali qo'lda ishlarimiz sezilarli kamaydi. Natijadan juda mamnunmiz.",
-            "name": "Malika S.",
-            "role": "Marketing rahbari",
-            "photo": "",
-        },
-        {
-            "text": "Professional yondashuv va toza kod. Loyihadan keyin ham qo'llab-quvvatlashdi.",
-            "name": "Sardor K.",
-            "role": "Biznes egasi",
-            "photo": "",
-        },
-    ],
-    "cases": [
-        {
-            "title": "Chindan Group",
-            "cat": "Avtomatlashtirish",
-            "client": "Chindan Group",
-            "duration": "20 kun",
-            "short": "To'liq avtomatlashtirilgan sotuv oqimi — leaddan to'lovgacha.",
-            "problem": "Leadlar qo'lda yig'ilar, sotuv jarayoni tarqoq va kuzatib bo'lmas edi.",
-            "solution": "Lead → CRM → sotuv sayti → to'lov + hisobot zanjirini yagona tizimga birlashtirdik.",
-            "result": "Qo'lda ishlar ~70% kamaydi, leaddan to'lovgacha vaqt sezilarli qisqardi.",
-            "tech": "FastAPI, PostgreSQL, Telegram Bot API, Redis",
-            "image": "",
-        },
-        {
-            "title": "Notiq AI",
-            "cat": "AI yechimlar",
-            "client": "Notiq",
-            "duration": "25 kun",
-            "short": "Ovozni matnga aylantiruvchi mobil ilova — o'zbek tili uchun optimallashtirilgan.",
-            "problem": "Mavjud yechimlar o'zbek tilida past aniqlik berardi.",
-            "solution": "O'zbek tiliga moslashtirilgan STT modeli va toza mobil UI ishlab chiqdik.",
-            "result": "Yuqori aniqlikdagi transkripsiya va tez, qulay foydalanuvchi tajribasi.",
-            "tech": "Flutter, Python, ASR pipeline",
-            "image": "",
-        },
-        {
-            "title": "BotSmith Platform",
-            "cat": "Web & ilova",
-            "client": "BotSmith",
-            "duration": "30 kun",
-            "short": "Prompt orqali Telegram botlarini avtomatik yaratib, deploy qiluvchi web-platforma.",
-            "problem": "Bot yaratish uchun har safar dasturchi yollash qimmat va sekin edi.",
-            "solution": "Foydalanuvchi prompt va token kiritadi — tizim botni o'zi generatsiya qilib, serverga joylaydi.",
-            "result": "Bot yaratish soatlab emas — daqiqalarda. Texnik bilimsiz foydalanuvchilar mustaqil ishlaydi.",
-            "tech": "Django DRF, aiogram 3, Docker, PostgreSQL, Redis",
-            "image": "",
-        },
-    ],
+    "faq": {
+        "uz": [
+            {
+                "question": "To'lov qanday amalga oshiriladi?",
+                "answer": "Texnik topshiriqdan so'ng 3 kun ichida taklif tayyorlanadi. Tasdiqlangach, 30% oldindan, qolgan qismi loyiha yakunlanganda to'lanadi.",
+            },
+            {
+                "question": "Kodning huquqi kimga tegishli bo'ladi?",
+                "answer": "Loyiha kodidan foydalanish huquqlari shartnomada belgilanadi — odatda mijoz o'z loyihasidan foydalanish huquqiga ega bo'ladi, uchinchi tomon kutubxonalar esa o'z litsenziyasiga bo'ysunadi.",
+            },
+            {
+                "question": "Loyihadan keyin qo'llab-quvvatlash bormi?",
+                "answer": "Ha — tanlangan paketga qarab 14, 30 yoki 90 kunlik bepul texnik yordam beriladi; undan keyin ham qo'llab-quvvatlashni alohida kelishuv asosida davom ettirish mumkin.",
+            },
+        ],
+        "ru": [
+            {
+                "question": "Как происходит оплата?",
+                "answer": "После технического задания предложение готовится в течение 3 дней. После согласования — 30% предоплата, остальное по завершении проекта.",
+            },
+            {
+                "question": "Кому принадлежат права на код и проект?",
+                "answer": "Права на использование кода проекта определяются договором между сторонами — как правило, клиент получает право использовать свой проект, а сторонние библиотеки и сервисы подчиняются собственным условиям лицензирования.",
+            },
+            {
+                "question": "Есть ли поддержка после завершения проекта?",
+                "answer": "Да — в зависимости от выбранного пакета предоставляется 14, 30 или 90 дней бесплатной технической поддержки. После этого срока поддержку можно продолжить по отдельной договорённости.",
+            },
+        ],
+        "en": [
+            {
+                "question": "How does payment work?",
+                "answer": "After the technical spec, a proposal is ready within 3 days. Once approved — 30% upfront, the rest on project completion.",
+            },
+            {
+                "question": "Who owns the code and the project?",
+                "answer": "Usage rights to the project's code are defined in the contract between the parties — the client typically receives the right to use their project, while third-party libraries and services remain subject to their own license terms.",
+            },
+            {
+                "question": "Is there support after the project is finished?",
+                "answer": "Yes — depending on the chosen package, you get 14, 30 or 90 days of free technical support. After that period, support can continue under a separate agreement.",
+            },
+        ],
+    },
+    "team": {
+        "uz": [
+            {"name": "G'iyosiddin Tursunxo'jayev", "role": "Founder", "photo": "", "role_type": "founder"},
+            {"name": "Jamolxon Yo'ldashaliyev", "role": "Co-Founder", "photo": "", "role_type": "co_founder"},
+            {"name": "Abbos Setdarov", "role": "IT Specialist", "photo": "", "role_type": "member"},
+            {"name": "Samandar Orifjonov", "role": "IT Specialist", "photo": "", "role_type": "member"},
+        ],
+        "ru": [
+            {"name": "G'iyosiddin Tursunxo'jayev", "role": "Основатель", "photo": "", "role_type": "founder"},
+            {"name": "Jamolxon Yo'ldashaliyev", "role": "Сооснователь", "photo": "", "role_type": "co_founder"},
+            {"name": "Abbos Setdarov", "role": "IT-специалист", "photo": "", "role_type": "member"},
+            {"name": "Samandar Orifjonov", "role": "IT-специалист", "photo": "", "role_type": "member"},
+        ],
+        "en": [
+            {"name": "G'iyosiddin Tursunxo'jayev", "role": "Founder", "photo": "", "role_type": "founder"},
+            {"name": "Jamolxon Yo'ldashaliyev", "role": "Co-Founder", "photo": "", "role_type": "co_founder"},
+            {"name": "Abbos Setdarov", "role": "IT Specialist", "photo": "", "role_type": "member"},
+            {"name": "Samandar Orifjonov", "role": "IT Specialist", "photo": "", "role_type": "member"},
+        ],
+    },
+    "testimonials": {
+        "uz": [
+            {
+                "text": "Jamoa g'oyani tez tushundi va MVP'ni kelishilgan muddatda yetkazdi. Aloqa doim ochiq edi.",
+                "name": "Rustam A.", "role": "Startap asoschisi", "photo": "",
+            },
+            {
+                "text": "Avtomatlashtirish orqali qo'lda ishlarimiz sezilarli kamaydi. Natijadan juda mamnunmiz.",
+                "name": "Malika S.", "role": "Marketing rahbari", "photo": "",
+            },
+            {
+                "text": "Professional yondashuv va toza kod. Loyihadan keyin ham qo'llab-quvvatlashdi.",
+                "name": "Sardor K.", "role": "Biznes egasi", "photo": "",
+            },
+        ],
+        "ru": [
+            {
+                "text": "Команда быстро уловила идею и в срок сдала MVP. На связи были всегда.",
+                "name": "Rustam A.", "role": "Основатель стартапа", "photo": "",
+            },
+            {
+                "text": "Благодаря автоматизации объём ручной работы значительно сократился. Мы очень довольны результатом.",
+                "name": "Malika S.", "role": "Руководитель отдела маркетинга", "photo": "",
+            },
+            {
+                "text": "Профессиональный подход и чистый код. Поддерживали нас и после завершения проекта.",
+                "name": "Sardor K.", "role": "Владелец бизнеса", "photo": "",
+            },
+        ],
+        "en": [
+            {
+                "text": "The team grasped the idea quickly and delivered the MVP on schedule. Communication was always open.",
+                "name": "Rustam A.", "role": "Startup founder", "photo": "",
+            },
+            {
+                "text": "Automation significantly cut down our manual work. We're very happy with the result.",
+                "name": "Malika S.", "role": "Head of Marketing", "photo": "",
+            },
+            {
+                "text": "Professional approach and clean code. They kept supporting us even after the project was done.",
+                "name": "Sardor K.", "role": "Business owner", "photo": "",
+            },
+        ],
+    },
 }

@@ -1090,7 +1090,7 @@ let DATA=JSON.parse(JSON.stringify(DEFAULTS));
 /* serverdan kontentni olib, qayta chizamiz */
 (async()=>{
   try{
-    const r=await fetch(API+'/api/content');
+    const r=await fetch(API+'/api/content?lang=uz');
     if(r.ok){DATA=await r.json();renderAll();}
   }catch(e){console.warn('Kontent olinmadi, lokal DEFAULTS ishlatiladi',e);}
 })();

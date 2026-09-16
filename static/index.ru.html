@@ -1091,8 +1091,15 @@ function renderNav(){
 }
 renderNav();
 let DATA=JSON.parse(JSON.stringify(DEFAULTS));
-/* RU versiyasi: kontent /api/content orqali FAQAT o'zbekcha keladi — shu
-   sabab bu yerda tarjima qilingan DEFAULTS'dan foydalaniladi, live fetch yo'q. */
+/* serverdan kontentni olib, qayta chizamiz — /api/content?lang=ru endi RU
+   tarjimasini qaytaradi (admin panelda kiritilgan), DEFAULTS faqat tarmoq/
+   server ishlamay qolgan holatlar uchun zaxira. */
+(async()=>{
+  try{
+    const r=await fetch(API+'/api/content?lang=ru');
+    if(r.ok){DATA=await r.json();renderAll();}
+  }catch(e){console.warn('Kontent olinmadi, lokal DEFAULTS ishlatiladi',e);}
+})();
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const initial=n=>(n||"?").trim().charAt(0).toUpperCase();
 /* eski (role_type'siz) kontent uchun — "Rol" matnidan taxmin qilamiz */

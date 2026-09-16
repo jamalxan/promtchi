@@ -2,7 +2,7 @@
 
 Endpointlar:
   GET  /api/health              — holat
-  GET  /api/content             — sayt kontenti (public, keshlangan + ETag)
+  GET  /api/content?lang=uz|ru|en — sayt kontenti, tilga mos (public, keshlangan + ETag)
   GET  /api/posts               — e'lon qilingan postlar (public, keshlangan)
   POST /api/auth/login          — {email,password} -> HttpOnly session cookie + {token}
                                    (Telegram xabarnoma). Sessiya: refresh/yangi tab/orqaga-
@@ -22,6 +22,7 @@ Endpointlar:
   POST /api/admin/account/emails/request-set-primary — {email}, FAQAT super admin, tasdiq o'ziga (Bearer)
   POST /api/admin/account/emails/{email}/resend-activation — eski (parolsiz) hisobga
                                                      qayta faollashtirish havolasi, faqat super admin (Bearer)
+  GET  /api/admin/content       — to'liq (barcha 3 til) xom kontent hujjati (Bearer)
   PUT  /api/admin/content       — to'liq kontentni saqlash (Bearer)
   POST /api/admin/content/reset — boshlang'ich kontentga qaytarish (Bearer)
   POST /api/leads               — aloqa formasi arizasi (public, rate-limit)
@@ -72,6 +73,7 @@ from .auth import (
     set_account_password, set_admin_cookie, set_primary_account,
 )
 from .config import settings
+from .content import LANGS
 from .db import (
     Base, Content, FaqItem, Lead, LeadNote, LeadStageHistory, PortfolioCase, Post,
     Review, ReviewCode, Service, SessionLocal, Setting, SlugRedirect, engine,
@@ -129,7 +131,53 @@ class _ContentCache:
         return bool(self.body)
 
 
-content_cache = _ContentCache()
+class _LangContentCache:
+    """`/api/content?lang=` — trilingual Content hujjatini keshlaydi.
+
+    `packages`/`team`/`testimonials`/`faq` endi til bo'yicha saqlanadi
+    (app/schemas.py::ContentDoc) — RU/EN bosh sahifasi ham admin panel
+    o'zgarishlarini avtomatik ko'rishi uchun (ilgira faqat UZ shunday edi).
+    Har 3 til uchun tayyor dict `set()`da (ya'ni faqat admin o'zgartirganda)
+    hisoblanadi — `get_content()` faqat DB'dan emas, shu keshdan o'qiydi;
+    `cases` (Portfolio, o'z keshiga ega — services_store.py) so'rov vaqtida
+    ustiga qo'shiladi, chunki u alohida CRUD orqali o'zgaradi.
+    """
+
+    __slots__ = ("raw", "version", "_by_lang")
+
+    def __init__(self):
+        self.raw: dict = {}
+        self.version: int = 0
+        self._by_lang: dict = {}
+
+    def set(self, data: dict, version: int) -> None:
+        self.raw = data
+        self.version = version
+        self._by_lang = {
+            lang: {
+                "packages": data.get("packages", {}).get(lang, []),
+                "team": data.get("team", {}).get(lang, []),
+                "testimonials": data.get("testimonials", {}).get(lang, []),
+                "faq": data.get("faq", {}).get(lang, []),
+                "contacts": data.get("contacts", []),
+                "socials": data.get("socials", []),
+            }
+            for lang in LANGS
+        }
+
+    def clear(self) -> None:
+        self.raw = {}
+        self._by_lang = {}
+
+    @property
+    def ready(self) -> bool:
+        return bool(self.raw)
+
+    def for_lang(self, lang: str) -> dict:
+        return self._by_lang.get(lang, {})
+
+
+content_cache = _LangContentCache()
 # Postlar va fikrlar keshi — CRUD'da clear() qilinadi, keyingi GET'da DB'dan
 # qayta yuklanadi. Public o'qishlar shu tufayli DB'ga umuman tegmaydi.
 posts_cache = _ContentCache()
@@ -241,6 +289,9 @@ async def lifespan(app: FastAPI):
     async with SessionLocal() as s:
         await faq_store.seed_if_empty(s)
 
+    # Shakl migratsiyasi (flat -> til bo'yicha, "faq" yo'qligi va h.k.)
+    # run_data_fixups()da yuqorida allaqachon bajarilgan — bu yerda faqat
+    # yakuniy holatni xotira keshiga yuklaymiz.
     async with engine.begin() as conn:
         res = await conn.execute(select(Content.data, Content.version).where(Content.id == 1))
         row = res.first()
@@ -250,18 +301,7 @@ async def lifespan(app: FastAPI):
             )
             content_cache.set(DEFAULT_CONTENT, 1)
         else:
-            data, version = row[0], row[1]
-            # Bir martalik ko'chirish: `faq` maydoni sxemaga keyinroq
-            # qo'shilgani uchun eski saqlangan hujjatlarda yo'q bo'lishi
-            # mumkin — admin panel va bosh sahifa DATA.faq'ga tayanadi.
-            if "faq" not in data:
-                data = {**data, "faq": DEFAULT_CONTENT["faq"]}
-                version += 1
-                await conn.execute(
-                    Content.__table__.update().where(Content.id == 1)
-                    .values(data=data, version=version)
-                )
-            content_cache.set(data, version)
+            content_cache.set(row[0], row[1])
 
     index_cache.load()  # birinchi so'rov gzip narxini to'lamasin
 
@@ -344,7 +384,9 @@ async def health():
 
 
 @app.get("/api/content")
-async def get_content(request: Request):
+async def get_content(request: Request, lang: str = "uz"):
+    if lang not in LANGS:
+        raise HTTPException(404, "Til topilmadi")
     # DB sessiyasi Depends orqali OLINMAYDI — kesh tayyor bo'lsa (99.9% holat)
     # so'rov umuman DB qatlamiga tegmaydi.
     if not content_cache.ready:  # kesh bo'sh bo'lsa (kutilmagan holat) — DB'dan
@@ -355,17 +397,26 @@ async def get_content(request: Request):
         else:
             content_cache.set(row.data, row.version)
 
+    # cases — Portfolio bazasidan (services_store, o'z xotira keshi bilan,
+    # DB'ga tegmaydi), til bo'yicha; alohida CRUD orqali o'zgargani uchun
+    # content_cache ichida SAQLANMAYDI, har so'rovda ustiga qo'shiladi.
+    cases = await services_store.get_cases()
+    payload = {
+        **content_cache.for_lang(lang),
+        "cases": [{**c[lang], "slug": c["slugs"][lang]} for c in cases],
+    }
+    body = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode()
+    etag = '"%s"' % hashlib.sha256(body).hexdigest()[:32]
+
     headers = {
-        "ETag": content_cache.etag,
+        "ETag": etag,
         "X-Content-Version": str(content_cache.version),
         "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
     }
-    if request.headers.get("if-none-match") == content_cache.etag:
+    if request.headers.get("if-none-match") == etag:
         return Response(status_code=304, headers=headers)
 
-    return Response(
-        content=content_cache.body, media_type="application/json", headers=headers
-    )
+    return Response(content=body, media_type="application/json", headers=headers)
 
 
 @app.get("/api/posts")
@@ -757,6 +808,24 @@ async def request_set_primary(
 
 
 # ══════════ ADMIN ══════════
+
+@app.get("/api/admin/content")
+async def get_content_admin(
+    response: Response,
+    _: str = Depends(require_admin), session: AsyncSession = Depends(get_session),
+):
+    """Admin panel tahrirlash uchun XOM hujjatni (barcha 3 til, `cases`siz —
+    Loyihalar endi Portfolio CRUD orqali boshqariladi) qaytaradi — public
+    `/api/content?lang=` dan farqli, u faqat bitta tilni tekislab beradi."""
+    if not content_cache.ready:
+        row = await session.get(Content, 1)
+        if row is None:
+            content_cache.set(DEFAULT_CONTENT, 0)
+        else:
+            content_cache.set(row.data, row.version)
+    response.headers["X-Content-Version"] = str(content_cache.version)
+    return content_cache.raw
+
 
 @app.put("/api/admin/content")
 async def put_content(
@@ -1510,11 +1579,11 @@ async def delete_review_code(
 # ══════════ STATIC SAYT — bosh sahifa (UZ/RU/EN) ══════════
 # 3 tilli TZ (2026-09-15): promtchi.uz/uz/, /ru/, /en/ — har biri mustaqil
 # indekslanadigan til versiyasi. RU/EN static/index.{ru,en}.html — uz bilan
-# bir xil dizayn/JS, faqat matn tarjima qilingan (admin-tahrirlanadigan
-# packages/team/testimonials/cases uchun DB fetch o'chirilgan — statik,
-# tarjima qilingan DEFAULTS ko'rsatiladi; kelajakda to'liq trilingual CMS
-# kerak bo'lsa app/content/ dagi qolgan sahifalar namunasidan foydalanish
-# mumkin). Ichki SEO sahifalari (xizmatlar/portfolio/faq/...) app/pages.py'da.
+# bir xil dizayn/JS, HTML matni tarjima qilingan. Admin-tahrirlanadigan
+# packages/team/testimonials/faq/cases endi HAR 3 til uchun ham /api/content
+# orqali JONLI keladi (GET /api/content?lang=uz|ru|en, ContentDoc til
+# bo'yicha saqlaydi) — DEFAULTS faqat tarmoq/server ishlamay qolgan holat
+# uchun zaxira. Ichki SEO sahifalari (xizmatlar/portfolio/faq/...) app/pages.py'da.
 
 _PAGE_CACHE = f"public, max-age={settings.STATIC_CACHE_SECONDS}, must-revalidate"
 

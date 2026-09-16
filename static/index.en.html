@@ -1091,8 +1091,15 @@ function renderNav(){
 }
 renderNav();
 let DATA=JSON.parse(JSON.stringify(DEFAULTS));
-/* EN version: /api/content only returns Uzbek content — this page uses the
-   translated DEFAULTS below instead of a live fetch. */
+/* fetch live content and re-render — /api/content?lang=en now returns the
+   English translation (entered via the admin panel); DEFAULTS is only the
+   offline fallback if the network/server is unavailable. */
+(async()=>{
+  try{
+    const r=await fetch(API+'/api/content?lang=en');
+    if(r.ok){DATA=await r.json();renderAll();}
+  }catch(e){console.warn('Could not load content, using local DEFAULTS',e);}
+})();
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const initial=n=>(n||"?").trim().charAt(0).toUpperCase();
 /* eski (role_type'siz) kontent uchun — "Rol" matnidan taxmin qilamiz */

@@ -735,59 +735,69 @@ async def run_data_fixups(session: AsyncSession) -> None:
             is_enabled=bool(old_token),
         ))
 
-    # 4. Content.data.faq/cases — TZ 2-bo'lim majburiy tuzatishlar: eski "kod
-    #    huquqi to'liq mijozga tegishli"/blanket "3 oy bepul" da'volari va
-    #    Content.data.cases'dagi eskirgan "BotSmith Platform"/"Tizimliy" case
-    #    (yangi Portfolio DB'dagi haqiqiy "Tizimly" bilan mos emas edi) —
-    #    ishlab turgan bazalarda bir martalik tuzatiladi (yangi bazalarda
-    #    DEFAULT_CONTENT/faq_store seed'i allaqachon to'g'ri qiymat bilan keladi).
+    # 4. Content.data — TZ 1-bo'lim: admin panel orqali 3 tilni boshqarish
+    #    RU/EN homepage'ga ham tegishli bo'lishi kerak. Ilgira `packages`/
+    #    `team`/`testimonials`/`faq` FAQAT o'zbekcha (flat list) saqlanardi —
+    #    RU/EN sahifalar mustaqil qattiq-yozilgan matnga tayanardi (admin
+    #    tahrirlagani ko'rinmasdi). Endi har biri `{uz:[...], ru:[...], en:[...]}`
+    #    shaklida — bir martalik ko'chirish: mavjud (uz) ro'yxat saqlanadi,
+    #    ru/en esa avvaldan mavjud professional tarjima (DEFAULT_CONTENT,
+    #    ilgari static/index.ru.html/.en.html'da qattiq yozilgan edi) bilan
+    #    to'ldiriladi — TZ 22-bo'lim: avtomatik tarjima emas.
+    #    `cases` maydoni BUTUNLAY olib tashlanadi — homepage "Loyihalar" gridi
+    #    endi to'g'ridan-to'g'ri Portfolio bazasidan (services_store) o'qiydi,
+    #    ikkinchi parallel manba saqlanmaydi.
+    #    Shu bilan birga eski "kod huquqi to'liq mijozga tegishli"/blanket
+    #    "3 oy bepul" da'volari ham (TZ 2-bo'lim) tuzatiladi.
     from sqlalchemy.orm.attributes import flag_modified
+
+    from .schemas import DEFAULT_CONTENT
 
     content_row = await session.get(Content, 1)
     if content_row is not None:
         data = content_row.data
         changed = False
-        for item in data.get("faq", []):
-            q, a = item.get("question", ""), item.get("answer", "")
-            if q.startswith("Kodning huquqi") and a.strip() == "Koddan foydalanish huquqi to'liq mijozga tegishli bo'ladi.":
-                item["answer"] = (
-                    "Loyiha kodidan foydalanish huquqlari shartnomada belgilanadi — odatda mijoz "
-                    "o'z loyihasidan foydalanish huquqiga ega bo'ladi, uchinchi tomon kutubxonalar "
-                    "esa o'z litsenziyasiga bo'ysunadi."
-                )
+
+        def _fix_faq_wording(items: list) -> bool:
+            did_change = False
+            for item in items:
+                q, a = item.get("question", ""), item.get("answer", "")
+                if q.startswith("Kodning huquqi") and a.strip() == "Koddan foydalanish huquqi to'liq mijozga tegishli bo'ladi.":
+                    item["answer"] = (
+                        "Loyiha kodidan foydalanish huquqlari shartnomada belgilanadi — odatda mijoz "
+                        "o'z loyihasidan foydalanish huquqiga ega bo'ladi, uchinchi tomon kutubxonalar "
+                        "esa o'z litsenziyasiga bo'ysunadi."
+                    )
+                    did_change = True
+                if q.startswith("Loyihadan keyin") and "3 oy davomida bepul o'zgartirishlar" in a:
+                    item["answer"] = (
+                        "Ha — tanlangan paketga qarab 14, 30 yoki 90 kunlik bepul texnik yordam "
+                        "beriladi; undan keyin ham qo'llab-quvvatlashni alohida kelishuv asosida "
+                        "davom ettirish mumkin."
+                    )
+                    did_change = True
+            return did_change
+
+        if isinstance(data.get("faq"), list):
+            _fix_faq_wording(data["faq"])
+            data["faq"] = {"uz": data["faq"], "ru": DEFAULT_CONTENT["faq"]["ru"], "en": DEFAULT_CONTENT["faq"]["en"]}
+            changed = True
+        elif isinstance(data.get("faq"), dict) and _fix_faq_wording(data["faq"].get("uz", [])):
+            changed = True
+
+        for key in ("packages", "team", "testimonials"):
+            if isinstance(data.get(key), list):
+                data[key] = {
+                    "uz": data[key],
+                    "ru": DEFAULT_CONTENT[key]["ru"],
+                    "en": DEFAULT_CONTENT[key]["en"],
+                }
                 changed = True
-            if q.startswith("Loyihadan keyin") and "3 oy davomida bepul o'zgartirishlar" in a:
-                item["answer"] = (
-                    "Ha — tanlangan paketga qarab 14, 30 yoki 90 kunlik bepul texnik yordam "
-                    "beriladi; undan keyin ham qo'llab-quvvatlashni alohida kelishuv asosida "
-                    "davom ettirish mumkin."
-                )
-                changed = True
-        for case in data.get("cases", []):
-            if case.get("title") in ("Tizimliy", "BotSmith Platform"):
-                case.update(
-                    title="Tizimly", cat="Web & ilova", client="Tizimly (o'z mahsulotimiz)",
-                    duration="30 kun", slug="tizimly",
-                    short="Savdo, ombor, moliya, CRM va analitikani bitta joyda birlashtiruvchi "
-                          "multi-tenant B2B SaaS platforma.",
-                    problem="Biznes ma'lumotlari tarqoq edi — savdo Excelda, mijozlar CRMda, "
-                            "qo'ng'iroqlar telefoniyada. Hisobot yig'ish qo'lda va kechikib bajarilardi.",
-                    solution="Barcha jarayonlarni bitta tizimga yig'dik: har bir savdo ombor "
-                             "qoldig'ini avtomatik yangilaydi, AmoCRM, Bitrix24, UTEL va Meta Ads "
-                             "real vaqtda sinxronlanadi, Telegram bot to'lov va qarzdorlik haqida "
-                             "darhol xabar beradi.",
-                    result="Qo'lda ma'lumot kiritish yo'qoldi — daromad, qarzdorlik va jamoa "
-                           "samaradorligi real vaqtda ko'rinadi. Platformadan 150 dan ortiq "
-                           "kompaniya foydalanmoqda.",
-                    tech="Django DRF, PostgreSQL, Redis, Docker, Telegram Bot API",
-                )
-                changed = True
-            elif case.get("title") == "Chindan Group" and not case.get("slug"):
-                case["slug"] = "chindan-group"
-                changed = True
-            elif case.get("title") == "Notiq AI" and not case.get("slug"):
-                case["slug"] = "notiq-ai"
-                changed = True
+
+        if "cases" in data:
+            del data["cases"]
+            changed = True
+
         if changed:
             flag_modified(content_row, "data")
 
