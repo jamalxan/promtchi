@@ -18,12 +18,11 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 
-from . import seo, services_store
+from . import faq_store, seo, services_store
 from .config import settings
 from .content import LANGS
 from .content.about import ABOUT
 from .content.common import COMMON, FOOTER, LANG_NAMES, LANG_SHORT, NAV, ORG, PROJECT_TYPE_OPTIONS
-from .content.faq import FAQ
 from .content.legal import LEGAL_LABEL, LEGAL_SLUGS, PRIVACY, TERMS, UPDATED_DATE, UPDATED_LABEL
 from .content.solutions import SLUGS as SOLUTION_SLUGS, SOLUTION_KEYS, SOLUTIONS
 from .db import Content, Post, SessionLocal
@@ -307,7 +306,7 @@ async def portfolio_detail(request: Request, lang: str, slug: str):
 async def faq_page(request: Request, lang: str):
     _check_lang(lang)
     path_by_lang = {l: f"/{l}/faq/" for l in LANGS}
-    items = FAQ[lang]
+    items = [(f["question"], f["answer"]) for f in await faq_store.get_items(lang)]
     desc = {"uz": "promtchi haqida ko'p so'raladigan savollar: narx, muddat, to'lov, texnik yordam va xizmatlar.",
             "ru": "Часто задаваемые вопросы о promtchi: цена, сроки, оплата, техподдержка и услуги.",
             "en": "Frequently asked questions about promtchi: pricing, timelines, payment, support and services."}[lang]
@@ -334,6 +333,17 @@ async def about_page(request: Request, lang: str):
     # (TeamIn: name/role/photo) qo'shiladi.
     ctx.update(a=a)
     return templates.TemplateResponse(request, "about.html", ctx)
+
+
+@router.get("/{lang}/jamoa/", include_in_schema=False)
+async def team_redirect(lang: str):
+    """TZ 3.2 route ro'yxatida /{lang}/jamoa/ tavsiya etilgan, lekin real jamoa
+    profillari hali alohida sahifa uchun tayyor emas (TZ 12/29-bo'lim — rozilik
+    kutilmoqda). Bo'sh/thin sahifa yoki 404 o'rniga /biz-haqimizda/ dagi mavjud
+    "Bizning ekspertiza" blokiga 301 — profillar tasdiqlangach shu yerga
+    to'liq /jamoa/ sahifasi qo'shilishi mumkin."""
+    _check_lang(lang)
+    return RedirectResponse(f"/{lang}/biz-haqimizda/", status_code=301)
 
 
 # ══════════ ALOQA ══════════

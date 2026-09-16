@@ -392,7 +392,7 @@ section{position:relative}
 .filters button.on{background:var(--acid);color:var(--blk);border-color:var(--acid);font-weight:700}
 .cgrid{display:grid;gap:1.4rem;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
 .ccard{background:var(--cream);color:var(--blk);border-radius:18px;overflow:hidden;border:3px solid var(--blk);
-  transition:transform .4s var(--ease),box-shadow .4s;text-align:left}
+  transition:transform .4s var(--ease),box-shadow .4s;text-align:left;display:block;text-decoration:none;cursor:pointer}
 .ccard:hover{transform:translateY(-8px) rotate(-.7deg);box-shadow:0 30px 60px rgba(217,255,63,.14)}
 .ccover{height:170px;position:relative;overflow:hidden;border-bottom:3px solid var(--blk);
   background-size:cover;background-position:center;display:grid;place-items:center;padding:18px;
@@ -984,13 +984,6 @@ body.menu-open,body.modal-open{overflow:hidden}
   <div class="f-word" aria-hidden="true"><span>P</span><span>R</span><span>O</span><span>M</span><span>T</span><span>C</span><span>H</span><span>I</span></div>
 </footer>
 
-<!-- CASE MODAL -->
-<div class="modal" id="caseModal"><div class="mbox">
-  <button class="close-x" onclick="closeCase()" aria-label="Yopish">✕</button>
-  <div id="caseModalBody"></div>
-</div></div>
-
-
 <script>
 /* ══════════ DATA ══════════ */
 const DEFAULTS={
@@ -1029,29 +1022,29 @@ const DEFAULTS={
     {text:"Professional yondashuv va toza kod. Loyihadan keyin ham qo'llab-quvvatlashdi.",name:"Sardor K.",role:"Biznes egasi",photo:""}
   ],
   cases:[
-    {title:"Chindan Group",cat:"Avtomatlashtirish",client:"Chindan Group",duration:"20 kun",
+    {title:"Chindan Group",cat:"Avtomatlashtirish",client:"Chindan Group",duration:"20 kun",slug:"chindan-group",
      short:"To'liq avtomatlashtirilgan sotuv oqimi — leaddan to'lovgacha.",
      problem:"Leadlar qo'lda yig'ilar, sotuv jarayoni tarqoq va kuzatib bo'lmas edi.",
      solution:"Lead → CRM → sotuv sayti → to'lov + hisobot zanjirini yagona tizimga birlashtirdik.",
      result:"Qo'lda ishlar ~70% kamaydi, leaddan to'lovgacha vaqt sezilarli qisqardi.",
      tech:"FastAPI, PostgreSQL, Telegram Bot API, Redis",image:""},
-    {title:"Notiq AI",cat:"AI yechimlar",client:"Notiq",duration:"25 kun",
+    {title:"Notiq AI",cat:"AI yechimlar",client:"Notiq",duration:"25 kun",slug:"notiq-ai",
      short:"Ovozni matnga aylantiruvchi mobil ilova — o'zbek tili uchun optimallashtirilgan.",
      problem:"Mavjud yechimlar o'zbek tilida past aniqlik berardi.",
      solution:"O'zbek tiliga moslashtirilgan STT modeli va toza mobil UI ishlab chiqdik.",
      result:"Yuqori aniqlikdagi transkripsiya va tez, qulay foydalanuvchi tajribasi.",
      tech:"Flutter, Python, ASR pipeline",image:""},
-    {title:"BotSmith Platform",cat:"Web & ilova",client:"BotSmith",duration:"30 kun",
-     short:"Prompt orqali Telegram botlarini avtomatik yaratib, deploy qiluvchi web-platforma.",
-     problem:"Bot yaratish uchun har safar dasturchi yollash qimmat va sekin edi.",
-     solution:"Foydalanuvchi prompt va token kiritadi — tizim botni o'zi generatsiya qilib, serverga joylaydi.",
-     result:"Bot yaratish soatlab emas — daqiqalarda. Texnik bilimsiz foydalanuvchilar ham mustaqil ishlaydi.",
-     tech:"Django DRF, aiogram 3, Docker, PostgreSQL, Redis",image:""}
+    {title:"Tizimly",cat:"Web & ilova",client:"Tizimly (o'z mahsulotimiz)",duration:"30 kun",slug:"tizimly",
+     short:"Savdo, ombor, moliya, CRM va analitikani bitta joyda birlashtiruvchi multi-tenant B2B SaaS platforma.",
+     problem:"Biznes ma'lumotlari tarqoq edi — savdo Excelda, mijozlar CRMda, qo'ng'iroqlar telefoniyada. Hisobot yig'ish qo'lda va kechikib bajarilardi.",
+     solution:"Barcha jarayonlarni bitta tizimga yig'dik: har bir savdo ombor qoldig'ini avtomatik yangilaydi, AmoCRM, Bitrix24, UTEL va Meta Ads real vaqtda sinxronlanadi, Telegram bot to'lov va qarzdorlik haqida darhol xabar beradi.",
+     result:"Qo'lda ma'lumot kiritish yo'qoldi — daromad, qarzdorlik va jamoa samaradorligi real vaqtda ko'rinadi. Platformadan 150 dan ortiq kompaniya foydalanmoqda.",
+     tech:"Django DRF, PostgreSQL, Redis, Docker, Telegram Bot API",image:""}
   ],
   faq:[
     {question:"To'lov qanday amalga oshiriladi?",answer:"Texnik topshiriqdan so'ng 3 kun ichida taklif tayyorlanadi. Tasdiqlangach, 30% oldindan, qolgan qismi loyiha yakunlanganda to'lanadi."},
-    {question:"Kodning huquqi kimga tegishli bo'ladi?",answer:"Koddan foydalanish huquqi to'liq mijozga tegishli bo'ladi."},
-    {question:"Loyihadan keyin qo'llab-quvvatlash bormi?",answer:"Ha — doimiy qo'llab-quvvatlash, jumladan 3 oy davomida bepul o'zgartirishlar va texnik yordam."}
+    {question:"Kodning huquqi kimga tegishli bo'ladi?",answer:"Loyiha kodidan foydalanish huquqlari shartnomada belgilanadi — odatda mijoz o'z loyihasidan foydalanish huquqiga ega bo'ladi, uchinchi tomon kutubxonalar esa o'z litsenziyasiga bo'ysunadi."},
+    {question:"Loyihadan keyin qo'llab-quvvatlash bormi?",answer:"Ha — tanlangan paketga qarab 14, 30 yoki 90 kunlik bepul texnik yordam beriladi; undan keyin ham qo'llab-quvvatlashni alohida kelishuv asosida davom ettirish mumkin."}
   ]
 };
 const STACK=["Python","FastAPI","Flutter","JavaScript","TypeScript","Go","C++"];
@@ -1523,7 +1516,6 @@ function coverArt(cat){
 function renderCases(filter){
   const box=document.getElementById('cases');box.innerHTML='';
   DATA.cases.filter(c=>!filter||filter==="Hammasi"||c.cat===filter).forEach(c=>{
-    const idx=DATA.cases.indexOf(c);
     const [cls,art]=coverArt(c.cat);
     /* video bo'lsa YouTube posteri muqova sifatida ishlatiladi */
     const yt=c.video?ytId(c.video):null;
@@ -1531,8 +1523,11 @@ function renderCases(filter){
     const cover=cov?`style="background-image:url('${esc(cov)}')"`:'';
     const covIn=cov?(c.video?'<span class="pst-play">▶</span>':'')
                    :(c.video?'<span class="pst-play">▶</span>':art);
+    /* real /portfolio/{slug}/ sahifasiga havola — SEO uchun kontent
+       faqat JS modalda emas, indekslanadigan sahifada ham bo'lishi kerak */
+    const href=c.slug?`/uz/portfolio/${esc(c.slug)}/`:'/uz/portfolio/';
     box.insertAdjacentHTML('beforeend',
-     `<button class="ccard" onclick="openCase(${idx})">
+     `<a class="ccard" href="${href}">
         <div class="ccover ${cov?'':cls}" ${cover}>${covIn}</div>
         <div class="cbody">
           <span class="ctag">${esc(c.cat)}</span>
@@ -1540,7 +1535,7 @@ function renderCases(filter){
           <p>${esc(c.short)}</p>
           <div class="cdur">[ ${esc(c.duration)} ]</div>
         </div>
-      </button>`);
+      </a>`);
   });
   /* cover reveal */
   const co=new IntersectionObserver(es=>es.forEach(e=>{
@@ -1555,32 +1550,10 @@ function renderFilters(){
     box.appendChild(b);
   });
 }
-function openCase(i){
-  const c=DATA.cases[i];if(!c)return;
-  const row=(lab,val)=>val?`<div class="mrow"><div class="lab">[ ${lab} ]</div><p>${esc(val)}</p></div>`:'';
-  document.getElementById('caseModalBody').innerHTML=
-   `<span class="ctag" style="background:var(--blk);color:var(--w);padding:.32rem .7rem;border-radius:6px;font-family:var(--mono);font-size:.64rem;letter-spacing:.18em;text-transform:uppercase">${esc(c.cat)}</span>
-    <h3 style="margin-top:.8rem">${esc(c.title)}</h3>
-    <p style="opacity:.7">${esc(c.short)}</p>
-    ${mediaHtml(c.video,c.image)}
-    ${row('Mijoz',c.client)}
-    ${row('Muammo',c.problem)}
-    ${row('Yechim',c.solution)}
-    ${row('Natija',c.result)}
-    ${row('Texnologiyalar',c.tech)}
-    ${row('Muddat',c.duration)}
-    <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.6rem">
-      ${c.link?`<a href="${esc(c.link)}" target="_blank" rel="noopener" class="btn btn-acid">Loyihani ko'rish ↗</a>`:''}
-      <a href="#aloqa" class="btn btn-blk" onclick="closeCase()">Shunga o'xshash loyiha kerakmi? →</a>
-    </div>`;
-  document.getElementById('caseModal').classList.add('show');
-  document.body.classList.add('modal-open');
-}
-function closeCase(){document.getElementById('caseModal').classList.remove('show');document.body.classList.remove('modal-open');}
-/* Escape — modal va menyuni yopadi */
+/* Escape — menyuni yopadi (fikr modali closeReview() bilan alohida boshqariladi) */
 addEventListener('keydown',e=>{
   if(e.key!=='Escape')return;
-  closeCase();closeReview();
+  closeReview();
   if(document.body.classList.contains('menu-open')){
     document.body.classList.remove('menu-open');
     document.querySelector('#menuBtn span:first-child').textContent='Menyu';
@@ -1701,8 +1674,6 @@ document.getElementById('contactForm').addEventListener('submit',async e=>{
   finally{btn.disabled=false;btn.style.opacity='';}
 });
 
-/* ══════════ MODAL CLOSE ══════════ */
-document.getElementById('caseModal').addEventListener('click',e=>{if(e.target===document.getElementById('caseModal'))closeCase();});
 </script>
 </body>
 </html>

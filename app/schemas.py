@@ -23,6 +23,26 @@ def _validate_media_url(v: str) -> str:
     return v
 
 
+_SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+_KEY_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+
+
+def _validate_slug(v: str) -> str:
+    v = (v or "").strip().lower()
+    if not _SLUG_RE.match(v):
+        raise ValueError("Slug faqat lotin harf/raqam va '-' belgisidan iborat bo'lishi kerak")
+    return v
+
+
+def _validate_optional_slug(v: str) -> str:
+    """CaseIn.slug — bo'sh bo'lishi mumkin (bosh sahifadagi teaser loyiha
+    hali alohida /portfolio/{slug}/ sahifasiga ega bo'lmasligi mumkin)."""
+    v = (v or "").strip().lower()
+    if v and not _SLUG_RE.match(v):
+        raise ValueError("Slug faqat lotin harf/raqam va '-' belgisidan iborat bo'lishi kerak")
+    return v
+
+
 class PackageIn(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     price: str = Field(min_length=1, max_length=60)
@@ -68,8 +88,10 @@ class CaseIn(BaseModel):
     image: str = Field(default="", max_length=1000)
     video: str = Field(default="", max_length=1000)
     link: str = Field(default="", max_length=500)  # jonli loyiha havolasi
+    slug: str = Field(default="", max_length=140)  # bo'lsa /{lang}/portfolio/{slug}/ ga bog'lanadi
 
     _v_image = field_validator("image")(_validate_media_url)
+    _v_slug = field_validator("slug")(_validate_optional_slug)
 
 
 class FaqItemIn(BaseModel):
@@ -77,17 +99,6 @@ class FaqItemIn(BaseModel):
 
     question: str = Field(min_length=1, max_length=200)
     answer: str = Field(min_length=1, max_length=2000)
-
-
-_SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
-_KEY_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
-
-
-def _validate_slug(v: str) -> str:
-    v = (v or "").strip().lower()
-    if not _SLUG_RE.match(v):
-        raise ValueError("Slug faqat lotin harf/raqam va '-' belgisidan iborat bo'lishi kerak")
-    return v
 
 
 def _validate_key(v: str) -> str:
@@ -184,6 +195,26 @@ class PortfolioCaseIn(BaseModel):
 
     _v_key = field_validator("key")(_validate_key)
     _v_image = field_validator("image")(_validate_media_url)
+
+
+class FaqLangIn(BaseModel):
+    """/{lang}/faq/ sahifasidagi bitta savol-javobning bitta tildagi matni."""
+
+    question: str = Field(min_length=1, max_length=300)
+    answer: str = Field(min_length=1, max_length=3000)
+
+
+class FaqAdminIn(BaseModel):
+    """PUT/POST /api/admin/faq[/{id}] — bitta savol-javob, 3 tilda (TZ 19-bo'lim)."""
+
+    key: str = Field(min_length=1, max_length=60)
+    order: int = 0
+    published: bool = True
+    uz: FaqLangIn
+    ru: FaqLangIn
+    en: FaqLangIn
+
+    _v_key = field_validator("key")(_validate_key)
 
 
 class ContactIn(BaseModel):
@@ -579,11 +610,11 @@ DEFAULT_CONTENT: dict = {
         },
         {
             "question": "Kodning huquqi kimga tegishli bo'ladi?",
-            "answer": "Koddan foydalanish huquqi to'liq mijozga tegishli bo'ladi.",
+            "answer": "Loyiha kodidan foydalanish huquqlari shartnomada belgilanadi — odatda mijoz o'z loyihasidan foydalanish huquqiga ega bo'ladi, uchinchi tomon kutubxonalar esa o'z litsenziyasiga bo'ysunadi.",
         },
         {
             "question": "Loyihadan keyin qo'llab-quvvatlash bormi?",
-            "answer": "Ha — doimiy qo'llab-quvvatlash, jumladan 3 oy davomida bepul o'zgartirishlar va texnik yordam.",
+            "answer": "Ha — tanlangan paketga qarab 14, 30 yoki 90 kunlik bepul texnik yordam beriladi; undan keyin ham qo'llab-quvvatlashni alohida kelishuv asosida davom ettirish mumkin.",
         },
     ],
     "team": [

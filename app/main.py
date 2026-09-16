@@ -31,6 +31,7 @@ Endpointlar:
   GET/POST/PUT/DELETE /api/admin/posts[/{id}] — postlar CRUD (Bearer)
   GET/POST/PUT/DELETE /api/admin/services[/{id}] — xizmat sahifalari CRUD, 3 til (Bearer)
   GET/POST/PUT/DELETE /api/admin/portfolio[/{id}] — portfolio case CRUD, 3 til (Bearer)
+  GET/POST/PUT/DELETE /api/admin/faq[/{id}]      — /faq/ sahifasi savol-javob CRUD, 3 til (Bearer)
   GET/PUT /api/admin/telegram   — bot holati/boshqaruvi — BUTUNLAY faqat super admin (Bearer)
   POST /api/admin/telegram/test — test xabar yuborish (faqat super admin)
   GET/POST/DELETE /api/admin/telegram/admins[/{chat_id}] — Telegram admin(lar) ro'yxati
@@ -72,7 +73,7 @@ from .auth import (
 )
 from .config import settings
 from .db import (
-    Base, Content, Lead, LeadNote, LeadStageHistory, PortfolioCase, Post,
+    Base, Content, FaqItem, Lead, LeadNote, LeadStageHistory, PortfolioCase, Post,
     Review, ReviewCode, Service, SessionLocal, Setting, SlugRedirect, engine,
     get_session, run_data_fixups, run_migrations,
 )
@@ -82,11 +83,11 @@ from .email import (
 )
 from .schemas import (
     DEFAULT_CONTENT, AddEmailRequestIn, ConfirmTokenIn, ContentDoc,
-    ForgotPasswordIn, LeadIn, LeadStatusIn, LoginIn, PortfolioCaseIn, PostIn,
-    RemoveEmailRequestIn, ResetPasswordIn, ReviewCodeIn, ReviewIn, ServiceIn,
+    FaqAdminIn, ForgotPasswordIn, LeadIn, LeadStatusIn, LoginIn, PortfolioCaseIn,
+    PostIn, RemoveEmailRequestIn, ResetPasswordIn, ReviewCodeIn, ReviewIn, ServiceIn,
     SetPrimaryRequestIn, TelegramAdminIn, TelegramSettingsIn,
 )
-from . import crm_api, crm_service, crypto, pages, services_store
+from . import crm_api, crm_service, crypto, faq_store, pages, services_store
 from . import crm_constants as crm
 from .telegram import bot
 from .security import (
@@ -237,6 +238,8 @@ async def lifespan(app: FastAPI):
         await run_data_fixups(s)
     async with SessionLocal() as s:
         await services_store.seed_if_empty(s)
+    async with SessionLocal() as s:
+        await faq_store.seed_if_empty(s)
 
     async with engine.begin() as conn:
         res = await conn.execute(select(Content.data, Content.version).where(Content.id == 1))
@@ -1095,6 +1098,78 @@ async def delete_portfolio_case(
     await session.execute(delete(PortfolioCase).where(PortfolioCase.id == case_id))
     await session.commit()
     services_store.invalidate()
+    return {"ok": True}
+
+
+# ══════════ FAQ CRUD (TZ 19-bo'lim) ══════════
+# /{lang}/faq/ sahifasining to'liq savol-javob ro'yxati — ilgira
+# app/content/faq.py'da qattiq yozilgan edi, endi DB (app/db.py FaqItem)
+# yagona manba; app/pages.py faq_store keshidan o'qiydi.
+
+@app.get("/api/admin/faq")
+async def list_faq_admin(
+    _: str = Depends(require_admin), session: AsyncSession = Depends(get_session)
+):
+    res = await session.execute(select(FaqItem).order_by(FaqItem.order, FaqItem.id))
+    return [f.as_dict() for f in res.scalars().all()]
+
+
+@app.post("/api/admin/faq", status_code=201)
+async def create_faq_item(
+    payload: FaqAdminIn,
+    _: str = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    if await session.scalar(select(FaqItem).where(FaqItem.key == payload.key)) is not None:
+        raise HTTPException(400, "Bu key allaqachon mavjud")
+    item = FaqItem(
+        key=payload.key, order=payload.order, published=payload.published,
+        question_uz=payload.uz.question, answer_uz=payload.uz.answer,
+        question_ru=payload.ru.question, answer_ru=payload.ru.answer,
+        question_en=payload.en.question, answer_en=payload.en.answer,
+    )
+    session.add(item)
+    await session.commit()
+    faq_store.invalidate()
+    return item.as_dict()
+
+
+@app.put("/api/admin/faq/{item_id}")
+async def update_faq_item(
+    item_id: int,
+    payload: FaqAdminIn,
+    _: str = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    item = await session.get(FaqItem, item_id)
+    if item is None:
+        raise HTTPException(404, "Savol topilmadi")
+    if payload.key != item.key:
+        dup = await session.scalar(
+            select(FaqItem).where(FaqItem.key == payload.key, FaqItem.id != item_id)
+        )
+        if dup is not None:
+            raise HTTPException(400, "Bu key allaqachon mavjud")
+    item.key = payload.key
+    item.order = payload.order
+    item.published = payload.published
+    item.question_uz, item.answer_uz = payload.uz.question, payload.uz.answer
+    item.question_ru, item.answer_ru = payload.ru.question, payload.ru.answer
+    item.question_en, item.answer_en = payload.en.question, payload.en.answer
+    await session.commit()
+    faq_store.invalidate()
+    return item.as_dict()
+
+
+@app.delete("/api/admin/faq/{item_id}")
+async def delete_faq_item(
+    item_id: int,
+    _: str = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    await session.execute(delete(FaqItem).where(FaqItem.id == item_id))
+    await session.commit()
+    faq_store.invalidate()
     return {"ok": True}
 
 

@@ -392,7 +392,7 @@ section{position:relative}
 .filters button.on{background:var(--acid);color:var(--blk);border-color:var(--acid);font-weight:700}
 .cgrid{display:grid;gap:1.4rem;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
 .ccard{background:var(--cream);color:var(--blk);border-radius:18px;overflow:hidden;border:3px solid var(--blk);
-  transition:transform .4s var(--ease),box-shadow .4s;text-align:left}
+  transition:transform .4s var(--ease),box-shadow .4s;text-align:left;display:block;text-decoration:none;cursor:pointer}
 .ccard:hover{transform:translateY(-8px) rotate(-.7deg);box-shadow:0 30px 60px rgba(217,255,63,.14)}
 .ccover{height:170px;position:relative;overflow:hidden;border-bottom:3px solid var(--blk);
   background-size:cover;background-position:center;display:grid;place-items:center;padding:18px;
@@ -991,11 +991,6 @@ body.menu-open,body.modal-open{overflow:hidden}
   <div class="f-word" aria-hidden="true"><span>P</span><span>R</span><span>O</span><span>M</span><span>T</span><span>C</span><span>H</span><span>I</span></div>
 </footer>
 
-<!-- CASE MODAL -->
-<div class="modal" id="caseModal"><div class="mbox">
-  <button class="close-x" onclick="closeCase()" aria-label="Close">✕</button>
-  <div id="caseModalBody"></div>
-</div></div>
 
 
 <script>
@@ -1036,19 +1031,19 @@ const DEFAULTS={
     {text:"Professional approach and clean code. They kept supporting us even after the project was done.",name:"Sardor K.",role:"Business owner",photo:""}
   ],
   cases:[
-    {title:"Chindan Group",cat:"Automation",client:"Chindan Group",duration:"20 days",
+    {title:"Chindan Group",cat:"Automation",client:"Chindan Group",duration:"20 days",slug:"chindan-group",
      short:"A fully automated sales pipeline — from lead to payment.",
      problem:"Leads were collected manually, and the sales process was fragmented and impossible to track.",
      solution:"We unified the lead → CRM → sales site → payment + reporting chain into one system.",
      result:"Manual work dropped by roughly 70%, and the time from lead to payment shortened significantly.",
      tech:"FastAPI, PostgreSQL, Telegram Bot API, Redis",image:""},
-    {title:"Notiq AI",cat:"AI Solutions",client:"Notiq",duration:"25 days",
+    {title:"Notiq AI",cat:"AI Solutions",client:"Notiq",duration:"25 days",slug:"notiq-ai",
      short:"A mobile app that helps assess and improve public speaking skills.",
      problem:"Many people struggle with public speaking.",
      solution:"We built an AI-powered solution, with extra video lessons to help improve speech.",
      result:"Users can now improve their speaking level right from home.",
      tech:"Flutter, Python, ASR pipeline",image:""},
-    {title:"Tizimly",cat:"Web & App",client:"Tizimly (our own product)",duration:"30 days",
+    {title:"Tizimly",cat:"Web & App",client:"Tizimly (our own product)",duration:"30 days",slug:"tizimly",
      short:"A multi-tenant B2B SaaS platform that unifies sales, inventory, finance, CRM and analytics in one place.",
      problem:"Business data was scattered — sales in spreadsheets, clients in a CRM, calls in a telephony system. Reporting was assembled manually and with delays.",
      solution:"We brought every process into one system: each sale automatically updates warehouse stock, AmoCRM, Bitrix24, UTEL and Meta Ads sync in real time, and a Telegram bot instantly reports payments and outstanding debt.",
@@ -1513,7 +1508,6 @@ function coverArt(cat){
 function renderCases(filter){
   const box=document.getElementById('cases');box.innerHTML='';
   DATA.cases.filter(c=>!filter||filter==="All"||c.cat===filter).forEach(c=>{
-    const idx=DATA.cases.indexOf(c);
     const [cls,art]=coverArt(c.cat);
     /* video bo'lsa YouTube posteri muqova sifatida ishlatiladi */
     const yt=c.video?ytId(c.video):null;
@@ -1521,8 +1515,10 @@ function renderCases(filter){
     const cover=cov?`style="background-image:url('${esc(cov)}')"`:'';
     const covIn=cov?(c.video?'<span class="pst-play">▶</span>':'')
                    :(c.video?'<span class="pst-play">▶</span>':art);
+    /* real /portfolio/{slug}/ page — for SEO/crawlability */
+    const href=c.slug?`/en/portfolio/${esc(c.slug)}/`:'/en/portfolio/';
     box.insertAdjacentHTML('beforeend',
-     `<button class="ccard" onclick="openCase(${idx})">
+     `<a class="ccard" href="${href}">
         <div class="ccover ${cov?'':cls}" ${cover}>${covIn}</div>
         <div class="cbody">
           <span class="ctag">${esc(c.cat)}</span>
@@ -1530,7 +1526,7 @@ function renderCases(filter){
           <p>${esc(c.short)}</p>
           <div class="cdur">[ ${esc(c.duration)} ]</div>
         </div>
-      </button>`);
+      </a>`);
   });
   /* cover reveal */
   const co=new IntersectionObserver(es=>es.forEach(e=>{
@@ -1545,32 +1541,10 @@ function renderFilters(){
     box.appendChild(b);
   });
 }
-function openCase(i){
-  const c=DATA.cases[i];if(!c)return;
-  const row=(lab,val)=>val?`<div class="mrow"><div class="lab">[ ${lab} ]</div><p>${esc(val)}</p></div>`:'';
-  document.getElementById('caseModalBody').innerHTML=
-   `<span class="ctag" style="background:var(--blk);color:var(--w);padding:.32rem .7rem;border-radius:6px;font-family:var(--mono);font-size:.64rem;letter-spacing:.18em;text-transform:uppercase">${esc(c.cat)}</span>
-    <h3 style="margin-top:.8rem">${esc(c.title)}</h3>
-    <p style="opacity:.7">${esc(c.short)}</p>
-    ${mediaHtml(c.video,c.image)}
-    ${row('Client',c.client)}
-    ${row('Problem',c.problem)}
-    ${row('Solution',c.solution)}
-    ${row('Result',c.result)}
-    ${row('Technologies',c.tech)}
-    ${row('Duration',c.duration)}
-    <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.6rem">
-      ${c.link?`<a href="${esc(c.link)}" target="_blank" rel="noopener" class="btn btn-acid">View project ↗</a>`:''}
-      <a href="#aloqa" class="btn btn-blk" onclick="closeCase()">Need a similar project? →</a>
-    </div>`;
-  document.getElementById('caseModal').classList.add('show');
-  document.body.classList.add('modal-open');
-}
-function closeCase(){document.getElementById('caseModal').classList.remove('show');document.body.classList.remove('modal-open');}
-/* Escape — modal va menyuni yopadi */
+/* Escape — closes the menu (review modal is handled separately by closeReview()) */
 addEventListener('keydown',e=>{
   if(e.key!=='Escape')return;
-  closeCase();closeReview();
+  closeReview();
   if(document.body.classList.contains('menu-open')){
     document.body.classList.remove('menu-open');
     document.querySelector('#menuBtn span:first-child').textContent='Menu';
@@ -1684,8 +1658,6 @@ document.getElementById('contactForm').addEventListener('submit',async e=>{
   finally{btn.disabled=false;btn.style.opacity='';}
 });
 
-/* ══════════ MODAL CLOSE ══════════ */
-document.getElementById('caseModal').addEventListener('click',e=>{if(e.target===document.getElementById('caseModal'))closeCase();});
 </script>
 </body>
 </html>

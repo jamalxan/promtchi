@@ -350,6 +350,10 @@ tr:hover td{background:rgba(217,255,63,.08)}
         <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
         Portfolio
       </a>
+      <a href="#" data-page="faqpage">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 1 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12" y2="17"/></svg>
+        FAQ sahifasi
+      </a>
       <div class="nav-label">Landing sahifa</div>
       <a href="#" data-page="cases">
         <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
@@ -373,7 +377,7 @@ tr:hover td{background:rgba(217,255,63,.08)}
       </a>
       <a href="#" data-page="faq">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 1 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12" y2="17"/></svg>
-        FAQ
+        FAQ (bosh sahifa, qisqa)
       </a>
       <a href="#" data-page="reviews">
         <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -454,6 +458,7 @@ let CRM_TG = null;    // CRM Telegram sozlamalari holati
 let POSTS = [];
 let SERVICES = [];   // /{lang}/xizmatlar/{slug}/ SEO sahifalari — /api/admin/services
 let PORTFOLIO = [];  // /{lang}/portfolio/{slug}/ SEO sahifalari — /api/admin/portfolio
+let FAQITEMS = [];   // /{lang}/faq/ sahifasining to'liq ro'yxati — /api/admin/faq
 let REVIEWS = [];
 let RCODES = [];
 let TG = null; // {has_token, bot_token_masked, chat_id, active, subscribers, ...}
@@ -680,7 +685,7 @@ async function showApp() {
   $('loginPage').style.display = 'none';
   $('appPage').style.display = '';
   await loadAccount(); // rol boshqa hammasidan oldin ma'lum bo'lishi kerak (navigatsiya shunga bog'liq)
-  const tasks = [loadContent(), loadCrmMeta(), loadLeads(), loadPosts(), loadServices(), loadPortfolio(), loadTelegram(), loadReviews()];
+  const tasks = [loadContent(), loadCrmMeta(), loadLeads(), loadPosts(), loadServices(), loadPortfolio(), loadFaqItems(), loadTelegram(), loadReviews()];
   if (canAssign()) tasks.push(loadCrmAccounts());
   await Promise.all(tasks);
   applyRoleVisibility();
@@ -773,6 +778,13 @@ async function loadPortfolio() {
   } catch (e) { /* silent */ }
 }
 
+async function loadFaqItems() {
+  try {
+    const r = await apiFetch('/api/admin/faq');
+    if (r.ok) FAQITEMS = await r.json();
+  } catch (e) { /* silent */ }
+}
+
 async function loadTelegram() {
   try {
     const r = await apiFetch('/api/admin/telegram');
@@ -812,11 +824,12 @@ function navigate(page) {
     team: () => renderContentPage('team', 'Jamoa'),
     contacts: () => renderContentPage('contacts', 'Aloqa havolalari'),
     socials: () => renderContentPage('socials', 'Ijtimoiy tarmoqlar'),
-    faq: () => renderContentPage('faq', 'FAQ'),
+    faq: () => renderContentPage('faq', 'FAQ (bosh sahifa, qisqa)'),
     reviews: renderReviews,
     posts: renderPosts,
     services: renderServices,
     portfolio: renderPortfolioAdmin,
+    faqpage: renderFaqAdmin,
     telegram: renderTelegram,
     crmtelegram: renderCrmTelegram,
     stats: renderStats,
@@ -2343,6 +2356,152 @@ async function addCase() {
       caseLangTab[c.id] = 'uz';
       renderPortfolioAdmin();
       toast("Case qo'shildi — endi to'ldiring");
+    } else { const d = await r.json().catch(() => ({})); toast(d.detail || 'Xatolik', 'error'); }
+  } catch (e) { toast('Xatolik yuz berdi', 'error'); }
+}
+
+/* ═══ FAQ SAHIFASI (/{lang}/faq/ to'liq ro'yxati, TZ 19-bo'lim) ═══ */
+let openFaqId = null;
+const faqLangTab = {};
+const _faqTimers = {};
+
+function renderFaqAdmin() {
+  const sorted = [...FAQITEMS].sort((a, b) => a.order - b.order);
+  $('mainContent').innerHTML = `
+    <div class="main-header">
+      <h2>FAQ sahifasi <span style="font-family:var(--mono);font-size:1rem;opacity:.4">(${FAQITEMS.length})</span></h2>
+      <div class="actions">
+        <button class="btn btn-acid btn-sm" onclick="addFaqItem()">+ Yangi savol</button>
+      </div>
+    </div>
+    <p style="font-size:.86rem;opacity:.6;margin:-1.2rem 0 1.3rem">
+      /{lang}/faq/ sahifasidagi to'liq savol-javob ro'yxati — har biri 3 tilda. Javoblar buyurtmachi
+      tasdiqlagandan keyin yozilsin, taxminiy va'da qo'shilmasin. O'zgartirishlar ~0.7s ichida avtomatik saqlanadi.</p>
+    <div class="card-list" id="faqCards">
+      ${sorted.length ? '' : '<div class="empty-state"><p>Hali savol yo\'q — birinchisini qo\'shing!</p></div>'}
+    </div>
+  `;
+  const box = $('faqCards');
+  sorted.forEach(f => box.appendChild(buildFaqCard(f)));
+}
+
+function buildFaqCard(f) {
+  const card = document.createElement('div');
+  card.className = 'edit-card';
+  const isOpen = openFaqId === f.id;
+  card.innerHTML = `
+    <div class="card-hd" style="cursor:pointer">
+      <span class="num">#${f.order} · <b>${esc(f.uz.question || f.key)}</b> <span style="opacity:.5;font-weight:400">(${esc(f.key)})</span></span>
+      <div style="display:flex;gap:.7rem;align-items:center">
+        <span style="font-size:.72rem;opacity:.7">${f.published ? 'Saytda ✓' : 'Yashirin'}</span>
+        <button class="del-btn" data-del="1" title="O'chirish">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </div>
+    </div>
+    ${isOpen ? buildFaqForm(f) : ''}
+  `;
+  card.querySelector('.card-hd').onclick = (e) => {
+    if (e.target.closest('[data-del]')) return;
+    openFaqId = isOpen ? null : f.id;
+    renderFaqAdmin();
+  };
+  card.querySelector('[data-del]').onclick = async (e) => {
+    e.stopPropagation();
+    const ok = await confirm("O'chirish", `"${f.uz.question || f.key}" savolini butunlay o'chirishni xohlaysizmi?`, "Ha, o'chirish");
+    if (!ok) return;
+    try {
+      const r = await apiFetch('/api/admin/faq/' + f.id, { method: 'DELETE' });
+      if (r.ok) { FAQITEMS = FAQITEMS.filter(x => x.id !== f.id); renderFaqAdmin(); toast("Savol o'chirildi"); }
+      else toast('Xatolik', 'error');
+    } catch (err) { toast('Xatolik', 'error'); }
+  };
+  if (isOpen) bindFaqForm(card, f);
+  return card;
+}
+
+function buildFaqForm(f) {
+  const lang = faqLangTab[f.id] || 'uz';
+  const d = f[lang];
+  const tabBtns = _LANGS3.map(l =>
+    `<button type="button" class="btn btn-sm ${l === lang ? 'btn-acid' : 'btn-outline'}" data-langtab="${l}">${_LANG3_LABEL[l]}</button>`
+  ).join('');
+  return `
+    <div style="border-top:1px solid var(--border,#e5e5e5);margin-top:.8rem;padding-top:.8rem">
+      <div class="field-row">
+        <div class="field"><label>Key (ichki identifikator, o'zgartirish tavsiya etilmaydi)</label>
+          <input data-fkey="key" value="${esc(f.key)}" maxlength="60"></div>
+        <div class="field"><label>Tartib raqami</label>
+          <input data-fkey="order" type="number" value="${f.order}"></div>
+      </div>
+      <div class="field-check">
+        <input type="checkbox" data-fkey="published" ${f.published ? 'checked' : ''}>
+        <span>Saytda ko'rinsin (/faq/ ro'yxati va FAQPage schema'da)</span>
+      </div>
+      <div style="display:flex;gap:.4rem;margin:.9rem 0">${tabBtns}</div>
+      <div class="field"><label>Savol</label>
+        <input data-flkey="question" value="${esc(d.question)}" maxlength="300"></div>
+      <div class="field"><label>Javob</label>
+        <textarea data-flkey="answer" maxlength="3000">${esc(d.answer)}</textarea></div>
+    </div>
+  `;
+}
+
+function bindFaqForm(card, f) {
+  card.querySelectorAll('[data-langtab]').forEach(btn => {
+    btn.onclick = (e) => { e.stopPropagation(); faqLangTab[f.id] = btn.dataset.langtab; renderFaqAdmin(); };
+  });
+  card.querySelectorAll('[data-fkey]').forEach(el => {
+    el.onclick = (e) => e.stopPropagation();
+    const handler = () => {
+      const key = el.dataset.fkey;
+      if (key === 'published') f.published = el.checked;
+      else if (key === 'order') f.order = parseInt(el.value, 10) || 0;
+      else f[key] = el.value;
+      saveFaqDebounced(f);
+    };
+    el.oninput = handler;
+    el.onchange = handler;
+  });
+  const lang = faqLangTab[f.id] || 'uz';
+  card.querySelectorAll('[data-flkey]').forEach(el => {
+    el.onclick = (e) => e.stopPropagation();
+    el.oninput = () => {
+      f[lang][el.dataset.flkey] = el.value;
+      saveFaqDebounced(f);
+    };
+  });
+}
+
+function saveFaqDebounced(f) {
+  clearTimeout(_faqTimers[f.id]);
+  _faqTimers[f.id] = setTimeout(() => saveFaqItem(f), 700);
+}
+
+async function saveFaqItem(f) {
+  try {
+    const r = await apiFetch('/api/admin/faq/' + f.id, {
+      method: 'PUT',
+      body: JSON.stringify({ key: f.key, order: f.order, published: f.published, uz: f.uz, ru: f.ru, en: f.en }),
+    });
+    if (r.ok) toast('Saqlandi ✓');
+    else { const d = await r.json().catch(() => ({})); toast((d.detail && d.detail[0] && d.detail[0].msg) || d.detail || 'Saqlashda xatolik', 'error'); }
+  } catch (e) { toast('Saqlashda xatolik', 'error'); }
+}
+
+async function addFaqItem() {
+  const key = 'savol-' + Date.now();
+  const blank = () => ({ question: 'Yangi savol', answer: '' });
+  const payload = { key, order: FAQITEMS.length, published: false, uz: blank(), ru: blank(), en: blank() };
+  try {
+    const r = await apiFetch('/api/admin/faq', { method: 'POST', body: JSON.stringify(payload) });
+    if (r.ok) {
+      const f = await r.json();
+      FAQITEMS.push(f);
+      openFaqId = f.id;
+      faqLangTab[f.id] = 'uz';
+      renderFaqAdmin();
+      toast("Savol qo'shildi — endi to'ldiring");
     } else { const d = await r.json().catch(() => ({})); toast(d.detail || 'Xatolik', 'error'); }
   } catch (e) { toast('Xatolik yuz berdi', 'error'); }
 }

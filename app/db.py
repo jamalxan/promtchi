@@ -468,6 +468,49 @@ class PortfolioCase(Base):
         }
 
 
+class FaqItem(Base):
+    """/{lang}/faq/ sahifasidagi to'liq savol-javob — admin-tahrirlanadigan (TZ 19-bo'lim).
+
+    Ilgari app/content/faq.py'da qattiq yozilgan 24 ta juftlik edi (Service/
+    PortfolioCase kabi endi DB yagona manba). Slug talab qilinmaydi — FAQ
+    o'z sahifasiga ega emas, /faq/ ro'yxatida ko'rsatiladi.
+    """
+
+    __tablename__ = "faq_items"
+    __table_args__ = (Index("ix_faq_items_order", "order"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    key: Mapped[str] = mapped_column(String(60), unique=True, nullable=False)
+    order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    published: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    question_uz: Mapped[str] = mapped_column(Text, nullable=False)
+    answer_uz: Mapped[str] = mapped_column(Text, nullable=False)
+    question_ru: Mapped[str] = mapped_column(Text, nullable=False)
+    answer_ru: Mapped[str] = mapped_column(Text, nullable=False)
+    question_en: Mapped[str] = mapped_column(Text, nullable=False)
+    answer_en: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    def as_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "key": self.key,
+            "order": self.order,
+            "published": bool(self.published),
+            "uz": {"question": self.question_uz, "answer": self.answer_uz},
+            "ru": {"question": self.question_ru, "answer": self.answer_ru},
+            "en": {"question": self.question_en, "answer": self.answer_en},
+        }
+
+
 class SlugRedirect(Base):
     """Xizmat/portfolio slug'i o'zgarganda avtomatik yaratiladigan 301 (TZ 27-bo'lim:
     "Slugs o'zgarsa 301 redirect yaratiladi"). `old_path`/`new_path` — to'liq
@@ -691,6 +734,62 @@ async def run_data_fixups(session: AsyncSession) -> None:
             leads_chat_id=old_chat,
             is_enabled=bool(old_token),
         ))
+
+    # 4. Content.data.faq/cases — TZ 2-bo'lim majburiy tuzatishlar: eski "kod
+    #    huquqi to'liq mijozga tegishli"/blanket "3 oy bepul" da'volari va
+    #    Content.data.cases'dagi eskirgan "BotSmith Platform"/"Tizimliy" case
+    #    (yangi Portfolio DB'dagi haqiqiy "Tizimly" bilan mos emas edi) —
+    #    ishlab turgan bazalarda bir martalik tuzatiladi (yangi bazalarda
+    #    DEFAULT_CONTENT/faq_store seed'i allaqachon to'g'ri qiymat bilan keladi).
+    from sqlalchemy.orm.attributes import flag_modified
+
+    content_row = await session.get(Content, 1)
+    if content_row is not None:
+        data = content_row.data
+        changed = False
+        for item in data.get("faq", []):
+            q, a = item.get("question", ""), item.get("answer", "")
+            if q.startswith("Kodning huquqi") and a.strip() == "Koddan foydalanish huquqi to'liq mijozga tegishli bo'ladi.":
+                item["answer"] = (
+                    "Loyiha kodidan foydalanish huquqlari shartnomada belgilanadi — odatda mijoz "
+                    "o'z loyihasidan foydalanish huquqiga ega bo'ladi, uchinchi tomon kutubxonalar "
+                    "esa o'z litsenziyasiga bo'ysunadi."
+                )
+                changed = True
+            if q.startswith("Loyihadan keyin") and "3 oy davomida bepul o'zgartirishlar" in a:
+                item["answer"] = (
+                    "Ha — tanlangan paketga qarab 14, 30 yoki 90 kunlik bepul texnik yordam "
+                    "beriladi; undan keyin ham qo'llab-quvvatlashni alohida kelishuv asosida "
+                    "davom ettirish mumkin."
+                )
+                changed = True
+        for case in data.get("cases", []):
+            if case.get("title") in ("Tizimliy", "BotSmith Platform"):
+                case.update(
+                    title="Tizimly", cat="Web & ilova", client="Tizimly (o'z mahsulotimiz)",
+                    duration="30 kun", slug="tizimly",
+                    short="Savdo, ombor, moliya, CRM va analitikani bitta joyda birlashtiruvchi "
+                          "multi-tenant B2B SaaS platforma.",
+                    problem="Biznes ma'lumotlari tarqoq edi — savdo Excelda, mijozlar CRMda, "
+                            "qo'ng'iroqlar telefoniyada. Hisobot yig'ish qo'lda va kechikib bajarilardi.",
+                    solution="Barcha jarayonlarni bitta tizimga yig'dik: har bir savdo ombor "
+                             "qoldig'ini avtomatik yangilaydi, AmoCRM, Bitrix24, UTEL va Meta Ads "
+                             "real vaqtda sinxronlanadi, Telegram bot to'lov va qarzdorlik haqida "
+                             "darhol xabar beradi.",
+                    result="Qo'lda ma'lumot kiritish yo'qoldi — daromad, qarzdorlik va jamoa "
+                           "samaradorligi real vaqtda ko'rinadi. Platformadan 150 dan ortiq "
+                           "kompaniya foydalanmoqda.",
+                    tech="Django DRF, PostgreSQL, Redis, Docker, Telegram Bot API",
+                )
+                changed = True
+            elif case.get("title") == "Chindan Group" and not case.get("slug"):
+                case["slug"] = "chindan-group"
+                changed = True
+            elif case.get("title") == "Notiq AI" and not case.get("slug"):
+                case["slug"] = "notiq-ai"
+                changed = True
+        if changed:
+            flag_modified(content_row, "data")
 
     await session.commit()
 

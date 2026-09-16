@@ -1,6 +1,12 @@
 """24 ta savol-javob — TZ 13-bo'lim ro'yxati, real ma'lumotlarga asoslangan
 (hech qanday soxta va'da yo'q — narx/muddat sonlari saytdagi paketlar va
-jarayon bo'limi bilan mos)."""
+jarayon bo'limi bilan mos).
+
+DIQQAT: bu fayl endi RUNTIME'da o'qilmaydi — faqat app/faq_store.py'ning
+bir martalik seed_if_empty()'i uchun manba (`faq_items` jadvali bo'sh
+bo'lsa shu yerdagi qiymatlar bilan to'ldiriladi). Saytdagi haqiqiy /faq/
+kontenti va admin CRUD app/db.py FaqItem jadvalida (TZ 19-bo'lim) — shu
+faylni tahrirlash saytga TA'SIR QILMAYDI, admin panel orqali o'zgartiring."""
 
 FAQ = {
 "uz": [
@@ -47,7 +53,7 @@ FAQ = {
     ("Qo'shimcha xarajatlar bo'lishi mumkinmi?",
      "Kelishilgan ish doirasidan tashqari qo'shimcha talab (scope o'zgarishi) alohida muhokama va kelishuvdan so'ng qo'shiladi. Domen/hosting kabi uchinchi tomon xizmatlari alohida hisoblanadi — bularning barchasi oldindan aniq aytiladi, yashirin to'lov yo'q."),
     ("Kod va loyiha huquqi kimga tegishli bo'ladi?",
-     "Koddan foydalanish huquqi to'liq mijozga tegishli bo'ladi."),
+     "Loyiha kodidan foydalanish huquqlari tomonlar o'rtasidagi shartnomada belgilanadi — odatda mijoz o'z loyihasidan foydalanish huquqiga ega bo'ladi, uchinchi tomon kutubxona va servislar esa o'zlarining litsenziya shartlariga bo'ysunadi."),
     ("Loyiha tugagandan keyin support bormi?",
      "Ha — tanlangan paketga qarab 14, 30 yoki 90 kunlik bepul texnik yordam beriladi. Bu muddatdan keyin ham qo'llab-quvvatlashni alohida kelishuv asosida davom ettirish mumkin."),
     ("Texnik xizmat ko'rsatish va yangilash mumkinmi?",
@@ -97,7 +103,7 @@ FAQ = {
     ("Могут ли быть дополнительные расходы?",
      "Дополнительные требования вне согласованного объёма работ (изменение scope) добавляются только после отдельного обсуждения и согласования. Сторонние услуги — домен/хостинг — оплачиваются отдельно; всё это озвучивается заранее, скрытых платежей нет."),
     ("Кому принадлежат права на код и проект?",
-     "Права на использование кода полностью принадлежат клиенту."),
+     "Права на использование кода проекта определяются договором между сторонами — как правило, клиент получает право использовать свой проект, а сторонние библиотеки и сервисы подчиняются собственным условиям лицензирования."),
     ("Есть ли поддержка после завершения проекта?",
      "Да — в зависимости от выбранного пакета предоставляется 14, 30 или 90 дней бесплатной технической поддержки. После этого срока поддержку можно продолжить по отдельной договорённости."),
     ("Возможно ли техническое обслуживание и обновления?",
@@ -147,7 +153,7 @@ FAQ = {
     ("Could there be additional costs?",
      "Additional requirements outside the agreed scope of work are only added after a separate discussion and agreement. Third-party services such as domain/hosting are billed separately — all of this is stated upfront, with no hidden fees."),
     ("Who owns the code and the project?",
-     "Full usage rights to the code belong to the client."),
+     "Usage rights to the project's code are defined in the contract between the parties — the client typically receives the right to use their project, while third-party libraries and services remain subject to their own license terms."),
     ("Is there support after the project is finished?",
      "Yes — depending on the chosen package, you get 14, 30 or 90 days of free technical support. After that period, support can continue under a separate agreement."),
     ("Is ongoing maintenance and updates available?",
