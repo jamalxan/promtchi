@@ -42,6 +42,17 @@ _BASE_HEADERS: list[tuple[str, str]] = [
 ]
 
 
+_PUBLIC_PAGE_CACHE = f"public, max-age={settings.STATIC_CACHE_SECONDS}, must-revalidate"
+# `/static/uploads/*` fayl nomlari secrets.token_hex(8) bilan yaratiladi
+# (main.py::upload_file) — bir URL HECH QACHON boshqa kontentga almashmaydi
+# (qayta yuklash yangi nom oladi), shuning uchun immutable xavfsiz.
+_UPLOADS_CACHE = "public, max-age=31536000, immutable"
+# Qolgan /static/* (logo.png, site.css, admin.html, ...) — repo bilan birga
+# deploy qilinadi, fayl nomi versiyalanmagan (hash yo'q), shu sabab
+# immutable EMAS — o'rtacha TTL bilan muddat tugagach qayta tekshiriladi.
+_STATIC_ASSET_CACHE = "public, max-age=86400, must-revalidate"
+
+
 class SecurityHeadersMiddleware:
     def __init__(self, app):
         self.app = app
@@ -71,6 +82,32 @@ class SecurityHeadersMiddleware:
                     or path == "/admin"
                 ):
                     h["Cache-Control"] = "no-store"
+                elif (
+                    200 <= message["status"] < 300
+                    and path.startswith("/static/uploads/")
+                    and "cache-control" not in h
+                ):
+                    h["Cache-Control"] = _UPLOADS_CACHE
+                elif (
+                    200 <= message["status"] < 300
+                    and path.startswith("/static/")
+                    and "cache-control" not in h
+                ):
+                    h["Cache-Control"] = _STATIC_ASSET_CACHE
+                elif (
+                    200 <= message["status"] < 300
+                    and not path.startswith("/api/")
+                    and not path.startswith("/static/")
+                    and "cache-control" not in h
+                ):
+                    # Ichki SEO sahifalar (xizmatlar/portfolio/faq/blog/...,
+                    # app/pages.py) — bosh sahifada (main.py::_PAGE_CACHE)
+                    # allaqachon qo'llanilgan naqshni takrorlaymiz (production
+                    # audit: 81/84 sahifada Cache-Control umuman yo'q edi).
+                    # Sahifalar admin panel orqali kamdan-kam yangilanadi;
+                    # `must-revalidate` ETag/Last-Modified bo'lmasa ham muddat
+                    # tugagach har doim originaldan qayta tekshirtiradi.
+                    h["Cache-Control"] = _PUBLIC_PAGE_CACHE
             await send(message)
 
         await self.app(scope, receive, send_wrapper)

@@ -47,6 +47,7 @@ import gzip
 import hashlib
 import json
 import logging
+import re
 import secrets
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -215,15 +216,71 @@ def _inject_ga(data: bytes, ga_id: str) -> bytes:
     return data
 
 
+_ORG_SCHEMA_RE = re.compile(
+    rb'<script type="application/ld\+json" id="orgSchema">(.*?)</script>', re.DOTALL
+)
+_DEFAULTS_CONTACTS_RE = re.compile(rb"contacts:\[.*?\]", re.DOTALL)
+_DEFAULTS_SOCIALS_RE = re.compile(rb"socials:\[.*?\]", re.DOTALL)
+
+
+def _inject_live_contacts(data: bytes) -> bytes:
+    """Bosh sahifa HTML fayli disk ustida qo'lda tahrirlangan holda saqlanadi
+    (`DEFAULTS.contacts/socials` — JS ishga tushmasdan oldin ko'rinadigan
+    boshlang'ich qiymat — va Organization JSON-LD). Admin panel orqali
+    kontakt (telefon/Telegram) o'zgartirilsa, bu qattiq yozilgan qiymat
+    ESKIRIB QOLARDI (production audit, 2026-09-16: bosh sahifada eski
+    telefon/Telegram, boshqa barcha sahifalar esa DB'dan to'g'ri o'qirdi —
+    root cause: ikkita mustaqil manba).
+
+    Shu funksiya har safar fayl qayta o'qilganda (mtime yoki admin content
+    versiyasi o'zgarganda, `_PageCache.load()`ga qarang) `content_cache`
+    (yagona, DB-asoslangan manba — `pages._live_org()` boshqa sahifalar
+    uchun ham xuddi shu Content jadvalidan o'qiydi) qiymatlarini statik
+    HTML'ga qayta yozadi — JS keyinroq `/api/content` orqali baribir DOM'ni
+    yangilaydi, bu yerdagi splice esa faqat JS ishga tushmasdan oldingi
+    (va JS'ni bajarmaydigan bot/crawler ko'radigan) holatni to'g'irlaydi.
+    """
+    if not content_cache.ready:
+        return data  # DB hali yuklanmagan (kutilmagan holat) — fayl qiymati bilan davom etamiz
+
+    contacts = content_cache.raw.get("contacts") or []
+    socials = content_cache.raw.get("socials") or []
+
+    if contacts:
+        contacts_json = json.dumps(contacts, ensure_ascii=False, separators=(",", ":")).encode()
+        data = _DEFAULTS_CONTACTS_RE.sub(lambda _m: b"contacts:" + contacts_json, data, count=1)
+    if socials:
+        socials_json = json.dumps(socials, ensure_ascii=False, separators=(",", ":")).encode()
+        data = _DEFAULTS_SOCIALS_RE.sub(lambda _m: b"socials:" + socials_json, data, count=1)
+
+    def _patch_org_schema(m: re.Match) -> bytes:
+        try:
+            org = json.loads(m.group(1))
+        except (json.JSONDecodeError, TypeError, ValueError):
+            return m.group(0)
+        tg = next((c for c in contacts if c.get("icon") == "telegram" and c.get("url")), None)
+        if tg:
+            org.setdefault("contactPoint", [{}])[0]["url"] = tg["url"]
+            org["sameAs"] = [tg["url"]]
+        phone = next((c for c in contacts if c.get("icon") == "phone" and c.get("url", "").startswith("tel:")), None)
+        if phone:
+            org.setdefault("contactPoint", [{}])[0]["telephone"] = phone["url"][len("tel:"):]
+        new_json = json.dumps(org, ensure_ascii=False, separators=(",", ":")).encode()
+        return b'<script type="application/ld+json" id="orgSchema">' + new_json + b"</script>"
+
+    return _ORG_SCHEMA_RE.sub(_patch_org_schema, data, count=1)
+
+
 class _PageCache:
     __slots__ = (
-        "path", "mtime", "raw", "gz", "etag",
+        "path", "mtime", "content_version", "raw", "gz", "etag",
         "raw_noindex", "gz_noindex", "etag_noindex",
     )
 
     def __init__(self, path: Path):
         self.path = path
         self.mtime: int = -1
+        self.content_version: int = -1
         self.raw: bytes = b""
         self.gz: bytes = b""
         self.etag: str = ""
@@ -232,13 +289,22 @@ class _PageCache:
         self.etag_noindex: str = ""
 
     def load(self) -> bool:
-        """Fayl mavjud bo'lsa keshni yangilaydi (o'zgargan bo'lsa) va True qaytaradi."""
+        """Fayl mavjud bo'lsa keshni yangilaydi (fayl yoki admin content
+        o'zgargan bo'lsa) va True qaytaradi.
+
+        `content_version` — `content_cache.version` (admin panelda kontakt
+        o'zgartirilganda ortadi). Faqat fayl mtime'ga qaraganda, admin
+        kontaktni o'zgartirgani HECH QACHON bosh sahifaga tegmas edi (fayl
+        o'zi o'zgarmagani uchun) — shu sabab ikkinchi shart qo'shildi.
+        """
         try:
             st = self.path.stat()
         except OSError:
             return False
-        if st.st_mtime_ns != self.mtime:
+        content_version = content_cache.version
+        if st.st_mtime_ns != self.mtime or content_version != self.content_version:
             data = self.path.read_bytes()
+            data = _inject_live_contacts(data)
             if settings.GA_MEASUREMENT_ID:
                 data = _inject_ga(data, settings.GA_MEASUREMENT_ID)
             self.raw = data
@@ -255,6 +321,7 @@ class _PageCache:
             self.etag_noindex = '"%s"' % hashlib.sha256(noindex).hexdigest()[:32]
 
             self.mtime = st.st_mtime_ns
+            self.content_version = content_version
         return True
 
 
@@ -348,6 +415,38 @@ async def lifespan(app: FastAPI):
     await engine.dispose()
 
 
+class WWWRedirectMiddleware:
+    """`www.<CANONICAL_HOST>` -> `https://<CANONICAL_HOST>` (301, GET/HEAD).
+
+    PRODUCTION_SEO_AUDIT.md bo'lim 2.3: `www` va apex domenlar alohida "sahifa"
+    sifatida (ikkalasi ham 200) xizmat qilib, backlink/ulashish signalini
+    bo'lib yuborishi mumkin edi. Scheme'dan qat'iy nazar (http yoki https)
+    to'g'ridan-to'g'ri yakuniy kanonik `https://` manzilga — bitta hop, zanjir
+    yo'q. Faqat GET/HEAD: boshqa metodlarda 301 mijoz tomonidan metodni
+    saqlamasligi mumkin (RFC 7231) — bu yerga amalda faqat brauzer
+    navigatsiyasi kelishi kutiladi.
+    """
+
+    def __init__(self, app):
+        self.app = app
+        host = settings.CANONICAL_HOST.strip().lower()
+        self.canonical_host = host
+        self.www_host = f"www.{host}" if host else ""
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http" or not self.www_host or scope["method"] not in ("GET", "HEAD"):
+            return await self.app(scope, receive, send)
+        raw_headers = dict(scope.get("headers") or [])
+        host = (raw_headers.get(b"host") or b"").decode("latin-1").split(":")[0].lower()
+        if host != self.www_host:
+            return await self.app(scope, receive, send)
+        path = scope.get("path", "/")
+        query = scope.get("query_string", b"").decode("latin-1")
+        target = f"https://{self.canonical_host}{path}" + (f"?{query}" if query else "")
+        response = RedirectResponse(target, status_code=301)
+        await response(scope, receive, send)
+
+
 app = FastAPI(
     title="promtchi® API",
     version="1.1.0",
@@ -358,7 +457,7 @@ app = FastAPI(
 )
 
 # Middleware: OXIRGI qo'shilgan ENG TASHQARIDA ishlaydi.
-# Kerakli tartib: SecurityHeaders → CORS → BodyLimit → RateLimit → GZip → app
+# Kerakli tartib: SecurityHeaders → WWWRedirect → CORS → BodyLimit → RateLimit → GZip → app
 app.add_middleware(GZipMiddleware, minimum_size=800, compresslevel=6)
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(BodyLimitMiddleware)
@@ -370,6 +469,7 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
     max_age=3600,
 )
+app.add_middleware(WWWRedirectMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(crm_api.router)

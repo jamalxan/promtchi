@@ -651,13 +651,13 @@ DEFAULT_CONTENT: dict = {
         ],
     },
     "contacts": [
-        {"label": "Telegram", "value": "@promtchi", "url": "https://t.me/promtchi", "icon": "telegram"},
+        {"label": "Telegram", "value": "@promtchiadmin", "url": "https://t.me/promtchiadmin", "icon": "telegram"},
         {"label": "Email", "value": "hello@promtchi.uz", "url": "mailto:hello@promtchi.uz", "icon": "email"},
-        {"label": "Telefon", "value": "+998 90 000 00 00", "url": "tel:+998900000000", "icon": "phone"},
+        {"label": "Telefon", "value": "+998 93 160 67 06", "url": "tel:+998931606706", "icon": "phone"},
     ],
     "socials": [
-        {"name": "Telegram", "url": "https://t.me/promtchi", "icon": "telegram"},
-        {"name": "Instagram", "url": "https://instagram.com/promtchi", "icon": "instagram"},
+        {"name": "Telegram", "url": "https://t.me/promtchiadmin", "icon": "telegram"},
+        {"name": "Instagram", "url": "https://instagram.com/promtchiuz", "icon": "instagram"},
     ],
     "team": {
         "uz": [

@@ -902,6 +902,147 @@ async def run_data_fixups(session: AsyncSession) -> None:
             ))
         session.add(Setting(key="blog_seo_articles_v1_done", value="1"))
 
+    # 9. PRODUCTION_SEO_AUDIT.md (2026-09-16), bo'lim 1 — Content.data["contacts"]
+    #    ichida eski/yasama qiymatlar (placeholder telefon +998 90 000 00 00,
+    #    eski Telegram @promtchi/@promtchiuz) production DB'da qolib ketgan edi.
+    #    Bosh sahifa /api/content orqali aynan shu qiymatni o'qib ko'rsatardi —
+    #    ichki sahifalar (pages.py::_live_org) ham xuddi shu Content jadvalidan
+    #    o'qigani uchun bu yerda tuzatilsa hammasi darhol to'g'irlanadi. Faqat
+    #    ANIQ eski qiymatlarni almashtiramiz (boshqa, keyinroq admin qo'lda
+    #    kiritgan qiymatga tegmasin) — bir martalik, Setting markeri bilan.
+    contact_fix_marker = await session.scalar(
+        select(Setting.value).where(Setting.key == "contact_accuracy_fix_v1_done")
+    )
+    if contact_fix_marker is None:
+        content_row = await session.get(Content, 1)
+        if content_row is not None:
+            data = content_row.data
+            changed = False
+            for c in data.get("contacts", []):
+                if c.get("icon") == "telegram" and (
+                    c.get("value") in ("@promtchi", "@promtchiuz")
+                    or c.get("url") in ("https://t.me/promtchi", "https://t.me/promtchiuz")
+                ):
+                    c["value"], c["url"] = "@promtchiadmin", "https://t.me/promtchiadmin"
+                    changed = True
+                if c.get("icon") == "phone" and c.get("url") == "tel:+998900000000":
+                    c["value"], c["url"] = "+998 93 160 67 06", "tel:+998931606706"
+                    changed = True
+            for s in data.get("socials", []):
+                if s.get("icon") == "telegram" and s.get("url") in (
+                    "https://t.me/promtchi", "https://t.me/promtchiuz",
+                ):
+                    s["url"] = "https://t.me/promtchiadmin"
+                    changed = True
+            if changed:
+                flag_modified(content_row, "data")
+        session.add(Setting(key="contact_accuracy_fix_v1_done", value="1"))
+
+    # 10. app/content/faq.py'dagi FAQ javoblarida "(@promtchiuz)" matn
+    #     ko'rinishida eslatilgan edi — production'da FaqItem jadvaliga
+    #     ALLAQACHON seed qilingan qatorlarda bu matn ESKI qolgan
+    #     (seed_if_empty faqat bo'sh bazada ishlaydi). Bir martalik almashtirish
+    #     — keyingi admin tahriri saqlanadi (marker).
+    faq_contact_fix_marker = await session.scalar(
+        select(Setting.value).where(Setting.key == "faq_contact_text_fix_v1_done")
+    )
+    if faq_contact_fix_marker is None:
+        res = await session.execute(
+            select(FaqItem).where(
+                FaqItem.answer_uz.like("%@promtchiuz%")
+                | FaqItem.answer_ru.like("%@promtchiuz%")
+                | FaqItem.answer_en.like("%@promtchiuz%")
+            )
+        )
+        for item in res.scalars().all():
+            item.answer_uz = item.answer_uz.replace("@promtchiuz", "@promtchiadmin")
+            item.answer_ru = item.answer_ru.replace("@promtchiuz", "@promtchiadmin")
+            item.answer_en = item.answer_en.replace("@promtchiuz", "@promtchiadmin")
+        session.add(Setting(key="faq_contact_text_fix_v1_done", value="1"))
+
+    # 11. PRODUCTION_SEO_AUDIT.md bo'lim 2.1 — keyword cannibalization: 7 ta eski
+    #     blog maqola (id 1,2,3,5,6,7,8) va ularning to'liqroq/yangi versiyasi
+    #     (id 9-15, app/content/blog_seed.py) bir xil mavzuni bir xil H1/title
+    #     bilan qamrab olgan. Eski postlar unpublish qilinadi (sitemap/blog
+    #     ro'yxatidan avtomatik chiqadi — Post.published filtri) va 301 redirect
+    #     (SlugRedirect) yangisiga yo'naltiradi — SEO equity yo'qolmaydi. Bir
+    #     martalik, Setting markeri bilan (keyingi admin harakatlarini
+    #     buzmaslik uchun).
+    blog_dedupe_marker = await session.scalar(
+        select(Setting.value).where(Setting.key == "blog_cannibalization_fix_v1_done")
+    )
+    if blog_dedupe_marker is None:
+        from .pages import _slugify
+
+        _OLD_TO_NEW_POST_ID = {1: 12, 2: 11, 3: 10, 5: 9, 6: 13, 7: 14, 8: 15}
+        ids = set(_OLD_TO_NEW_POST_ID) | set(_OLD_TO_NEW_POST_ID.values())
+        res = await session.execute(select(Post).where(Post.id.in_(ids)))
+        by_id = {p.id: p for p in res.scalars().all()}
+        for old_id, new_id in _OLD_TO_NEW_POST_ID.items():
+            old_p, new_p = by_id.get(old_id), by_id.get(new_id)
+            if old_p is None or new_p is None or not old_p.published:
+                continue
+            old_path = f"/{old_p.lang}/blog/{_slugify(old_p.title, old_p.id)}/"
+            new_path = f"/{new_p.lang}/blog/{_slugify(new_p.title, new_p.id)}/"
+            old_p.published = False
+            existing = await session.scalar(
+                select(SlugRedirect).where(SlugRedirect.old_path == old_path)
+            )
+            if existing is not None:
+                existing.new_path = new_path
+            else:
+                session.add(SlugRedirect(old_path=old_path, new_path=new_path))
+        session.add(Setting(key="blog_cannibalization_fix_v1_done", value="1"))
+
+    # 12. PRODUCTION_SEO_AUDIT.md bo'lim 2.2 — CRM va AI xizmat sahifalarida
+    #     (uz/ru/en, 6 URL) integratsiya haqida deyarli bir xil ma'noli FAQ
+    #     savoli ikki marta takrorlangan (admin panel orqali qo'shilgan —
+    #     app/content/services.py seed faylida bunday dublikat yo'q, shu
+    #     sabab bu yerda DB darajasida tuzatiladi). UZ matni audit'da so'zma-so'z
+    #     keltirilgan; RU/EN uchun ehtimoliy matn variantlari kiritilgan — ANIQ
+    #     mos kelmasa hech narsa o'zgarmaydi (xavfsiz no-op, hech qanday
+    #     content UYDIRILMAYDI/qo'shilmaydi, faqat aniq mos kelgan qator
+    #     o'chiriladi).
+    faq_dedupe_marker = await session.scalar(
+        select(Setting.value).where(Setting.key == "service_faq_dedupe_v1_done")
+    )
+    if faq_dedupe_marker is None:
+        _DUP_QUESTIONS = {
+            ("crm", "uz"): {"Mavjud CRM yoki boshqa tizimlarga integratsiya qilasizmi?"},
+            ("crm", "ru"): {
+                "Можно интегрировать с другими CRM или системами?",
+                "Вы интегрируетесь с другими CRM или системами?",
+            },
+            ("crm", "en"): {
+                "Do you integrate with other CRM or systems?",
+                "Can you integrate with other CRM systems?",
+            },
+            ("ai", "uz"): {"AI chatbotni Telegram yoki saytga integratsiya qilasizmi?"},
+            ("ai", "ru"): {
+                "Можно интегрировать AI-чат-бота с Telegram или сайтом?",
+                "Вы интегрируете AI-чат-бота с Telegram или сайтом?",
+            },
+            ("ai", "en"): {
+                "Do you integrate the AI chatbot with Telegram or a website?",
+                "Can you integrate the AI chatbot with Telegram or a website?",
+            },
+        }
+        res = await session.execute(select(Service).where(Service.key.in_(["crm", "ai"])))
+        for svc in res.scalars().all():
+            for lang in ("uz", "ru", "en"):
+                dups = _DUP_QUESTIONS.get((svc.key, lang), set())
+                if not dups:
+                    continue
+                data = getattr(svc, f"data_{lang}")
+                faq = data.get("faq")
+                if not isinstance(faq, list):
+                    continue
+                new_faq = [pair for pair in faq if pair[0] not in dups]
+                if len(new_faq) != len(faq):
+                    data["faq"] = new_faq
+                    flag_modified(svc, f"data_{lang}")
+        session.add(Setting(key="service_faq_dedupe_v1_done", value="1"))
+
     await session.commit()
 
 
