@@ -824,6 +824,34 @@ async def run_data_fixups(session: AsyncSession) -> None:
                 item.show_on_home = idx in _SEED_SHOW_ON_HOME
         session.add(Setting(key="faq_service_backfill_done", value="1"))
 
+    # 6. Service.title — 3 ta xizmat sahifasining <title> matni SEO audit'da
+    #    Google SERP uchun juda uzun (67-74 belgi) topildi, ~50-60 belgigacha
+    #    qisqartirildi (seed manbai app/content/services.py'da ham tuzatilgan,
+    #    lekin allaqachon seed qilingan DB qatorlarga bu o'zgarish avtomatik
+    #    tegmaydi) — bir martalik, Setting markeri bilan.
+    title_fix_marker = await session.scalar(
+        select(Setting.value).where(Setting.key == "service_title_length_fix_done")
+    )
+    if title_fix_marker is None:
+        _TITLE_FIXES = {
+            ("web", "ru"): "Разработка сайтов — лендинг, корпоративный сайт | promtchi",
+            ("web", "en"): "Web Development — landing page, corporate website | promtchi",
+            ("ai", "ru"): "AI-чат-боты и AI-решения для бизнеса | promtchi",
+            ("automation", "uz"): "Avtomatlashtirish — sotuv, ombor, hisobot | promtchi",
+            ("automation", "ru"): "Автоматизация — продажи, склад, отчётность | promtchi",
+            ("automation", "en"): "Business Automation — sales, inventory, reporting | promtchi",
+        }
+        res = await session.execute(select(Service).where(Service.key.in_({k for k, _ in _TITLE_FIXES})))
+        by_key = {s.key: s for s in res.scalars().all()}
+        for (key, lang), new_title in _TITLE_FIXES.items():
+            svc = by_key.get(key)
+            if svc is None:
+                continue
+            data = getattr(svc, f"data_{lang}")
+            data["title"] = new_title
+            flag_modified(svc, f"data_{lang}")
+        session.add(Setting(key="service_title_length_fix_done", value="1"))
+
     await session.commit()
 
 
