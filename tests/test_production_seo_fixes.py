@@ -11,7 +11,7 @@ import datetime
 
 from sqlalchemy import select
 
-from app.db import Content, Post, Setting, SessionLocal, SlugRedirect, run_data_fixups
+from app.db import Content, FaqItem, Post, Setting, SessionLocal, SlugRedirect, run_data_fixups
 from app.pages import _slugify
 
 
@@ -169,5 +169,162 @@ def test_blog_cannibalization_fixup_redirects_old_to_new():
             redirect = await s.scalar(select(SlugRedirect).where(SlugRedirect.old_path == old_path))
             assert redirect is not None
             assert redirect.new_path == new_path
+
+    asyncio.run(_run())
+
+
+# ══════════ FAQ dublikat (faq_items.service_key, PART 12 to'ldirilishi) ══════════
+# PRODUCTION_SEO_AUDIT.md bo'lim 2.2: CRM/AI xizmat sahifasida (uz/ru/en) bir xil
+# ma'noli savol ikki marta chiqadi — biri Service.data_{lang}["faq"]'da, ikkinchisi
+# `faq_items` jadvalida service_key="crm"/"ai" orqali bog'langan. Eski
+# "service_faq_dedupe_v1" migratsiyasi (app/db.py) Service.data ichidan qidirgani
+# uchun HAR DOIM no-op edi (matn haqiqatda faq_items'da). Bu bo'lim yangi
+# "faq_items_linked_dup_unlink_v1" migratsiyasini va yangilangan seedni tekshiradi.
+
+_AI_DUP_UZ = "AI chatbotni Telegram yoki saytga integratsiya qilasizmi?"
+_AI_CANONICAL_UZ = "AI chatbotni Telegram yoki saytga ulash mumkinmi?"
+_CRM_DUP_UZ = "Mavjud CRM yoki boshqa tizimlarga integratsiya qilasizmi?"
+_CRM_CANONICAL_UZ = "Mavjud CRM (AmoCRM, Bitrix24)ga integratsiya qila olasizmi?"
+
+_AI_DUP_RU = "Вы интегрируете AI-чат-бот с Telegram или сайтом?"
+_AI_CANONICAL_RU = "Можно подключить AI-чат-бот к Telegram или сайту?"
+_CRM_DUP_RU = "Вы делаете интеграции с существующей CRM или другими системами?"
+_CRM_CANONICAL_RU = "Можно интегрировать с существующей CRM (AmoCRM, Bitrix24)?"
+
+_AI_DUP_EN = "Do you integrate AI chatbots with Telegram or a website?"
+_AI_CANONICAL_EN = "Can an AI chatbot connect to Telegram or a website?"
+_CRM_DUP_EN = "Can you integrate with an existing CRM or other systems?"
+_CRM_CANONICAL_EN = "Can you integrate with an existing CRM (AmoCRM, Bitrix24)?"
+
+
+def test_fresh_seed_does_not_link_dup_questions_to_service(client):
+    """app/faq_store.py::_SEED_SERVICE_KEY endi index 11/16'ni "ai"/"crm"ga
+    bog'lamasligi kerak — fresh DB (test fixture) buni to'g'ridan-to'g'ri
+    aks ettiradi."""
+
+    async def _run():
+        async with SessionLocal() as s:
+            res = await s.execute(select(FaqItem).where(FaqItem.question_uz == _AI_DUP_UZ))
+            item = res.scalar_one()
+            assert item.service_key == ""
+
+            res = await s.execute(select(FaqItem).where(FaqItem.question_uz == _CRM_DUP_UZ))
+            item = res.scalar_one()
+            assert item.service_key == ""
+
+    asyncio.run(_run())
+
+
+def test_ai_service_page_has_no_duplicate_faq_uz_ru_en(client):
+    """/xizmatlar/ai/ sahifasida savol faqat BIR marta ko'rinishi kerak —
+    faq_items'dagi deyarli bir xil ma'noli nusxa endi service_key="" bo'lgani
+    uchun sahifaga chiqmasligi kerak."""
+    pairs = [("uz", _AI_DUP_UZ, _AI_CANONICAL_UZ), ("ru", _AI_DUP_RU, _AI_CANONICAL_RU),
+             ("en", _AI_DUP_EN, _AI_CANONICAL_EN)]
+    for lang, dup, canonical in pairs:
+        html = client.get(f"/{lang}/xizmatlar/ai/").text
+        assert canonical in html
+        assert dup not in html
+
+
+def test_crm_service_page_has_no_duplicate_faq_uz_ru_en(client):
+    pairs = [("uz", _CRM_DUP_UZ, _CRM_CANONICAL_UZ), ("ru", _CRM_DUP_RU, _CRM_CANONICAL_RU),
+             ("en", _CRM_DUP_EN, _CRM_CANONICAL_EN)]
+    for lang, dup, canonical in pairs:
+        html = client.get(f"/{lang}/xizmatlar/crm/").text
+        assert canonical in html
+        assert dup not in html
+
+
+def test_ai_crm_faq_jsonld_matches_visible_faq_exactly(client):
+    """FAQPage JSON-LD (mainEntity) sahifadagi ko'rinadigan `s.faq` ro'yxati
+    bilan bir xil manbadan (app/pages.py::service_detail) kelishi kerak —
+    dublikat savol JSON-LD'da ham bo'lmasligi shart."""
+    import re
+
+    for slug in ("ai", "crm"):
+        html = client.get(f"/uz/xizmatlar/{slug}/").text
+        m = re.search(r'<script type="application/ld\+json">(\{"@context":"https://schema.org","@type":"FAQPage".*?)</script>', html)
+        assert m, f"FAQPage JSON-LD topilmadi: {slug}"
+        import json as _json
+        schema = _json.loads(m.group(1))
+        questions = [q["name"] for q in schema["mainEntity"]]
+        assert len(questions) == len(set(questions)), f"{slug}: JSON-LD'da dublikat savol bor: {questions}"
+        dup = _AI_DUP_UZ if slug == "ai" else _CRM_DUP_UZ
+        assert dup not in questions
+
+
+def test_faq_items_linked_dup_unlink_migration_fixes_stale_production_row():
+    """Production'da bu migratsiya ishga tushishidan OLDIN yaratilgan qator
+    (service_key="ai"/"crm" + audit'da keltirilgan aniq matn) hali ham
+    mavjud bo'lsa, run_data_fixups uni service_key=""ga o'tkazishi kerak."""
+
+    async def _run():
+        async with SessionLocal() as s:
+            marker = await s.get(Setting, "faq_items_linked_dup_unlink_v1_done")
+            if marker is not None:
+                await s.delete(marker)
+            # eski (tuzatishdan oldingi) production holatini simulyatsiya qilamiz
+            s.add(FaqItem(
+                key="test_stale_ai_dup", order=999, published=True,
+                category="AI", service_key="ai",
+                question_uz=_AI_DUP_UZ, answer_uz="test",
+                question_ru=_AI_DUP_RU, answer_ru="test",
+                question_en=_AI_DUP_EN, answer_en="test",
+            ))
+            s.add(FaqItem(
+                key="test_stale_crm_dup", order=1000, published=True,
+                category="CRM", service_key="crm",
+                question_uz=_CRM_DUP_UZ, answer_uz="test",
+                question_ru=_CRM_DUP_RU, answer_ru="test",
+                question_en=_CRM_DUP_EN, answer_en="test",
+            ))
+            await s.commit()
+
+        try:
+            async with SessionLocal() as s:
+                await run_data_fixups(s)
+
+            async with SessionLocal() as s:
+                ai_item = await s.scalar(select(FaqItem).where(FaqItem.key == "test_stale_ai_dup"))
+                crm_item = await s.scalar(select(FaqItem).where(FaqItem.key == "test_stale_crm_dup"))
+                assert ai_item.service_key == ""
+                assert crm_item.service_key == ""
+        finally:
+            async with SessionLocal() as s:
+                for key in ("test_stale_ai_dup", "test_stale_crm_dup"):
+                    item = await s.scalar(select(FaqItem).where(FaqItem.key == key))
+                    if item is not None:
+                        await s.delete(item)
+                await s.commit()
+
+    asyncio.run(_run())
+
+
+def test_faq_items_linked_dup_unlink_migration_leaves_unrelated_rows_untouched():
+    """Migratsiya faqat aniq mos matnli qatorni o'zgartirishi kerak — boshqa
+    "ai"/"crm"ga bog'langan (haqiqiy, dublikat bo'lmagan) savollar va boshqa
+    umumiy savollar tegilmasdan qolishi kerak."""
+
+    async def _run():
+        async with SessionLocal() as s:
+            marker = await s.get(Setting, "faq_items_linked_dup_unlink_v1_done")
+            if marker is not None:
+                await s.delete(marker)
+            await s.commit()
+
+        async with SessionLocal() as s:
+            before = {f.key: f.service_key for f in (await s.execute(select(FaqItem))).scalars().all()}
+
+        async with SessionLocal() as s:
+            await run_data_fixups(s)
+
+        async with SessionLocal() as s:
+            after = {f.key: f.service_key for f in (await s.execute(select(FaqItem))).scalars().all()}
+
+        # yangi seed hech qanday dublikatni bog'lamaydi, shu sabab migratsiya
+        # bu bazada haqiqiy no-op bo'lishi kerak — barcha service_key'lar
+        # ("q10"/"q17" kabi haqiqiy "ai"/"crm" savollari qo'shilgan) saqlanadi
+        assert after == before
 
     asyncio.run(_run())

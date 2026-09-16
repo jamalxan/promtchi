@@ -20,12 +20,22 @@ from .db import FaqItem, SessionLocal
 # ko'rinib turibdi (yangi fakt emas, faqat mavjud kontentni tasniflash,
 # TZ 14-bo'lim: "Category yoki service bilan bog'lash"). Ro'yxatga kiritilmagan
 # indekslar — umumiy (kompaniya darajasidagi) savollar, service_key="".
+#
+# DIQQAT: index 11 ("AI chatbotni Telegram yoki saytga integratsiya
+# qilasizmi?") va index 16 ("Mavjud CRM yoki boshqa tizimlarga integratsiya
+# qilasizmi?") ataylab "ai"/"crm"ga BOG'LANMAYDI — Service.data_{lang}["faq"]
+# (app/content/services.py, "ai"/"crm") ichida deyarli bir xil ma'noli va
+# javobi savol allaqachon bor; service_key bog'lansa app/pages.py::
+# service_detail ikkalasini bitta sahifada ketma-ket ko'rsatib, FAQPage
+# JSON-LD'da ham takrorlaydi (production audit 2026-09-16, run_data_fixups
+# ichidagi "faq_items_linked_dup_unlink_v1" migratsiyasi eski/production
+# bazalarda xuddi shu ikkita qatorni bir martalik uzadi — app/db.py).
 _SEED_SERVICE_KEY = {
     4: "web", 5: "web", 7: "web", 8: "web",
     6: "mobile",
-    9: "ai", 10: "ai", 11: "ai", 12: "ai",
+    9: "ai", 10: "ai", 12: "ai",
     13: "telegram-bot",
-    14: "crm", 16: "crm",
+    14: "crm",
     15: "erp",
 }
 _SEED_CATEGORY = {

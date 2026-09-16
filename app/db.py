@@ -1043,6 +1043,37 @@ async def run_data_fixups(session: AsyncSession) -> None:
                     flag_modified(svc, f"data_{lang}")
         session.add(Setting(key="service_faq_dedupe_v1_done", value="1"))
 
+    # 13. #12 ("service_faq_dedupe_v1") Service.data_{lang}["faq"] ichida
+    #     qidirgan edi va HAR DOIM no-op bo'lgan — chunki audit'da keltirilgan
+    #     aniq matn haqiqatda `faq_items` jadvalida, `service_key="ai"/"crm"`
+    #     orqali bog'langan qatorda ekan (app/pages.py::service_detail bu
+    #     ikkalasini — Service.data va faq_store.get_items(service_key=...)ni —
+    #     bitta sahifada ketma-ket ko'rsatadi va FAQPage JSON-LD'da ham
+    #     birlashtiradi, shu sabab ikkalasi HAM saqlanib qolsa ko'rinadigan
+    #     dublikat bo'lib qoladi). Bu yerda FaqItem qatori O'CHIRILMAYDI (hali
+    #     ham umumiy /{lang}/faq/ sahifasida to'g'ri, dublikat bo'lmagan holda
+    #     ko'rinadi) — faqat service_key="" qilib xizmat sahifasidan UZILADI,
+    #     Service.data'dagi (bir xil ma'noli, allaqachon batafsilroq) versiya
+    #     yagona qoladi. Yangi seed (app/faq_store.py::_SEED_SERVICE_KEY) bu
+    #     ikki savolni boshidanoq bog'lamaydi — shu sabab bu migratsiya faqat
+    #     ESKI (allaqachon seed qilingan) bazalarga ta'sir qiladi, aniq matn
+    #     mos kelmasa hech narsa o'zgarmaydi (xavfsiz no-op).
+    faq_items_dup_marker = await session.scalar(
+        select(Setting.value).where(Setting.key == "faq_items_linked_dup_unlink_v1_done")
+    )
+    if faq_items_dup_marker is None:
+        _LINKED_FAQ_DUP_UNLINK = {
+            "crm": "Mavjud CRM yoki boshqa tizimlarga integratsiya qilasizmi?",
+            "ai": "AI chatbotni Telegram yoki saytga integratsiya qilasizmi?",
+        }
+        res = await session.execute(
+            select(FaqItem).where(FaqItem.service_key.in_(_LINKED_FAQ_DUP_UNLINK))
+        )
+        for item in res.scalars().all():
+            if item.question_uz == _LINKED_FAQ_DUP_UNLINK.get(item.service_key):
+                item.service_key = ""
+        session.add(Setting(key="faq_items_linked_dup_unlink_v1_done", value="1"))
+
     await session.commit()
 
 

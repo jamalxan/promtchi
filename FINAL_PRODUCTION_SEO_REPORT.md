@@ -263,3 +263,106 @@ Repo'da CI/CD, Dockerfile yoki nginx konfiguratsiyasi YO'Q — `README.md`ga ko'
 - HSTS production'da faol bo'lishi — `.env` tuzatilib restart qilingandan keyin tekshirilishi kerak.
 - Mobile/Lighthouse real o'lchov — faqat deploy'dan KEYIN, yangi sessiya/hujjat sifatida.
 - Blog/portfolio hero rasmlar uchun aniq width/height (CLS) — kichik P2, schema o'zgarishi talab qiladi, bu bosqichda amalga oshirilmadi (over-engineering bo'lardi).
+
+---
+
+## 14. OPEN ISSUES — FINAL CLOSURE (2026-09-16, 5-bosqich)
+
+Bo'lim 13'dagi ikki ochiq band ("FAQ RU/EN dedup — taxminiy", "HSTS production'da faol bo'lishi tekshirilishi kerak") shu bo'limda yopiladi.
+
+### 14.1 FAQ dublikat — HAQIQIY ROOT CAUSE topildi va tuzatildi
+
+**Avvalgi tashxis noto'g'ri edi.** Bo'lim 3/13'dagi `service_faq_dedupe_v1` migratsiyasi (`app/db.py`) `Service.data_{lang}["faq"]` ichidan audit matnini qidirgan, lekin o'sha matn haqiqatda **`faq_items` jadvalida**, `service_key="ai"/"crm"` orqali bog'langan qatorda ekan (`app/faq_store.py::get_items(service_key=...)`, `app/pages.py::service_detail` qatorlar 231-242 — ikkalasi bitta sahifada ketma-ket konkatenatsiya qilinadi va bitta FAQPage JSON-LD'ga birlashtiriladi). Natijada eski migratsiya har doim **xavfsiz no-op** bo'lgan — hech narsani o'zgartirmagan (dublikat production'da hali ham bor edi).
+
+**Aniq dublikat qatorlar (faq_items, `service_key` orqali bog'langan; DB'da real matn, taxmin emas):**
+
+| Til | Xizmat | Dublikat savol (faq_items, service_key bog'langan) | Kanonik savol (Service.data_{lang}["faq"], saqlanadi) | Amal |
+|---|---|---|---|---|
+| uz | ai | "AI chatbotni Telegram yoki saytga integratsiya qilasizmi?" (id, key seed'da index 11) | "AI chatbotni Telegram yoki saytga ulash mumkinmi?" | `service_key`: `"ai"` → `""` |
+| ru | ai | "Вы интегрируете AI-чат-бот с Telegram или сайтом?" | "Можно подключить AI-чат-бот к Telegram или сайту?" | (bir xil qator, uz bilan birga uziladi) |
+| en | ai | "Do you integrate AI chatbots with Telegram or a website?" | "Can an AI chatbot connect to Telegram or a website?" | (bir xil qator) |
+| uz | crm | "Mavjud CRM yoki boshqa tizimlarga integratsiya qilasizmi?" (seed'da index 16) | "Mavjud CRM (AmoCRM, Bitrix24)ga integratsiya qila olasizmi?" | `service_key`: `"crm"` → `""` |
+| ru | crm | "Вы делаете интеграции с существующей CRM или другими системами?" | "Можно интегрировать с существующей CRM (AmoCRM, Bitrix24)?" | (bir xil qator) |
+| en | crm | "Can you integrate with an existing CRM or other systems?" | "Can you integrate with an existing CRM (AmoCRM, Bitrix24)?" | (bir xil qator) |
+
+Har ikkala juftlik uchun javob matni ham deyarli so'zma-so'z bir xil (masalan CRM javobida ikkalasi ham "AmoCRM, Bitrix24, UTEL va Meta Ads" faktini takrorlaydi) — bu haqiqatan ham bir xil ma'noli dublikat, boshqa qidiruv niyatiga ega "shunga o'xshash" savol EMAS.
+
+**Fix strategiyasi (destruktiv EMAS):** `faq_items` qatori **o'chirilmaydi** — faqat `service_key` bo'shatiladi (`"ai"`/`"crm"` → `""`). Qator hali ham umumiy `/{lang}/faq/` sahifasida (u yerda hech qanday dublikat yo'q — Service.data faq u yerda ko'rsatilmaydi) va admin panelda to'liq tahrirlanadigan holda qoladi; faqat ikkinchi marta xizmat sahifasida (va uning FAQPage JSON-LD'sida) ko'rinishi to'xtaydi.
+
+**O'zgargan fayllar:**
+- `app/faq_store.py` — `_SEED_SERVICE_KEY`'dan index 11/16 olib tashlandi (fresh DB endi boshidanoq dublikat bog'lamaydi).
+- `app/db.py` — yangi migratsiya `faq_items_linked_dup_unlink_v1` (marker: `Setting.key == "faq_items_linked_dup_unlink_v1_done"`), `run_data_fixups()` ichida, eski `service_faq_dedupe_v1` blokidan keyin qo'shildi (eskisi olib tashlanmadi — u production'da allaqachon ishga tushgan, zararsiz no-op tarixiy migratsiya sifatida qoladi). Aniq `question_uz` matni mos kelmasa hech narsa o'zgarmaydi (xavfsiz no-op) — RU/EN alohida tekshirilmaydi, chunki bitta FaqItem qatorida uchala til ham birga saqlanadi (bitta `service_key`).
+- `tests/test_production_seo_fixes.py` — 6 ta yangi regressiya (pastga qarang).
+
+**Test natijalari (lokal, `pytest -q`):**
+```
+41 passed, 0 failed  (35 avvalgi + 6 yangi)
+```
+Yangi testlar: (1) fresh seed endi dublikatni bog'lamaydi, (2) `/uz|ru|en/xizmatlar/ai/` sahifasida dublikat yo'q — kanonik savol bor, dublikat matn yo'q, (3) xuddi shu CRM uchun, (4) FAQPage JSON-LD'da savollar takrorlanmaydi (`len(questions) == len(set(questions))`) va dublikat matn JSON-LD'da yo'q, (5) eski (tuzatishdan oldingi) production qatorini simulyatsiya qilib — migratsiya uni `service_key=""`ga o'tkazishini tasdiqlaydi, (6) migratsiya boshqa (haqiqiy, dublikat bo'lmagan) `ai`/`crm` savollarini va umumiy savollarni O'ZGARTIRMASLIGINI tasdiqlaydi.
+
+**LOCAL: ✅ PASS** (kod, migratsiya, render, JSON-LD — hammasi lokal DB'da tekshirildi).
+**PRODUCTION: ⏳ NOT VERIFIED** — bu sessiyada production serverga kirish yo'q (bo'lim 12). Deploy qilingandan va servis restart qilingandan keyin `run_data_fixups()` avtomatik ishlaydi; tasdiqlash uchun: `curl -s https://promtchi.uz/uz/xizmatlar/ai/ | grep -c "AI chatbotni Telegram yoki saytga integratsiya qilasizmi"` → **0** bo'lishi kerak (kanonik "...ulash mumkinmi?" versiyasi qoladi).
+
+### 14.2 HSTS — kod holati va production talabi
+
+**Kod holati: to'g'ri implementatsiya qilingan, hech narsa o'zgartirilmadi (audit tasdiqlangan).**
+
+- Fayl: `app/security.py`, `SecurityHeadersMiddleware.__init__` (qator 60-64):
+  ```python
+  if settings.is_production and settings.HSTS_SECONDS > 0:
+      self.headers.append((
+          "Strict-Transport-Security",
+          f"max-age={settings.HSTS_SECONDS}; includeSubDomains",
+      ))
+  ```
+- `settings.is_production` — `app/config.py` qator 150-151: `self.ENV == "production"`.
+- `ENV` — `app/config.py` qator 37: `os.getenv("ENV", "development").strip().lower()` — ya'ni **aynan `ENV=production`** (kichik harf, boshqa yozilishi ishlamaydi) `.env` faylida yoki process environment'da bo'lishi kerak.
+- `HSTS_SECONDS` — default `31536000` (1 yil), `.env`da `HSTS_SECONDS` bilan override qilinadi (kerak emas, default yetarli).
+- **Kutilayotgan header qiymati:** `Strict-Transport-Security: max-age=31536000; includeSubDomains`
+
+**MUHIM — `ENV=production` qo'yishdan oldin tekshiring (aks holda servis ISHGA TUSHMAY QOLISHI mumkin):** `app/config.py::Settings.validate()` `ENV=production` bo'lganda bir nechta xavfsizlik shartini **MAJBURIY** qiladi va bittasi ham bajarilmasa `SystemExit` bilan ishga tushishni to'xtatadi (`app/config.py` qator 195-208):
+1. `JWT_SECRET` default (`"o'zgartiring-maxfiy-kalit"`) BO'LMASLIGI va 32+ belgi bo'lishi kerak.
+2. `ADMIN_PASSWORD_HASH` bo'sh bo'lmasligi kerak (ADMIN_PASSWORD xom holda ishlatilsa production'da xato).
+3. `CORS_ORIGINS` `"*"` bo'lmasligi kerak (aniq domen, masalan `https://promtchi.uz`).
+4. `DATABASE_URL` SQLite bo'lmasligi kerak (Postgres tavsiya/majburiy — `problems()` ro'yxatida, `validate()` production'da BARCHA muammoni fatal deb hisoblaydi).
+5. `ENCRYPTION_KEY` bo'sh bo'lmasligi kerak (CRM Telegram bot tokenini shifrlash uchun).
+
+Bu sessiyada production `.env` ko'rilmagani sabab bularning qay biri hozir bajarilmagan/bajarilgan — NOMA'LUM. Shu sabab quyidagi buyruqlar avval **xavfsiz tekshirish** (hech qanday maxfiy qiymat chiqarilmaydi, faqat muammo TAVSIFI), keyin qo'llash tartibida berilgan.
+
+**Production serverda bajarilishi kerak bo'lgan aniq buyruqlar:**
+
+```bash
+cd /home/ubuntu/promtchi
+
+# 1) ENV qatorini xavfsiz tekshirish (faqat shu qatorni chiqaradi, boshqa hech narsa emas)
+grep -m1 '^ENV=' .env || echo "ENV qatori topilmadi"
+
+# 2) Production'da ishga tushirishni bloklashi mumkin bo'lgan muammolarni OLDINDAN ko'rish
+#    (settings.problems() faqat TAVSIF matnini qaytaradi, hech qanday maxfiy QIYMAT chiqarmaydi)
+ENV=production .venv/bin/python -c "from app.config import settings; [print('-', p) for p in settings.problems()] or print('Muammo topilmadi — production uchun tayyor')"
+
+# 3) Agar (2) muammo ko'rsatmasa — ENV=production qatorini qo'yish/tasdiqlash
+#    (mavjud bo'lsa qiymatini "production"ga o'zgartiring, bo'lmasa qo'shing)
+grep -q '^ENV=' .env && sed -i 's/^ENV=.*/ENV=production/' .env || echo 'ENV=production' >> .env
+
+# 4) Servisni qayta ishga tushirish (run_data_fixups() shu paytda avtomatik ishlaydi —
+#    14.1'dagi FAQ migratsiyasi ham shu yerda production DB'ga qo'llanadi)
+sudo systemctl restart promtchi
+
+# 5) Production'da HSTS header'ni haqiqatda tekshirish
+curl -I https://promtchi.uz/ | grep -i strict-transport-security
+```
+
+`(3)`-qadamdagi `sed` faqat `ENV=` qatorini almashtiradi, boshqa qatorlarga tegmaydi — lekin **agar `(2)` bironta muammo ko'rsatsa, `(3)`ga o'tmasdan oldin o'sha muammoni tuzating** (masalan `python -m app.config hash "..."` bilan `ADMIN_PASSWORD_HASH` yarating), aks holda `(4)`dagi restart servisni ISHGA TUSHIRMAY, xato bilan to'xtatadi.
+
+**LOCAL: ✅ PASS** — kod (`app/security.py`, `app/config.py`) audit qilindi, HSTS logikasi to'g'ri ekanligi tasdiqlandi, hech narsa o'zgartirilmadi (o'zgartirishga hojat yo'q).
+**PRODUCTION: ⏳ NOT VERIFIED** — production serverga bu sessiyadan kirish yo'q. Yuqoridagi `curl -I` buyrug'i `Strict-Transport-Security` qatorini qaytarmaguncha HSTS "PASS" deb hisoblanmaydi.
+
+### 14.3 Yakuniy holat
+
+| | LOCAL | PRODUCTION |
+|---|---|---|
+| FAQ dedup (CRM/AI, uz/ru/en, `faq_items` + `Service.data`) | ✅ PASS (41/41 test) | ⏳ NOT VERIFIED (deploy + restart kerak) |
+| HSTS | ✅ PASS (kod to'g'ri) | ⏳ NOT VERIFIED (`.env` `ENV=production` + restart + `curl -I` kerak) |
+
+Boshqa hech narsa (telefon, Telegram, blog redirect, sitemap, robots, cache header, unrelated xizmatlar) bu bosqichda TEGILMADI — faqat FAQ fix haqiqatan talab qilgan `app/faq_store.py` va `app/db.py` fayllari o'zgardi.
