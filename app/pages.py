@@ -19,6 +19,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 
 from . import faq_store, seo, services_store
+from .content.markdown_lite import render_body
 from .config import settings
 from .content import LANGS
 from .content.about import ABOUT
@@ -163,6 +164,29 @@ def _case_cards(lang: str, cases: list, exclude: str | None = None) -> list:
     return [{"slug": c["slugs"][lang], **c[lang]} for c in cases if c["key"] != exclude]
 
 
+def _post_tags(tags: str) -> list[str]:
+    return [t.strip() for t in tags.split(",") if t.strip()]
+
+
+async def _posts_tagged(lang: str, tag: str, limit: int = 3) -> list[dict]:
+    """Berilgan `tag` (odatda xizmat `key`i) bilan belgilangan, chop etilgan
+    postlar — xizmat sahifasidagi "Mavzu bo'yicha maqolalar" bo'limi va
+    blog<->xizmat topical cluster bog'lanishi uchun (TZ GEO audit, 8-bo'lim:
+    "Blog → Service → Contact internal linking")."""
+    async with SessionLocal() as session:
+        res = await session.execute(
+            select(Post).where(Post.published == True, Post.lang == lang)  # noqa: E712
+            .order_by(Post.created_at.desc(), Post.id.desc()).limit(200)
+        )
+        rows = res.scalars().all()
+    matched = [p for p in rows if tag in _post_tags(p.tags)][:limit]
+    return [{
+        "slug": _slugify(p.title, p.id),
+        "title": p.title,
+        "excerpt": p.excerpt or ((p.body[:130] + "…") if len(p.body) > 130 else p.body),
+    } for p in matched]
+
+
 # ══════════ XIZMATLAR ══════════
 # Kontent app/db.py Service jadvalidan (admin-tahrirlanadigan, TZ 19-bo'lim) —
 # app/services_store.py orqali xotira keshi bilan o'qiladi.
@@ -213,6 +237,7 @@ async def service_detail(request: Request, lang: str, slug: str):
         s={**s, "slug": slug, "faq": faq_items},
         all_services=_service_cards(lang, services),
         related_cases=_case_cards(lang, cases)[:2],
+        related_posts=await _posts_tagged(lang, match["key"]),
         service_schema=seo.json_ld(seo.service_schema(s["h1"], s["value"], canonical_url, lang)),
         faq_schema=seo.json_ld(seo.faq_schema(faq_items)) if faq_items else None,
     )
@@ -336,7 +361,7 @@ async def about_page(request: Request, lang: str):
     # ismlar EMAS, faqat umumiy "Bizning ekspertiza" bloki (a.team_title/team_lead,
     # app/content/about.py) ko'rsatiladi. Rozilik kelgach shu yerga real profillar
     # (TeamIn: name/role/photo) qo'shiladi.
-    ctx.update(a=a)
+    ctx.update(a=a, faq_schema=seo.json_ld(seo.faq_schema(a["entity_qa"])))
     return templates.TemplateResponse(request, "about.html", ctx)
 
 
@@ -479,14 +504,21 @@ async def blog_detail(request: Request, lang: str, slug: str):
                      og_type="article", noindex=p.noindex, hreflang_paths={lang: own_path},
                      og_image=_abs_image(p.image))
     canonical_url = seo.abs_url(own_path)
+    tags = _post_tags(p.tags)
+    services_by_key = {sv["key"]: sv for sv in await services_store.get_services()}
+    # `tags` tartibi muhim — birinchi mos keluvchi xizmat "asosiy" hisoblanadi
+    # (masalan ERP/CRM'ni solishtiruvchi maqolada birinchi tag ERP'ni belgilaydi).
+    related_service = next((services_by_key[t] for t in tags if t in services_by_key), None)
     ctx.update(
         p={
-            "title": p.title, "body": p.body, "image": p.image,
+            "title": p.title, "body_html": render_body(p.body), "image": p.image,
             "date": p.created_at.strftime("%Y-%m-%d"),
             "category": p.category,
-            "tags": [t.strip() for t in p.tags.split(",") if t.strip()],
+            "tags": tags,
             "author": p.author,
         },
+        related_service=({"slug": related_service["slugs"][lang], "nav": related_service[lang]["nav"]}
+                          if related_service else None),
         article_schema=seo.json_ld(seo.article_schema(
             p.title, excerpt, canonical_url, p.created_at.date().isoformat(), p.image, lang)),
     )

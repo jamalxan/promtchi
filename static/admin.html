@@ -2141,6 +2141,10 @@ function buildServiceForm(s) {
         <textarea data-lkey="includes" data-list="1">${esc((d.includes || []).join('\n'))}</textarea></div>
       <div class="field"><label>Xususiyatlar (har qatorda 1 ta)</label>
         <textarea data-lkey="features" data-list="1">${esc((d.features || []).join('\n'))}</textarea></div>
+      <div class="field"><label>Integratsiyalar (har qatorda 1 ta, ixtiyoriy)</label>
+        <textarea data-lkey="integrations" data-list="1">${esc((d.integrations || []).join('\n'))}</textarea></div>
+      <div class="field"><label>Ish jarayoni bosqichlari (har qatorda 1 ta, ixtiyoriy)</label>
+        <textarea data-lkey="process" data-list="1">${esc((d.process || []).join('\n'))}</textarea></div>
       <div class="field"><label>Texnologiyalar (har qatorda 1 ta)</label>
         <textarea data-lkey="tech" data-list="1">${esc((d.tech || []).join('\n'))}</textarea></div>
       <div class="field"><label>Narx eslatmasi</label><textarea data-lkey="price_note">${esc(d.price_note)}</textarea></div>
@@ -2208,7 +2212,7 @@ async function addService() {
   const blank = () => ({
     slug: key, nav: 'Yangi xizmat', h1: 'Yangi xizmat', title: 'Yangi xizmat | promtchi',
     meta: 'Tavsifni yozing', value: 'Qisqa taklifni yozing', for_whom: '', problem: '', solution: '',
-    includes: [], features: [], tech: [], price_note: '', faq: [],
+    includes: [], features: [], integrations: [], process: [], tech: [], price_note: '', faq: [],
   });
   const payload = { key, order: SERVICES.length, published: false, uz: blank(), ru: blank(), en: blank() };
   try {

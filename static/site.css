@@ -83,6 +83,9 @@ section.sec.alt{background:rgba(252,251,247,.03)}
 .check-list{list-style:none;margin:0;padding:0;display:grid;gap:.6rem}
 .check-list li{display:flex;gap:.6rem;align-items:flex-start}
 .check-list li::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--acid);margin-top:.5em;flex:none}
+.process-list{list-style:none;counter-reset:proc;margin:0;padding:0;display:grid;gap:.8rem}
+.process-list li{display:flex;gap:.8rem;align-items:flex-start;counter-increment:proc}
+.process-list li::before{content:counter(proc);font-family:var(--mono);font-size:.72rem;font-weight:700;width:1.7rem;height:1.7rem;border-radius:50%;border:1.5px solid var(--acid);color:var(--acid);display:flex;align-items:center;justify-content:center;flex:none}
 .tag-row{display:flex;flex-wrap:wrap;gap:.5rem}
 .tag-row span{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;padding:.35rem .7rem;border:1px solid var(--line);border-radius:999px;opacity:.85}
 
@@ -94,6 +97,14 @@ section.sec.alt{background:rgba(252,251,247,.03)}
 .card h3{margin:.4rem 0 .5rem}
 .card p{opacity:.75;font-size:.92rem;margin:0}
 .card .sub{font-family:var(--mono);font-size:.7rem;opacity:.55;text-transform:uppercase;letter-spacing:.06em}
+
+/* blog article body (app/content/markdown_lite.py render'i) */
+.article-body{opacity:.92;font-size:1.02rem;line-height:1.7}
+.article-body p{margin:0 0 1.1rem}
+.article-body h2{margin:2rem 0 .8rem;font-size:1.3rem}
+.article-body ul{margin:0 0 1.1rem;padding-left:1.3rem}
+.article-body li{margin:.35rem 0}
+.article-body a{color:var(--acid);text-decoration:underline}
 
 /* pricing-note box */
 .note-box{padding:1.2rem 1.4rem;border:1.5px dashed var(--line);border-radius:14px;background:rgba(217,255,63,.04);margin-top:1rem}

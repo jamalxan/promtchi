@@ -99,6 +99,8 @@ class ServiceLangIn(BaseModel):
     solution: str = Field(default="", max_length=1200)
     includes: list[str] = Field(default_factory=list, max_length=20)
     features: list[str] = Field(default_factory=list, max_length=20)
+    integrations: list[str] = Field(default_factory=list, max_length=20)
+    process: list[str] = Field(default_factory=list, max_length=20)
     tech: list[str] = Field(default_factory=list, max_length=20)
     price_note: str = Field(default="", max_length=500)
     faq: list[list[str]] = Field(default_factory=list, max_length=10)

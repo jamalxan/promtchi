@@ -5,10 +5,15 @@
   <span class="eyebrow">{{ p.category }}{% if p.category %} · {% endif %}{{ p.date }}{% if p.author %} · {{ p.author }}{% endif %}</span>
   <h1>{{ p.title }}</h1>
   {% if p.image %}<img src="{{ p.image }}" alt="{{ p.title }}" loading="lazy" decoding="async" style="border-radius:16px;margin:1.2rem 0;width:100%">{% endif %}
-  <div style="white-space:pre-wrap;opacity:.92;font-size:1.02rem">{{ p.body }}</div>
+  <div class="article-body">{{ p.body_html }}</div>
   {% if p.tags %}
   <div style="margin-top:1.5rem;display:flex;gap:.5rem;flex-wrap:wrap">
     {% for tag in p.tags %}<span class="tag" style="font-size:.78rem;opacity:.7;border:1px solid currentColor;border-radius:999px;padding:.2rem .7rem">#{{ tag }}</span>{% endfor %}
+  </div>
+  {% endif %}
+  {% if related_service %}
+  <div class="note-box" style="margin-top:1.6rem">
+    <a class="btn btn-outline" href="/{{ lang }}/xizmatlar/{{ related_service.slug }}/">{{ related_service.nav }} — {{ common.read_more }} →</a>
   </div>
   {% endif %}
 </article>

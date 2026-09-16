@@ -852,6 +852,56 @@ async def run_data_fixups(session: AsyncSession) -> None:
             flag_modified(svc, f"data_{lang}")
         session.add(Setting(key="service_title_length_fix_done", value="1"))
 
+    # 7. SEO/GEO growth audit (2026-09-16, TZ v3.0 bosqich 2) — har xizmat
+    #    sahifasiga "Integratsiyalar"/"Ish jarayoni" bo'limlari va Toshkent/
+    #    O'zbekiston semantik qamrovi (meta/for_whom) qo'shildi. Bu maydonlar
+    #    ALLAQACHON seed qilingan DB qatorlarida yo'q edi — app/content/
+    #    services.py'dagi yangilangan matnni bir martalik nusxalaymiz
+    #    (_TITLE_FIXES'dagi bilan bir xil naqsh: hali hech qanday admin bu
+    #    maydonlarni qo'lda tahrirlamagan, shu sabab to'g'ridan-to'g'ri
+    #    almashtirish xavfsiz). Keyingi restartlarda marker orqali
+    #    o'tkazib yuboriladi — shu vaqtdan keyingi admin tahrirlari saqlanadi.
+    geo_fix_marker = await session.scalar(
+        select(Setting.value).where(Setting.key == "service_geo_content_v1_done")
+    )
+    if geo_fix_marker is None:
+        from .content.services import SERVICES as SEED_SERVICES, SERVICE_KEYS as SEED_SERVICE_KEYS
+
+        res = await session.execute(select(Service).where(Service.key.in_(SEED_SERVICE_KEYS)))
+        by_key = {s.key: s for s in res.scalars().all()}
+        for key in SEED_SERVICE_KEYS:
+            svc = by_key.get(key)
+            if svc is None:
+                continue
+            for lang in ("uz", "ru", "en"):
+                seed = SEED_SERVICES[key][lang]
+                data = getattr(svc, f"data_{lang}")
+                data["meta"] = seed["meta"]
+                data["for_whom"] = seed["for_whom"]
+                data["integrations"] = list(seed["integrations"])
+                data["process"] = list(seed["process"])
+                flag_modified(svc, f"data_{lang}")
+        session.add(Setting(key="service_geo_content_v1_done", value="1"))
+
+    # 8. SEO/GEO growth audit (2026-09-16) — 7 ta original blog maqolasi
+    #    (app/content/blog_seed.py, topical authority uchun, TZ 7-bo'lim).
+    #    Bir martalik: admin keyinchalik shu postlarni tahrirlasa/o'chirsa,
+    #    keyingi restart ularni qayta yaratmaydi (Setting markeri).
+    blog_seed_marker = await session.scalar(
+        select(Setting.value).where(Setting.key == "blog_seo_articles_v1_done")
+    )
+    if blog_seed_marker is None:
+        from .content.blog_seed import ARTICLES
+
+        for art in ARTICLES:
+            session.add(Post(
+                title=art["title"], body=art["body"], excerpt=art["excerpt"],
+                category=art["category"], tags=art["tags"], author="promtchi",
+                lang="uz", seo_title=art["seo_title"], seo_description=art["seo_description"],
+                noindex=False, published=True,
+            ))
+        session.add(Setting(key="blog_seo_articles_v1_done", value="1"))
+
     await session.commit()
 
 

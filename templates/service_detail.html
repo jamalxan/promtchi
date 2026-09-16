@@ -37,6 +37,27 @@
   <div class="note-box">{{ s.price_note }}</div>
 </section>
 
+{% if s.integrations or s.process %}
+<section class="sec wrap two-col">
+  {% if s.integrations %}
+  <div>
+    <h2>{{ common.integrations }}</h2>
+    <ul class="check-list">
+      {% for i in s.integrations %}<li>{{ i }}</li>{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+  {% if s.process %}
+  <div>
+    <h2>{{ common.process }}</h2>
+    <ol class="process-list">
+      {% for step in s.process %}<li>{{ step }}</li>{% endfor %}
+    </ol>
+  </div>
+  {% endif %}
+</section>
+{% endif %}
+
 {% if related_cases %}
 <section class="sec wrap">
   <h2>{{ common.portfolio_examples }}</h2>
@@ -58,6 +79,20 @@
   <div class="faq-list">
     {% for q, a in s.faq %}
     <details><summary>{{ q }}</summary><div class="fa-body">{{ a }}</div></details>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if related_posts %}
+<section class="sec wrap">
+  <h2>{{ common.related_articles }}</h2>
+  <div class="card-grid">
+    {% for post in related_posts %}
+    <a class="card" href="/{{ lang }}/blog/{{ post.slug }}/">
+      <h3>{{ post.title }}</h3>
+      <p>{{ post.excerpt }}</p>
+    </a>
     {% endfor %}
   </div>
 </section>

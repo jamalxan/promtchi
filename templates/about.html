@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% block extra_schema %}<script type="application/ld+json">{{ faq_schema|safe }}</script>{% endblock %}
 {% block content %}
 <section class="hero-in wrap">
   <span class="eyebrow">{{ nav.about }}</span>
@@ -26,6 +27,17 @@
   <h2>{{ a.team_title }}</h2>
   <p class="lead">{{ a.team_lead }}</p>
 </section>
+
+{% if a.entity_qa %}
+<section class="sec alt wrap" style="max-width:760px">
+  <h2>{{ a.entity_qa_title }}</h2>
+  <div class="faq-list">
+    {% for q, ans in a.entity_qa %}
+    <details><summary>{{ q }}</summary><div class="fa-body">{{ ans }}</div></details>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
 
 <section class="cta-band wrap">
   <h2>{{ common.cta_title }}</h2>
