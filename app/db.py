@@ -797,6 +797,33 @@ async def run_data_fixups(session: AsyncSession) -> None:
         if changed:
             flag_modified(content_row, "data")
 
+    # 5. FaqItem.category/service_key/show_on_home — bu ustunlar FaqItem
+    #    jadvali ALLAQACHON seed qilingandan KEYIN qo'shildi (ALTER TABLE,
+    #    mavjud qatorlar uchun bo'sh/False bilan) — bu bosh sahifadagi qisqa
+    #    FAQ bo'limini BUTUNLAY BO'SH qoldirib qo'ygan edi (hech bir qator
+    #    show_on_home=True emas edi, faqat yangi/bo'sh bazada seed_if_empty()
+    #    to'g'ri qiymat bilan yaratardi). Mavjud 24 ta savolni `key` (q01..q24)
+    #    orqali topib, BIR MARTALIK to'g'ri qiymatlar bilan to'ldiramiz —
+    #    `Setting` markeri orqali faqat bir marta (keyinchalik admin shu
+    #    maydonlarni qo'lda o'zgartirsa, keyingi restart buni QAYTA YOZIB
+    #    YUBORMASLIGI kerak).
+    backfill_marker = await session.scalar(
+        select(Setting.value).where(Setting.key == "faq_service_backfill_done")
+    )
+    if backfill_marker is None:
+        from .faq_store import _SEED_CATEGORY, _SEED_SERVICE_KEY, _SEED_SHOW_ON_HOME
+
+        res = await session.execute(select(FaqItem).where(FaqItem.key.like("q%")))
+        for item in res.scalars().all():
+            suffix = item.key[1:]
+            if suffix.isdigit():
+                idx = int(suffix) - 1
+                service_key = _SEED_SERVICE_KEY.get(idx, "")
+                item.category = _SEED_CATEGORY.get(service_key, "Umumiy")
+                item.service_key = service_key
+                item.show_on_home = idx in _SEED_SHOW_ON_HOME
+        session.add(Setting(key="faq_service_backfill_done", value="1"))
+
     await session.commit()
 
 
