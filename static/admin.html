@@ -375,10 +375,6 @@ tr:hover td{background:rgba(217,255,63,.08)}
         <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.6" x2="15.4" y2="6.4"/><line x1="8.6" y1="13.4" x2="15.4" y2="17.6"/></svg>
         Ijtimoiy tarmoqlar
       </a>
-      <a href="#" data-page="faq">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 1 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12" y2="17"/></svg>
-        FAQ (bosh sahifa, qisqa)
-      </a>
       <a href="#" data-page="reviews">
         <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         Fikrlar <span class="nav-badge" id="navNewRev" style="display:none">0</span>
@@ -698,7 +694,7 @@ async function showApp() {
 /* Rolga qarab yon menyuni cheklash — server ham har bir endpointda mustaqil
    tekshiradi (bu yerdagi yashirish faqat UX, xavfsizlik chegarasi emas). */
 const MANAGER_HIDDEN_PAGES = new Set([
-  'dashboard', 'packages', 'team', 'testimonials', 'contacts', 'socials', 'faq',
+  'dashboard', 'packages', 'team', 'testimonials', 'contacts', 'socials',
   'posts', 'services', 'portfolio', 'faqpage', 'telegram', 'crmtelegram', 'stats',
 ]);
 function applyRoleVisibility() {
@@ -824,7 +820,6 @@ function navigate(page) {
     testimonials: () => renderContentPage('testimonials', 'Fikrlar (zaxira)'),
     contacts: () => renderContentPage('contacts', 'Aloqa havolalari'),
     socials: () => renderContentPage('socials', 'Ijtimoiy tarmoqlar'),
-    faq: () => renderContentPage('faq', 'FAQ (bosh sahifa, qisqa)'),
     reviews: renderReviews,
     posts: renderPosts,
     services: renderServices,
@@ -1372,7 +1367,7 @@ async function renderStats() {
 /* packages/team/testimonials/faq — endi til bo'yicha saqlanadi ({uz:[],ru:[],en:[]},
    TZ 1-bo'lim: RU/EN bosh sahifasi ham admin o'zgarishlarini avtomatik ko'rishi
    uchun); contacts/socials tilga bog'liq EMAS (bitta umumiy ro'yxat). */
-const LANG_TAB_SECTIONS = new Set(['packages', 'team', 'testimonials', 'faq']);
+const LANG_TAB_SECTIONS = new Set(['packages', 'team', 'testimonials']);
 let contentTab = 'packages';
 let contentLangTab = 'uz';
 let _saveTimer = null;
@@ -1400,7 +1395,7 @@ function saveContent() {
 
 const SECTION_TITLES = {
   packages: 'Paketlar', team: 'Jamoa', testimonials: 'Fikrlar (zaxira)',
-  contacts: 'Aloqa havolalari', socials: 'Ijtimoiy tarmoqlar', faq: 'FAQ (bosh sahifa, qisqa)'
+  contacts: 'Aloqa havolalari', socials: 'Ijtimoiy tarmoqlar'
 };
 function rerenderSection() { renderContentPage(contentTab, SECTION_TITLES[contentTab] || 'Kontent'); }
 
@@ -1409,8 +1404,7 @@ const SECTION_HINTS = {
   team: "Landing'dagi \"Jamoa\" bo'limi — 3 tilda (ism/rasm har tilda takrorlanadi, faqat lavozim tarjima qilinadi). Avtomatik saqlanadi.",
   testimonials: "Landing'dagi \"Mijozlar fikri\" bo'limining ZAXIRA matni — 3 tilda. Real mijoz fikrlari (Review tizimi, \"Fikrlar\" menyusi) mavjud bo'lsa, ular ko'rsatiladi; bu faqat ular hali yo'q bo'lganda ko'rinadi.",
   contacts: "Landing'dagi \"Aloqa\" bo'limidagi havolalar (Telegram, Email, Telefon...) — barcha 3 tilda BIR XIL (telefon raqami tilga qarab o'zgarmaydi). Bo'sh havola ko'rsatilmaydi.",
-  socials: "Footer pastidagi ijtimoiy tarmoq ikonkalari — barcha 3 tilda bir xil. Bo'sh yoki o'chirilgan havola ko'rsatilmaydi.",
-  faq: "Bosh sahifadagi qisqa \"Savol-javob\" bo'limi — 3 tilda (to'liq 24 ta savol-javob uchun \"FAQ sahifasi\" bo'limiga qarang). Avtomatik saqlanadi va saytda darhol ko'rinadi."
+  socials: "Footer pastidagi ijtimoiy tarmoq ikonkalari — barcha 3 tilda bir xil. Bo'sh yoki o'chirilgan havola ko'rsatilmaydi."
 };
 
 function renderContentPage(tab, title) {
@@ -1497,10 +1491,6 @@ function renderContentCards() {
           ${makeField('Havola (url)', 'url', i, item.url)}
         </div>
         ${makeIconField(i, item.icon)}`;
-    } else if (contentTab === 'faq') {
-      fields = `
-        ${makeField('Savol', 'question', i, item.question)}
-        ${makeField('Javob', 'answer', i, item.answer, true)}`;
     }
 
     card.innerHTML = `
@@ -1692,8 +1682,7 @@ function addItem() {
     team: { name: "Yangi a'zo", role: 'Rol', photo: '', role_type: 'member' },
     testimonials: { text: 'Fikr matni', name: 'Ism', role: 'Rol', photo: '' },
     contacts: { label: 'Telegram', value: '', url: '', icon: 'telegram' },
-    socials: { name: 'Telegram', url: '', icon: 'telegram' },
-    faq: { question: 'Yangi savol', answer: 'Javob matni' }
+    socials: { name: 'Telegram', url: '', icon: 'telegram' }
   };
   const tpl = templates[contentTab];
   if (LANG_TAB_SECTIONS.has(contentTab)) {
@@ -1725,7 +1714,7 @@ function importContent(e) {
   reader.onload = () => {
     try {
       const parsed = JSON.parse(reader.result);
-      if (parsed.packages && parsed.team && parsed.testimonials && parsed.faq) {
+      if (parsed.packages && parsed.team && parsed.testimonials && parsed.contacts) {
         DATA = parsed;
         saveContent();
         rerenderSection();
@@ -1742,7 +1731,7 @@ function importContent(e) {
 async function resetContent() {
   const ok = await confirm(
     'Reset',
-    "Barcha kontent (paketlar, jamoa, fikrlar, FAQ — 3 tilda) boshlang'ich holatga qaytariladi. Loyihalar/Portfolio bunga kirmaydi (alohida boshqariladi). Bu qaytarib bo'lmaydi.",
+    "Barcha kontent (paketlar, jamoa, fikrlar — 3 tilda) boshlang'ich holatga qaytariladi. Loyihalar/Portfolio va FAQ sahifasi bunga kirmaydi (alohida boshqariladi). Bu qaytarib bo'lmaydi.",
     'Ha, qaytarish', 'RESET'
   );
   if (!ok) return;
@@ -2329,10 +2318,15 @@ function buildCaseForm(c) {
         <div class="field"><label>Mijoz (ruxsat bo'lsa)</label><input data-clkey="client" value="${esc(d.client)}" maxlength="140"></div>
         <div class="field"><label>Muddat</label><input data-clkey="duration" value="${esc(d.duration)}" maxlength="60"></div>
       </div>
+      <div class="field"><label>Sohasi (industry, ixtiyoriy)</label><input data-clkey="industry" value="${esc(d.industry || '')}" maxlength="120" placeholder="masalan: Savdo, Ta'lim, Logistika"></div>
       <div class="field"><label>Meta description</label><textarea data-clkey="meta" maxlength="300">${esc(d.meta)}</textarea></div>
       <div class="field"><label>Qisqa tavsif</label><textarea data-clkey="short">${esc(d.short)}</textarea></div>
       <div class="field"><label>Muammo</label><textarea data-clkey="problem">${esc(d.problem)}</textarea></div>
+      <div class="field"><label>Maqsad (ixtiyoriy)</label><textarea data-clkey="goal">${esc(d.goal || '')}</textarea></div>
       <div class="field"><label>Yechim</label><textarea data-clkey="solution">${esc(d.solution)}</textarea></div>
+      <div class="field"><label>Asosiy funksiyalar (har qatorda 1 ta, ixtiyoriy)</label><textarea data-clkey="features">${esc((d.features || []).join('\n'))}</textarea></div>
+      <div class="field"><label>Integratsiyalar (har qatorda 1 ta, ixtiyoriy)</label><textarea data-clkey="integrations">${esc((d.integrations || []).join('\n'))}</textarea></div>
+      <div class="field"><label>Jarayon bosqichlari (har qatorda 1 ta, ixtiyoriy)</label><textarea data-clkey="process">${esc((d.process || []).join('\n'))}</textarea></div>
       <div class="field"><label>Natija (faqat tekshirilgan real raqam/natija)</label><textarea data-clkey="result">${esc(d.result)}</textarea></div>
       <div class="field"><label>Texnologiyalar (vergul bilan)</label><input data-clkey="tech" value="${esc(d.tech)}" maxlength="400"></div>
     </div>
@@ -2356,10 +2350,12 @@ function bindCaseForm(card, c) {
     el.onchange = handler;
   });
   const lang = caseLangTab[c.id] || 'uz';
+  const CASE_LIST_FIELDS = new Set(['features', 'integrations', 'process']);
   card.querySelectorAll('[data-clkey]').forEach(el => {
     el.onclick = (e) => e.stopPropagation();
     el.oninput = () => {
-      c[lang][el.dataset.clkey] = el.value;
+      const key = el.dataset.clkey;
+      c[lang][key] = CASE_LIST_FIELDS.has(key) ? el.value.split('\n').filter(x => x.trim()) : el.value;
       saveCaseDebounced(c);
     };
   });
@@ -2432,8 +2428,9 @@ function buildFaqCard(f) {
   const isOpen = openFaqId === f.id;
   card.innerHTML = `
     <div class="card-hd" style="cursor:pointer">
-      <span class="num">#${f.order} · <b>${esc(f.uz.question || f.key)}</b> <span style="opacity:.5;font-weight:400">(${esc(f.key)})</span></span>
+      <span class="num">#${f.order} · <b>${esc(f.uz.question || f.key)}</b> <span style="opacity:.5;font-weight:400">(${esc(f.key)}${f.category ? ' · ' + esc(f.category) : ''})</span></span>
       <div style="display:flex;gap:.7rem;align-items:center">
+        ${f.show_on_home ? '<span style="font-size:.72rem;opacity:.7">🏠 Bosh sahifada</span>' : ''}
         <span style="font-size:.72rem;opacity:.7">${f.published ? 'Saytda ✓' : 'Yashirin'}</span>
         <button class="del-btn" data-del="1" title="O'chirish">
           <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
@@ -2475,9 +2472,22 @@ function buildFaqForm(f) {
         <div class="field"><label>Tartib raqami</label>
           <input data-fkey="order" type="number" value="${f.order}"></div>
       </div>
+      <div class="field-row">
+        <div class="field"><label>Kategoriya</label>
+          <input data-fkey="category" value="${esc(f.category || '')}" maxlength="80" placeholder="masalan: CRM, Umumiy"></div>
+        <div class="field"><label>Bog'langan xizmat (ixtiyoriy)</label>
+          <select data-fkey="service_key">
+            <option value="">— Umumiy (xizmatga bog'lanmagan) —</option>
+            ${SERVICES.map(s => `<option value="${esc(s.key)}" ${f.service_key === s.key ? 'selected' : ''}>${esc(s.uz.nav)}</option>`).join('')}
+          </select></div>
+      </div>
       <div class="field-check">
         <input type="checkbox" data-fkey="published" ${f.published ? 'checked' : ''}>
         <span>Saytda ko'rinsin (/faq/ ro'yxati va FAQPage schema'da)</span>
+      </div>
+      <div class="field-check">
+        <input type="checkbox" data-fkey="show_on_home" ${f.show_on_home ? 'checked' : ''}>
+        <span>Bosh sahifadagi qisqa "Savol-javob" bo'limida ham chiqsin</span>
       </div>
       <div style="display:flex;gap:.4rem;margin:.9rem 0">${tabBtns}</div>
       <div class="field"><label>Savol</label>
@@ -2496,7 +2506,7 @@ function bindFaqForm(card, f) {
     el.onclick = (e) => e.stopPropagation();
     const handler = () => {
       const key = el.dataset.fkey;
-      if (key === 'published') f.published = el.checked;
+      if (key === 'published' || key === 'show_on_home') f[key] = el.checked;
       else if (key === 'order') f.order = parseInt(el.value, 10) || 0;
       else f[key] = el.value;
       saveFaqDebounced(f);
@@ -2523,7 +2533,11 @@ async function saveFaqItem(f) {
   try {
     const r = await apiFetch('/api/admin/faq/' + f.id, {
       method: 'PUT',
-      body: JSON.stringify({ key: f.key, order: f.order, published: f.published, uz: f.uz, ru: f.ru, en: f.en }),
+      body: JSON.stringify({
+        key: f.key, order: f.order, published: f.published,
+        category: f.category || '', service_key: f.service_key || '', show_on_home: !!f.show_on_home,
+        uz: f.uz, ru: f.ru, en: f.en,
+      }),
     });
     if (r.ok) toast('Saqlandi ✓');
     else { const d = await r.json().catch(() => ({})); toast((d.detail && d.detail[0] && d.detail[0].msg) || d.detail || 'Saqlashda xatolik', 'error'); }

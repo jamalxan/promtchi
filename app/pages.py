@@ -204,12 +204,17 @@ async def service_detail(request: Request, lang: str, slug: str):
                                   (s["nav"], None)])
     cases = await services_store.get_cases()
     canonical_url = seo.abs_url(path_by_lang[lang])
+    # Shu xizmatga bog'langan umumiy FAQ (admin "FAQ sahifasi"da service'ga
+    # biriktirgan savollar, TZ 14-bo'lim) xizmatning o'ziga xos FAQ ro'yxatiga
+    # qo'shiladi — ikkalasi ham /faq/ va shu sahifada ko'rinadi (indexable).
+    linked_faq = [(f["question"], f["answer"]) for f in await faq_store.get_items(lang, service_key=match["key"])]
+    faq_items = [*s.get("faq", []), *linked_faq]
     ctx.update(
-        s={**s, "slug": slug},
+        s={**s, "slug": slug, "faq": faq_items},
         all_services=_service_cards(lang, services),
         related_cases=_case_cards(lang, cases)[:2],
         service_schema=seo.json_ld(seo.service_schema(s["h1"], s["value"], canonical_url, lang)),
-        faq_schema=seo.json_ld(seo.faq_schema(s["faq"])) if s.get("faq") else None,
+        faq_schema=seo.json_ld(seo.faq_schema(faq_items)) if faq_items else None,
     )
     return templates.TemplateResponse(request, "service_detail.html", ctx)
 

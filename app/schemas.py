@@ -60,13 +60,6 @@ class TestimonialIn(BaseModel):
     _v_photo = field_validator("photo")(_validate_media_url)
 
 
-class FaqItemIn(BaseModel):
-    """Bosh sahifadagi "Savol-javob" bo'limi — admin panel orqali boshqariladi."""
-
-    question: str = Field(min_length=1, max_length=200)
-    answer: str = Field(min_length=1, max_length=2000)
-
-
 def _validate_key(v: str) -> str:
     v = (v or "").strip().lower()
     if not _KEY_RE.match(v):
@@ -129,16 +122,26 @@ class ServiceIn(BaseModel):
 
 class CaseLangIn(BaseModel):
     """Bitta portfolio case'ning bitta tildagi to'liq kontenti
-    (templates/portfolio_detail.html shu maydonlarga tayanadi)."""
+    (templates/portfolio_detail.html shu maydonlarga tayanadi).
+
+    `industry`/`goal`/`features`/`integrations`/`process` — TZ 12-bo'lim
+    (yangi TZ v3.0) talab qilgan maydonlar; barchasi ixtiyoriy (bo'sh bo'lsa
+    shablon o'sha bo'limni ko'rsatmaydi) — mavjud 3 ta case'da hali
+    to'ldirilmagan, uydirilmaydi, admin panel orqali qo'shiladi."""
 
     slug: str = Field(min_length=1, max_length=140)
     title: str = Field(min_length=1, max_length=140)
     cat: str = Field(min_length=1, max_length=60)
     client: str = Field(default="", max_length=140)
+    industry: str = Field(default="", max_length=120)
     duration: str = Field(default="", max_length=60)
     short: str = Field(default="", max_length=600)
     problem: str = Field(default="", max_length=2000)
+    goal: str = Field(default="", max_length=1000)
     solution: str = Field(default="", max_length=2000)
+    features: list[str] = Field(default_factory=list, max_length=20)
+    integrations: list[str] = Field(default_factory=list, max_length=20)
+    process: list[str] = Field(default_factory=list, max_length=20)
     result: str = Field(default="", max_length=2000)
     tech: str = Field(default="", max_length=400)
     meta: str = Field(default="", max_length=300)
@@ -171,11 +174,19 @@ class FaqLangIn(BaseModel):
 
 
 class FaqAdminIn(BaseModel):
-    """PUT/POST /api/admin/faq[/{id}] — bitta savol-javob, 3 tilda (TZ 19-bo'lim)."""
+    """PUT/POST /api/admin/faq[/{id}] — bitta savol-javob, 3 tilda (TZ 14/19-bo'lim).
+
+    `service_key` — bo'sh bo'lsa umumiy savol; aks holda mavjud xizmat
+    key'iga ishora qiladi va o'sha xizmat sahifasida ham ko'rsatiladi.
+    `show_on_home` — bosh sahifadagi qisqa "Savol-javob" bo'limida ham chiqsinmi.
+    """
 
     key: str = Field(min_length=1, max_length=60)
     order: int = 0
     published: bool = True
+    category: str = Field(default="", max_length=80)
+    service_key: str = Field(default="", max_length=60)
+    show_on_home: bool = False
     uz: FaqLangIn
     ru: FaqLangIn
     en: FaqLangIn
@@ -227,23 +238,16 @@ class TestimonialsByLang(BaseModel):
     en: list[TestimonialIn] = Field(default_factory=list, max_length=50)
 
 
-class FaqTeaserByLang(BaseModel):
-    """Bosh sahifadagi qisqa FAQ (to'liq ro'yxat — FaqItem/app/faq_store.py) — 3 tilda."""
-
-    uz: list[FaqItemIn] = Field(default_factory=list, max_length=30)
-    ru: list[FaqItemIn] = Field(default_factory=list, max_length=30)
-    en: list[FaqItemIn] = Field(default_factory=list, max_length=30)
-
-
 class ContentDoc(BaseModel):
     """To'liq kontent hujjati — PUT /api/admin/content shu shaklni kutadi.
 
-    `packages`/`team`/`testimonials`/`faq` endi til bo'yicha saqlanadi
-    (uz/ru/en) — TZ 1-bo'lim: "kontentni admin panel orqali... 3 tilda"
-    talabi RU/EN bosh sahifalariga ham tegishli, ilgari faqat UZ saqlanardi.
-    `cases` ATAYLAB yo'q — homepage "Loyihalar" gridi endi to'g'ridan-to'g'ri
-    Portfolio bazasidan (app/services_store.py) o'qiydi, admin uni "Portfolio"
-    bo'limidan boshqaradi (ikkita parallel manba TZ audit'ida topilgan edi).
+    `packages`/`team`/`testimonials` endi til bo'yicha saqlanadi (uz/ru/en) —
+    TZ 1-bo'lim: "kontentni admin panel orqali... 3 tilda" talabi RU/EN bosh
+    sahifalariga ham tegishli, ilgira faqat UZ saqlanardi.
+    `cases`/`faq` ATAYLAB yo'q — homepage "Loyihalar" gridi Portfolio
+    bazasidan (services_store), bosh sahifadagi qisqa FAQ esa FaqItem
+    bazasidan (faq_store, `show_on_home=True` bo'lganlar) to'g'ridan-to'g'ri
+    o'qiydi — ikkinchi parallel manba yo'q (TZ audit'ida topilgan edi).
     contacts/socials tilga bog'liq EMAS (bitta umumiy ro'yxat, TZ 4.6/4.9-bo'lim
     — telefon/telegram/email raqami tilga qarab o'zgarmaydi).
     """
@@ -253,7 +257,6 @@ class ContentDoc(BaseModel):
     testimonials: TestimonialsByLang
     contacts: list[ContactIn] = Field(default_factory=list, max_length=12)
     socials: list[SocialIn] = Field(default_factory=list, max_length=12)
-    faq: FaqTeaserByLang
 
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -654,50 +657,6 @@ DEFAULT_CONTENT: dict = {
         {"name": "Telegram", "url": "https://t.me/promtchi", "icon": "telegram"},
         {"name": "Instagram", "url": "https://instagram.com/promtchi", "icon": "instagram"},
     ],
-    "faq": {
-        "uz": [
-            {
-                "question": "To'lov qanday amalga oshiriladi?",
-                "answer": "Texnik topshiriqdan so'ng 3 kun ichida taklif tayyorlanadi. Tasdiqlangach, 30% oldindan, qolgan qismi loyiha yakunlanganda to'lanadi.",
-            },
-            {
-                "question": "Kodning huquqi kimga tegishli bo'ladi?",
-                "answer": "Loyiha kodidan foydalanish huquqlari shartnomada belgilanadi — odatda mijoz o'z loyihasidan foydalanish huquqiga ega bo'ladi, uchinchi tomon kutubxonalar esa o'z litsenziyasiga bo'ysunadi.",
-            },
-            {
-                "question": "Loyihadan keyin qo'llab-quvvatlash bormi?",
-                "answer": "Ha — tanlangan paketga qarab 14, 30 yoki 90 kunlik bepul texnik yordam beriladi; undan keyin ham qo'llab-quvvatlashni alohida kelishuv asosida davom ettirish mumkin.",
-            },
-        ],
-        "ru": [
-            {
-                "question": "Как происходит оплата?",
-                "answer": "После технического задания предложение готовится в течение 3 дней. После согласования — 30% предоплата, остальное по завершении проекта.",
-            },
-            {
-                "question": "Кому принадлежат права на код и проект?",
-                "answer": "Права на использование кода проекта определяются договором между сторонами — как правило, клиент получает право использовать свой проект, а сторонние библиотеки и сервисы подчиняются собственным условиям лицензирования.",
-            },
-            {
-                "question": "Есть ли поддержка после завершения проекта?",
-                "answer": "Да — в зависимости от выбранного пакета предоставляется 14, 30 или 90 дней бесплатной технической поддержки. После этого срока поддержку можно продолжить по отдельной договорённости.",
-            },
-        ],
-        "en": [
-            {
-                "question": "How does payment work?",
-                "answer": "After the technical spec, a proposal is ready within 3 days. Once approved — 30% upfront, the rest on project completion.",
-            },
-            {
-                "question": "Who owns the code and the project?",
-                "answer": "Usage rights to the project's code are defined in the contract between the parties — the client typically receives the right to use their project, while third-party libraries and services remain subject to their own license terms.",
-            },
-            {
-                "question": "Is there support after the project is finished?",
-                "answer": "Yes — depending on the chosen package, you get 14, 30 or 90 days of free technical support. After that period, support can continue under a separate agreement.",
-            },
-        ],
-    },
     "team": {
         "uz": [
             {"name": "G'iyosiddin Tursunxo'jayev", "role": "Founder", "photo": "", "role_type": "founder"},

@@ -474,15 +474,27 @@ class FaqItem(Base):
     Ilgari app/content/faq.py'da qattiq yozilgan 24 ta juftlik edi (Service/
     PortfolioCase kabi endi DB yagona manba). Slug talab qilinmaydi — FAQ
     o'z sahifasiga ega emas, /faq/ ro'yxatida ko'rsatiladi.
+
+    `service_key` — bo'sh bo'lsa umumiy (kompaniya darajasidagi) savol; aks
+    holda `Service.key`ga ishora qiladi va o'sha xizmat sahifasida ham
+    ko'rsatiladi (TZ 14-bo'lim: "Category yoki service bilan bog'lash",
+    "FAQ ... service page'da server-rendered/indexable bo'lishi").
+    `show_on_home` — TRUE bo'lsa bosh sahifadagi qisqa "Savol-javob" bo'limida
+    ham chiqadi (TZ 14: "Home'da ko'rsatish/ko'rsatmaslik") — ilgari alohida,
+    mustaqil Content.data.faq (3 ta) bor edi, endi shu yagona jadvaldan
+    tanlab ko'rsatiladi (ikkinchi parallel manba yo'q).
     """
 
     __tablename__ = "faq_items"
-    __table_args__ = (Index("ix_faq_items_order", "order"),)
+    __table_args__ = (Index("ix_faq_items_order", "order"), Index("ix_faq_items_service_key", "service_key"))
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     key: Mapped[str] = mapped_column(String(60), unique=True, nullable=False)
     order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     published: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    category: Mapped[str] = mapped_column(String(80), default="")
+    service_key: Mapped[str] = mapped_column(String(60), default="")
+    show_on_home: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     question_uz: Mapped[str] = mapped_column(Text, nullable=False)
     answer_uz: Mapped[str] = mapped_column(Text, nullable=False)
     question_ru: Mapped[str] = mapped_column(Text, nullable=False)
@@ -505,6 +517,9 @@ class FaqItem(Base):
             "key": self.key,
             "order": self.order,
             "published": bool(self.published),
+            "category": self.category,
+            "service_key": self.service_key,
+            "show_on_home": bool(self.show_on_home),
             "uz": {"question": self.question_uz, "answer": self.answer_uz},
             "ru": {"question": self.question_ru, "answer": self.answer_ru},
             "en": {"question": self.question_en, "answer": self.answer_en},
@@ -670,6 +685,10 @@ _MIGRATIONS = [
     "ALTER TABLE posts ADD COLUMN noindex BOOLEAN NOT NULL DEFAULT 0",
     # ── Portfolio screenshot (TZ 5/13-bo'lim) ────────────────────────────────
     "ALTER TABLE portfolio_cases ADD COLUMN image VARCHAR(1000) DEFAULT ''",
+    # ── FAQ — category/service bog'lash, bosh sahifada ko'rsatish (TZ 14-bo'lim) ─
+    "ALTER TABLE faq_items ADD COLUMN category VARCHAR(80) DEFAULT ''",
+    "ALTER TABLE faq_items ADD COLUMN service_key VARCHAR(60) DEFAULT ''",
+    "ALTER TABLE faq_items ADD COLUMN show_on_home BOOLEAN NOT NULL DEFAULT 0",
 ]
 
 
@@ -737,18 +756,18 @@ async def run_data_fixups(session: AsyncSession) -> None:
 
     # 4. Content.data — TZ 1-bo'lim: admin panel orqali 3 tilni boshqarish
     #    RU/EN homepage'ga ham tegishli bo'lishi kerak. Ilgira `packages`/
-    #    `team`/`testimonials`/`faq` FAQAT o'zbekcha (flat list) saqlanardi —
+    #    `team`/`testimonials` FAQAT o'zbekcha (flat list) saqlanardi —
     #    RU/EN sahifalar mustaqil qattiq-yozilgan matnga tayanardi (admin
     #    tahrirlagani ko'rinmasdi). Endi har biri `{uz:[...], ru:[...], en:[...]}`
     #    shaklida — bir martalik ko'chirish: mavjud (uz) ro'yxat saqlanadi,
     #    ru/en esa avvaldan mavjud professional tarjima (DEFAULT_CONTENT,
     #    ilgari static/index.ru.html/.en.html'da qattiq yozilgan edi) bilan
     #    to'ldiriladi — TZ 22-bo'lim: avtomatik tarjima emas.
-    #    `cases` maydoni BUTUNLAY olib tashlanadi — homepage "Loyihalar" gridi
-    #    endi to'g'ridan-to'g'ri Portfolio bazasidan (services_store) o'qiydi,
-    #    ikkinchi parallel manba saqlanmaydi.
-    #    Shu bilan birga eski "kod huquqi to'liq mijozga tegishli"/blanket
-    #    "3 oy bepul" da'volari ham (TZ 2-bo'lim) tuzatiladi.
+    #    `cases`/`faq` maydonlari BUTUNLAY olib tashlanadi — homepage
+    #    "Loyihalar" gridi Portfolio bazasidan (services_store), bosh
+    #    sahifadagi qisqa FAQ esa FaqItem bazasidan (faq_store, TZ 14-bo'lim:
+    #    "Home'da ko'rsatish/ko'rsatmaslik" — show_on_home) to'g'ridan-to'g'ri
+    #    o'qiydi, ikkinchi parallel manba saqlanmaydi.
     from sqlalchemy.orm.attributes import flag_modified
 
     from .schemas import DEFAULT_CONTENT
@@ -758,31 +777,8 @@ async def run_data_fixups(session: AsyncSession) -> None:
         data = content_row.data
         changed = False
 
-        def _fix_faq_wording(items: list) -> bool:
-            did_change = False
-            for item in items:
-                q, a = item.get("question", ""), item.get("answer", "")
-                if q.startswith("Kodning huquqi") and a.strip() == "Koddan foydalanish huquqi to'liq mijozga tegishli bo'ladi.":
-                    item["answer"] = (
-                        "Loyiha kodidan foydalanish huquqlari shartnomada belgilanadi — odatda mijoz "
-                        "o'z loyihasidan foydalanish huquqiga ega bo'ladi, uchinchi tomon kutubxonalar "
-                        "esa o'z litsenziyasiga bo'ysunadi."
-                    )
-                    did_change = True
-                if q.startswith("Loyihadan keyin") and "3 oy davomida bepul o'zgartirishlar" in a:
-                    item["answer"] = (
-                        "Ha — tanlangan paketga qarab 14, 30 yoki 90 kunlik bepul texnik yordam "
-                        "beriladi; undan keyin ham qo'llab-quvvatlashni alohida kelishuv asosida "
-                        "davom ettirish mumkin."
-                    )
-                    did_change = True
-            return did_change
-
-        if isinstance(data.get("faq"), list):
-            _fix_faq_wording(data["faq"])
-            data["faq"] = {"uz": data["faq"], "ru": DEFAULT_CONTENT["faq"]["ru"], "en": DEFAULT_CONTENT["faq"]["en"]}
-            changed = True
-        elif isinstance(data.get("faq"), dict) and _fix_faq_wording(data["faq"].get("uz", [])):
+        if "faq" in data:
+            del data["faq"]
             changed = True
 
         for key in ("packages", "team", "testimonials"):

@@ -16,6 +16,28 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .content.faq import FAQ as SEED_FAQ
 from .db import FaqItem, SessionLocal
 
+# Har savolning qaysi xizmatga tegishli ekani — mavjud savol matnining o'zidan
+# ko'rinib turibdi (yangi fakt emas, faqat mavjud kontentni tasniflash,
+# TZ 14-bo'lim: "Category yoki service bilan bog'lash"). Ro'yxatga kiritilmagan
+# indekslar — umumiy (kompaniya darajasidagi) savollar, service_key="".
+_SEED_SERVICE_KEY = {
+    4: "web", 5: "web", 7: "web", 8: "web",
+    6: "mobile",
+    9: "ai", 10: "ai", 11: "ai", 12: "ai",
+    13: "telegram-bot",
+    14: "crm", 16: "crm",
+    15: "erp",
+}
+_SEED_CATEGORY = {
+    "web": "Web", "mobile": "Mobil ilova", "ai": "AI",
+    "telegram-bot": "Telegram bot", "crm": "CRM", "erp": "ERP",
+}
+# Bosh sahifadagi qisqa "Savol-javob" bo'limida ilgari alohida Content.data.faq
+# (3 ta) sifatida saqlanardi — endi shu 3 tasi shu yerda show_on_home=True
+# bilan belgilanadi (TZ 14: "Home'da ko'rsatish/ko'rsatmaslik"), ikkinchi
+# parallel manba yo'q.
+_SEED_SHOW_ON_HOME = {19, 21, 22}
+
 
 class _Cache:
     __slots__ = ("items",)
@@ -39,8 +61,12 @@ async def seed_if_empty(session: AsyncSession) -> None:
         return
     uz, ru, en = SEED_FAQ["uz"], SEED_FAQ["ru"], SEED_FAQ["en"]
     for i in range(len(uz)):
+        service_key = _SEED_SERVICE_KEY.get(i, "")
         session.add(FaqItem(
             key=f"q{i + 1:02d}", order=i, published=True,
+            category=_SEED_CATEGORY.get(service_key, "Umumiy"),
+            service_key=service_key,
+            show_on_home=i in _SEED_SHOW_ON_HOME,
             question_uz=uz[i][0], answer_uz=uz[i][1],
             question_ru=ru[i][0], answer_ru=ru[i][1],
             question_en=en[i][0], answer_en=en[i][1],
@@ -48,7 +74,8 @@ async def seed_if_empty(session: AsyncSession) -> None:
     await session.commit()
 
 
-async def get_items(lang: str, published_only: bool = True) -> list[dict]:
+async def get_items(lang: str, published_only: bool = True, home_only: bool = False,
+                     service_key: str | None = None) -> list[dict]:
     if _cache.items is None:
         async with SessionLocal() as session:
             res = await session.execute(select(FaqItem).order_by(FaqItem.order, FaqItem.id))
@@ -56,6 +83,10 @@ async def get_items(lang: str, published_only: bool = True) -> list[dict]:
     items = _cache.items
     if published_only:
         items = [f for f in items if f["published"]]
+    if home_only:
+        items = [f for f in items if f["show_on_home"]]
+    if service_key is not None:
+        items = [f for f in items if f["service_key"] == service_key]
     return [f[lang] for f in items]
 
 

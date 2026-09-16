@@ -158,7 +158,6 @@ class _LangContentCache:
                 "packages": data.get("packages", {}).get(lang, []),
                 "team": data.get("team", {}).get(lang, []),
                 "testimonials": data.get("testimonials", {}).get(lang, []),
-                "faq": data.get("faq", {}).get(lang, []),
                 "contacts": data.get("contacts", []),
                 "socials": data.get("socials", []),
             }
@@ -397,13 +396,16 @@ async def get_content(request: Request, lang: str = "uz"):
         else:
             content_cache.set(row.data, row.version)
 
-    # cases — Portfolio bazasidan (services_store, o'z xotira keshi bilan,
-    # DB'ga tegmaydi), til bo'yicha; alohida CRUD orqali o'zgargani uchun
-    # content_cache ichida SAQLANMAYDI, har so'rovda ustiga qo'shiladi.
+    # cases/faq — mos ravishda Portfolio va FaqItem bazalaridan (o'z xotira
+    # keshlari bilan, DB'ga tegmaydi), til bo'yicha; alohida CRUD orqali
+    # o'zgargani uchun content_cache ichida SAQLANMAYDI, har so'rovda ustiga
+    # qo'shiladi (TZ 14-bo'lim: faq bosh sahifada faqat show_on_home=True
+    # bo'lganlar chiqadi — Content.data.faq kabi ikkinchi parallel manba yo'q).
     cases = await services_store.get_cases()
     payload = {
         **content_cache.for_lang(lang),
         "cases": [{**c[lang], "slug": c["slugs"][lang]} for c in cases],
+        "faq": await faq_store.get_items(lang, home_only=True),
     }
     body = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode()
     etag = '"%s"' % hashlib.sha256(body).hexdigest()[:32]
@@ -1193,6 +1195,7 @@ async def create_faq_item(
         raise HTTPException(400, "Bu key allaqachon mavjud")
     item = FaqItem(
         key=payload.key, order=payload.order, published=payload.published,
+        category=payload.category, service_key=payload.service_key, show_on_home=payload.show_on_home,
         question_uz=payload.uz.question, answer_uz=payload.uz.answer,
         question_ru=payload.ru.question, answer_ru=payload.ru.answer,
         question_en=payload.en.question, answer_en=payload.en.answer,
@@ -1222,6 +1225,9 @@ async def update_faq_item(
     item.key = payload.key
     item.order = payload.order
     item.published = payload.published
+    item.category = payload.category
+    item.service_key = payload.service_key
+    item.show_on_home = payload.show_on_home
     item.question_uz, item.answer_uz = payload.uz.question, payload.uz.answer
     item.question_ru, item.answer_ru = payload.ru.question, payload.ru.answer
     item.question_en, item.answer_en = payload.en.question, payload.en.answer

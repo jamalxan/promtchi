@@ -12,13 +12,17 @@
 <meta property="og:url" content="https://promtchi.uz/uz/">
 <meta property="og:image" content="https://promtchi.uz/static/logo.png">
 <meta property="og:locale" content="uz_UZ">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="promtchi® — raqamli mahsulotlar studiyasi">
+<meta name="twitter:description" content="Biznesingizni bitta tizimda jonlantiramiz — dizayn, ishlab chiqish, avtomatlashtirish va AI.">
+<meta name="twitter:image" content="https://promtchi.uz/static/logo.png">
 <link rel="canonical" href="https://promtchi.uz/uz/">
 <link rel="alternate" hreflang="uz-UZ" href="https://promtchi.uz/uz/">
 <link rel="alternate" hreflang="ru-RU" href="https://promtchi.uz/ru/">
 <link rel="alternate" hreflang="en" href="https://promtchi.uz/en/">
 <link rel="alternate" hreflang="x-default" href="https://promtchi.uz/uz/">
 <link rel="icon" href="/static/logo.png" type="image/png">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"promtchi","url":"https://promtchi.uz/","logo":"https://promtchi.uz/static/logo.png","foundingDate":"2023","address":{"@type":"PostalAddress","addressLocality":"Tashkent","addressCountry":"UZ"},"contactPoint":[{"@type":"ContactPoint","contactType":"customer service","email":"hello@promtchi.uz","telephone":"+998 93 160 67 06","url":"https://t.me/promtchiuz","areaServed":"UZ","availableLanguage":["uz","ru","en"]}],"sameAs":["https://t.me/promtchiuz","https://instagram.com/promtchiuz"]}</script>
+<script type="application/ld+json" id="orgSchema">{"@context":"https://schema.org","@type":"Organization","name":"promtchi","url":"https://promtchi.uz/","logo":"https://promtchi.uz/static/logo.png","foundingDate":"2023","address":{"@type":"PostalAddress","addressLocality":"Tashkent","addressCountry":"UZ"},"contactPoint":[{"@type":"ContactPoint","contactType":"customer service","url":"https://t.me/promtchi","areaServed":"UZ","availableLanguage":["uz","ru","en"]}],"sameAs":["https://t.me/promtchi"]}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"promtchi","url":"https://promtchi.uz/uz/","inLanguage":"uz-UZ"}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1633,7 +1637,30 @@ function renderFaq(){
     `<div class="fitem in"><button class="fq"><span>${esc(f.question)}</span><span class="fx"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></button>
       <div class="fa"><p>${esc(f.answer)}</p></div></div>`).join('');
 }
-function renderAll(){renderFilters();renderCases();renderTestimonials();renderContacts();renderSocials();renderFaq();}
+/* Organization schema — statik HTML'dagi <script id="orgSchema"> faqat
+   zaxira; jonli kontent kelgach kontakt/ijtimoiy tarmoqlar shu yerdan
+   qayta yoziladi, aks holda admin telefon/email o'chirsa ham schema.org
+   eski (mavjud bo'lmagan) ma'lumotni e'lon qilib qolaverardi (TZ 10-bo'lim:
+   structured data faqat sahifadagi haqiqiy ko'rinadigan ma'lumot bilan mos
+   bo'lishi shart). */
+function renderOrgSchema(){
+  const el=document.getElementById('orgSchema');if(!el)return;
+  const contacts=DATA.contacts||[];
+  const tg=contacts.find(c=>c.icon==='telegram');
+  const email=contacts.find(c=>c.icon==='email');
+  const phone=contacts.find(c=>c.icon==='phone');
+  const contactPoint={"@type":"ContactPoint","contactType":"customer service","areaServed":"UZ","availableLanguage":["uz","ru","en"]};
+  if(tg&&tg.url)contactPoint.url=tg.url;
+  if(email&&email.value)contactPoint.email=email.value;
+  if(phone&&phone.url&&phone.url.startsWith('tel:'))contactPoint.telephone=phone.url.slice(4);
+  const sameAs=[...new Set([tg&&tg.url,...( DATA.socials||[]).map(s=>s.url)].filter(Boolean))];
+  const schema={"@context":"https://schema.org","@type":"Organization","name":"promtchi","url":"https://promtchi.uz/",
+    "logo":"https://promtchi.uz/static/logo.png","foundingDate":"2023",
+    "address":{"@type":"PostalAddress","addressLocality":"Tashkent","addressCountry":"UZ"},
+    "contactPoint":[contactPoint],"sameAs":sameAs};
+  el.textContent=JSON.stringify(schema);
+}
+function renderAll(){renderFilters();renderCases();renderTestimonials();renderContacts();renderSocials();renderFaq();renderOrgSchema();}
 renderAll();
 
 /* ══════════ FAQ — delegatsiya, chunki savollar DATA orqali dinamik chiqadi ══════════ */

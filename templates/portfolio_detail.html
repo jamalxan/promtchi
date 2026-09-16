@@ -17,11 +17,25 @@
     <div><small>{{ common.client }}</small>{{ c.client }}</div>
     <div><small>{{ common.duration }}</small>{{ c.duration }}</div>
     <div><small>{{ common.category }}</small>{{ c.cat }}</div>
+    {% if c.industry %}<div><small>{{ common.industry }}</small>{{ c.industry }}</div>{% endif %}
     <div><small>{{ common.tech }}</small>{{ c.tech }}</div>
   </div>
 
   <div class="case-block"><span class="lab">{{ common.problem }}</span><p>{{ c.problem }}</p></div>
+  {% if c.goal %}<div class="case-block"><span class="lab">{{ common.goal }}</span><p>{{ c.goal }}</p></div>{% endif %}
   <div class="case-block"><span class="lab">{{ common.solution }}</span><p>{{ c.solution }}</p></div>
+  {% if c.features %}
+  <div class="case-block"><span class="lab">{{ common.features }}</span>
+    <ul>{% for f in c.features %}<li>{{ f }}</li>{% endfor %}</ul></div>
+  {% endif %}
+  {% if c.integrations %}
+  <div class="case-block"><span class="lab">{{ common.integrations }}</span>
+    <ul>{% for i in c.integrations %}<li>{{ i }}</li>{% endfor %}</ul></div>
+  {% endif %}
+  {% if c.process %}
+  <div class="case-block"><span class="lab">{{ common.process }}</span>
+    <ul>{% for p in c.process %}<li>{{ p }}</li>{% endfor %}</ul></div>
+  {% endif %}
   <div class="case-block"><span class="lab">{{ common.result }}</span><p>{{ c.result }}</p></div>
 
   <a class="btn btn-acid" href="/{{ lang }}/aloqa/">{{ common.cta_button }}</a>
