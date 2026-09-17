@@ -14,7 +14,12 @@
     var defaultLabel = tag.getAttribute('data-default-label') || '';
     var mx = 0, my = 0, tx = 0, ty = 0, on = false;
 
-    addEventListener('mousemove', function (e) {
+    /* Sahifa yangi ochilganda 'mousemove' hali bo'lmaydi — foydalanuvchi
+       havolani bosib kelib, sichqonchani qimirlatmay o'qiy boshlasa brauzerning
+       oddiy strelkasi ko'rinib qolardi. Shuning uchun kursorni koordinata bergan
+       HAR QANDAY birinchi hodisada yoqamiz: harakat, hover, bosish va scroll. */
+    function point(e) {
+      if (typeof e.clientX !== 'number') return;
       mx = e.clientX; my = e.clientY;
       dot.style.left = mx + 'px'; dot.style.top = my + 'px';
       if (!on) {
@@ -22,11 +27,17 @@
         document.body.classList.add('cur-on');
         dot.style.opacity = tag.style.opacity = 1;
       }
-    });
+    }
+
+    addEventListener('mousemove', point, { passive: true });
+    addEventListener('mouseover', point, { passive: true });
+    addEventListener('mousedown', point, { passive: true });
+    addEventListener('wheel', point, { passive: true });
 
     document.addEventListener('mouseleave', function () {
       document.body.classList.remove('cur-on');
       dot.style.opacity = tag.style.opacity = 0;
+      tag.classList.remove('show');
       on = false;
     });
 
@@ -48,6 +59,30 @@
     });
     document.addEventListener('mouseout', function (e) {
       if (e.target.closest(HOT)) tag.classList.remove('show');
+    });
+  })();
+
+  /* ---------- FAQ akkordeon: bir vaqtda faqat bitta savol ochiq ----------
+     Bosh sahifadagi #faqList bilan bir xil xatti-harakat. Zamonaviy brauzerlar
+     buni <details name="faq"> orqali o'zi bajaradi, bu kod esa eski
+     brauzerlar (Chrome<120, Safari<17.2, Firefox<130) uchun zaxira.
+     JS o'chiq bo'lsa savollar oddiy <details> bo'lib ochilaveradi — kontent
+     baribir DOM'da, SEO/GEO'ga ta'sir qilmaydi. */
+  (function () {
+    var each = Array.prototype.forEach;
+    each.call(document.querySelectorAll('.faq-list'), function (list) {
+      /* 'toggle' hodisasi asinxron ishlaydi va ikkala savol bir lahza ochiq
+         qolardi — shuning uchun 'click'da, brauzer <details>ni ochishidan
+         oldin qolganlarini yopamiz. Enter/Probel bilan ham 'click' keladi. */
+      list.addEventListener('click', function (e) {
+        var s = e.target.closest('summary');
+        if (!s) return;
+        var d = s.parentElement;
+        if (!d || d.tagName !== 'DETAILS' || d.parentElement !== list) return;
+        each.call(list.querySelectorAll('details[open]'), function (other) {
+          if (other !== d) other.open = false;
+        });
+      });
     });
   })();
 

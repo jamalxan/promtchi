@@ -33,7 +33,7 @@
   <h2>{{ a.entity_qa_title }}</h2>
   <div class="faq-list">
     {% for q, ans in a.entity_qa %}
-    <details><summary><span>{{ q }}</span><span class="fx" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></summary><div class="fa-body">{{ ans }}</div></details>
+    <details name="faq"><summary><span>{{ q }}</span><span class="fx" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></summary><div class="fa-body">{{ ans }}</div></details>
     {% endfor %}
   </div>
 </section>

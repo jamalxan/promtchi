@@ -52,8 +52,9 @@ body{background:var(--blk);color:var(--w);font-family:var(--grot);line-height:1.
 img{max-width:100%;display:block}
 a,button{cursor:pointer;font-family:inherit}
 :focus-visible{outline:3px solid var(--acid);outline-offset:3px}
-body.cur-on, body.cur-on a, body.cur-on button, body.cur-on input,
-body.cur-on select, body.cur-on textarea{cursor:none}
+/* kursor yoqilganda hech bir element brauzer strelkasini ko'rsatmasin
+   (label/summary kabi elementlarda oddiy strelka chiqib qolardi) */
+body.cur-on, body.cur-on *{cursor:none!important}
 
 .grain{position:fixed;inset:0;z-index:60;pointer-events:none;opacity:.06;mix-blend-mode:overlay;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
@@ -633,9 +634,20 @@ footer{background:var(--blk);color:var(--w);padding:clamp(60px,8vw,110px) clamp(
 .mn-txt .wd.on{opacity:1}
 
 /* footer wordmark harflari */
-.f-word{color:var(--w);background:none;-webkit-text-fill-color:currentColor}
-.f-word span{display:inline-block;transition:transform .3s var(--ease),color .3s}
-.f-word span:hover{transform:translateY(-7%) rotate(-2.5deg);color:var(--acid)}
+/* Harflar FAQAT bitta tekis rangda chiqsin — rangli qirra (to'q sariq/ko'k
+   fringe) bo'lmasin. Bu qirra subpiksel (ClearType) matn tekislashidan
+   kelib chiqadi; alohida kompozit qatlam + kulrang tekislash uni o'chiradi.
+   Qolgan text-shadow/filter/pseudo qatlamlar ham bu yerda bloklanadi. */
+.f-word{color:var(--w);background:none;-webkit-text-fill-color:currentColor;
+  transform:translateY(14%) translateZ(0);will-change:transform;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  text-shadow:none;filter:none;-webkit-text-stroke:0}
+.f-word::before,.f-word::after{content:none}
+.f-word span{display:inline-block;transition:transform .3s var(--ease),color .3s;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  text-shadow:none;filter:none;-webkit-text-stroke:0}
+.f-word span::before,.f-word span::after{content:none}
+.f-word span:hover{transform:translateY(-7%) rotate(-2.5deg);color:var(--acid);text-shadow:none}
 
 /* scrollbar */
 ::-webkit-scrollbar{width:11px}
@@ -1327,12 +1339,16 @@ if(reduced)document.querySelectorAll('[data-split]').forEach(el=>el.classList.ad
   if(!matchMedia('(hover:hover) and (min-width:961px)').matches)return;
   const dot=document.querySelector('.cur-dot'),tag=document.getElementById('curTag');
   let mx=0,my=0,tx=0,ty=0,on=false;
-  addEventListener('mousemove',e=>{
+  /* koordinata bergan har qanday birinchi hodisada yoqamiz — sahifa ochilgach
+     sichqoncha qimirlamasa ham (scroll, bosish, hover) kursor ko'rinsin */
+  const point=e=>{
+    if(typeof e.clientX!=='number')return;
     mx=e.clientX;my=e.clientY;dot.style.left=mx+'px';dot.style.top=my+'px';
     if(!on){on=true;tx=mx;ty=my;document.body.classList.add('cur-on');dot.style.opacity=tag.style.opacity=1;}
-  });
+  };
+  ['mousemove','mouseover','mousedown','wheel'].forEach(t=>addEventListener(t,point,{passive:true}));
   document.addEventListener('mouseleave',()=>{document.body.classList.remove('cur-on');
-    dot.style.opacity=tag.style.opacity=0;on=false;});
+    dot.style.opacity=tag.style.opacity=0;tag.classList.remove('show');on=false;});
   (function loop(){tx+=(mx-tx)*.16;ty+=(my-ty)*.16;tag.style.left=tx+'px';tag.style.top=ty+'px';requestAnimationFrame(loop);})();
   document.addEventListener('mouseover',e=>{
     const cc=e.target.closest('.ccard');

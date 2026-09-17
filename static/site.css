@@ -64,8 +64,10 @@ summary:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--acid);out
   font-family:var(--mono);font-size:.66rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
   transform:translate(14px,14px) scale(0);transition:transform .3s var(--ease);white-space:nowrap}
 .cur-tag.show{transform:translate(14px,14px) scale(1)}
-body.cur-on,body.cur-on a,body.cur-on button,body.cur-on input,
-body.cur-on select,body.cur-on textarea,body.cur-on summary,body.cur-on label{cursor:none}
+/* .cur-on faqat JS kursorni yoqqanda qo'shiladi — o'sha paytda sahifadagi
+   BIRORTA element brauzer kursorini ko'rsatmasligi kerak (ilgari ro'yxatga
+   tushmagan .btn/summary kabi elementlarda strelka chiqib qolardi). */
+body.cur-on,body.cur-on *{cursor:none!important}
 @media(hover:none),(max-width:960px){.cur{display:none}}
 .wrap{max-width:1180px;margin:0 auto;padding:0 clamp(18px,4vw,40px)}
 h1,h2,h3{font-family:var(--anton);text-transform:uppercase;line-height:1.05;letter-spacing:.01em;margin:0 0 .6em}
@@ -290,10 +292,20 @@ section.sec.alt::before{content:'';position:absolute;inset:0 calc(50% - 50vw);ba
 /* footer wordmark — bosh sahifadagi .f-word kabi har bir harf alohida
    hover'da ko'tariladi va acid rangga o'tadi (shuning uchun gradient-fill
    emas, oddiy rang ishlatiladi — gradient bilan harf rangi o'zgarmaydi) */
+/* Rangli qirra (to'q sariq/ko'k fringe) bo'lmasin: subpiksel matn
+   tekislashini o'chirish uchun alohida kompozit qatlam + kulrang tekislash;
+   text-shadow/filter/pseudo qatlamlar ham bloklanadi. */
 .ft-word{font-family:var(--anton);font-size:clamp(3.4rem,14vw,10.5rem);line-height:.8;text-transform:uppercase;
-  text-align:center;margin-top:1.8rem;letter-spacing:.01em;color:var(--w);padding-bottom:.08em}
-.ft-word span{display:inline-block;transition:transform .3s var(--ease),color .3s}
-.ft-word span:hover{transform:translateY(-7%) rotate(-2.5deg);color:var(--acid)}
+  text-align:center;margin-top:1.8rem;letter-spacing:.01em;color:var(--w);padding-bottom:.08em;
+  transform:translateZ(0);will-change:transform;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  text-shadow:none;filter:none;-webkit-text-stroke:0}
+.ft-word::before,.ft-word::after{content:none}
+.ft-word span{display:inline-block;transition:transform .3s var(--ease),color .3s;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  text-shadow:none;filter:none;-webkit-text-stroke:0}
+.ft-word span::before,.ft-word span::after{content:none}
+.ft-word span:hover{transform:translateY(-7%) rotate(-2.5deg);color:var(--acid);text-shadow:none}
 
 /* contact form */
 .cform{display:grid;gap:1rem}
