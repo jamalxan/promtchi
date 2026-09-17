@@ -48,7 +48,11 @@
       requestAnimationFrame(loop);
     })();
 
-    var HOT = '[data-cursor],.card,.con-a,.faq-list summary,.btn';
+    /* FAQ savoli bosh sahifadagidek bo'lsin: u yerda savol ustiga borilganda
+       kursor yorlig'i ('Batafsil') chiqmaydi — faqat nuqta qoladi. Shu sabab
+       '.faq-list summary' bu ro'yxatdan olib tashlandi (bosh sahifada yorliq
+       faqat portfolio kartalarida — .ccard). */
+    var HOT = '[data-cursor],.card,.con-a,.btn';
     document.addEventListener('mouseover', function (e) {
       var t = e.target.closest(HOT);
       if (!t) return;

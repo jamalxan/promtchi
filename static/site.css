@@ -243,7 +243,8 @@ section.sec.alt::before{content:'';position:absolute;inset:0 calc(50% - 50vw);ba
 .note-box{padding:1.2rem 1.4rem;border:1.5px dashed var(--line);border-radius:14px;background:rgba(217,255,63,.04);margin-top:1rem}
 
 /* FAQ accordion — native <details>, no JS needed; visually matches bosh sahifadagi .fitem/.fq/.fx */
-.faq-list{display:grid;margin-top:1.4rem}
+/* ro'yxat eni ham bosh sahifadagi .faq kabi — 860px, markazda */
+.faq-list{display:grid;margin:1.4rem auto 0;max-width:860px}
 .faq-list details{border-top:1px solid var(--line)}
 .faq-list details:last-child{border-bottom:1px solid var(--line)}
 /* bosh sahifadagi .fq bilan bir xil bo'shliq va o'lcham */
