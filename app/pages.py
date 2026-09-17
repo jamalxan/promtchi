@@ -33,6 +33,28 @@ router = APIRouter()
 TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
+STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
+
+
+def _asset_v(*names: str) -> str:
+    """Statik fayllar uchun kesh-buster.
+
+    site.css `max-age=86400` bilan uzatiladi, shuning uchun deploy'dan keyin
+    qaytgan foydalanuvchi YANGI HTML + ESKI CSS oladi va sahifa buzilgan
+    ko'rinadi (sr-only sarlavha chiqib qoladi, nav ro'yxat bo'lib to'kiladi).
+    Fayl mtime'idan hosil qilingan qiymat URL'ni o'zgartiradi — brauzer
+    yangisini so'rashga majbur bo'ladi."""
+    stamp = 0.0
+    for name in names:
+        try:
+            stamp = max(stamp, (STATIC_DIR / name).stat().st_mtime)
+        except OSError:
+            continue
+    return format(int(stamp), "x")
+
+
+ASSET_V = _asset_v("site.css", "site.js")
+
 
 def _check_lang(lang: str) -> str:
     if lang not in LANGS:
@@ -144,6 +166,7 @@ async def _base_ctx(request: Request, lang: str, path_by_lang: dict, title: str,
         "page_title": title,
         "page_desc": desc,
         "ga_id": settings.GA_MEASUREMENT_ID,
+        "asset_v": ASSET_V,
         "legal": {
             "privacy": f"/{lang}/{LEGAL_SLUGS['privacy'][lang]}/",
             "terms": f"/{lang}/{LEGAL_SLUGS['terms'][lang]}/",
