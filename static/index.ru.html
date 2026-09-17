@@ -555,6 +555,18 @@ section{position:relative}
 .fitem.open .fq .fx{transform:rotate(45deg);background:var(--acid);color:var(--blk);border-color:var(--acid)}
 .fa{max-height:0;overflow:hidden;transition:max-height .5s var(--ease)}
 .fa p{padding:0 .2rem 1.6rem;color:rgba(252,251,247,.66);max-width:62ch}
+/* ro'yxat oxiridagi "barcha savollar" qatori — to'liq /{lang}/faq/ sahifasiga
+   o'tkazadi (bosh sahifada faqat show_on_home=True savollar ko'rinadi).
+   Blog bo'limidagi .pst-all bilan bir xil naqsh. */
+.faq-all{display:flex;justify-content:space-between;align-items:center;gap:1.2rem;padding:1.6rem .2rem;min-height:52px;
+  border-bottom:1px solid var(--line-w);text-decoration:none;color:var(--acid);
+  font-family:var(--anton);font-size:clamp(1.1rem,2.4vw,1.6rem);text-transform:uppercase;line-height:1.2;
+  transition:padding-left .3s var(--ease)}
+.faq-all .fx{width:40px;height:40px;border:2px solid currentColor;border-radius:50%;display:grid;place-items:center;flex:none;
+  transition:transform .4s var(--ease),background .3s,color .3s}
+.faq-all .fx svg{width:15px;height:15px;stroke:currentColor;stroke-width:2.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.faq-all:hover{padding-left:.9rem}
+.faq-all:hover .fx{background:var(--acid);color:var(--blk);transform:translateX(4px)}
 
 /* ══════════ ALOQA ══════════ */
 .contact-sec{background:var(--acid);color:var(--blk)}
@@ -964,14 +976,7 @@ body.menu-open,body.modal-open{overflow:hidden}
   <div class="wrap">
     <div class="tag-line rv" style="color:var(--acid)">FAQ</div>
     <h2 class="h-xl rv">Вопрос — <em style="color:var(--acid)">ответ</em></h2>
-    <div class="faq">
-      <div class="fitem rv"><button class="fq"><span>Как происходит оплата?</span><span class="fx"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></button>
-        <div class="fa"><p>После технического задания предложение готовится в течение 3 дней. После согласования — 30% предоплата, остальное по завершении проекта.</p></div></div>
-      <div class="fitem rv"><button class="fq"><span>Кому принадлежат права на код?</span><span class="fx"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></button>
-        <div class="fa"><p>Права на использование кода полностью принадлежат клиенту.</p></div></div>
-      <div class="fitem rv"><button class="fq"><span>Есть ли поддержка после проекта?</span><span class="fx"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></button>
-        <div class="fa"><p>Да — постоянная поддержка, включая 3 месяца бесплатных правок и технической помощи.</p></div></div>
-    </div>
+    <div class="faq" id="faqList"></div>
   </div>
 </section>
 
@@ -1084,6 +1089,12 @@ const DEFAULTS={
      solution:"Мы объединили все процессы в одной системе: каждая продажа автоматически обновляет остатки склада, AmoCRM, Bitrix24, UTEL и Meta Ads синхронизируются в реальном времени, а Telegram-бот мгновенно сообщает об оплатах и задолженностях.",
      result:"Ручной ввод данных исчез — доход, задолженность и эффективность команды видны в реальном времени. Платформой пользуются более 150 компаний.",
      tech:"Django DRF, PostgreSQL, Redis, Docker, Telegram Bot API",image:""}
+  ],
+  /* zaxira — jonli ro'yxat /api/content?lang=ru ichidagi faq (show_on_home) */
+  faq:[
+    {question:"Как происходит оплата?",answer:"После технического задания предложение готовится в течение 3 дней. После согласования — 30% предоплата, остальное по завершении проекта."},
+    {question:"Кому принадлежат права на код и проект?",answer:"Права на использование кода проекта определяются договором между сторонами — как правило, клиент получает право использовать свой проект, а сторонние библиотеки и сервисы подчиняются собственным условиям лицензирования."},
+    {question:"Есть ли поддержка после завершения проекта?",answer:"Да — в зависимости от выбранного пакета предоставляется 14, 30 или 90 дней бесплатной технической поддержки. После этого срока поддержку можно продолжить по отдельной договорённости."}
   ]
 };
 const STACK=["Python","FastAPI","Flutter","JavaScript","TypeScript","Go","C++"];
@@ -1710,6 +1721,14 @@ function renderSocials(){
    zaxira; jonli kontent kelgach kontakt/ijtimoiy tarmoqlar shu yerdan
    qayta yoziladi (TZ 10-bo'lim: structured data faqat sahifadagi haqiqiy
    ko'rinadigan ma'lumot bilan mos bo'lishi shart). */
+function renderFaq(){
+  const list=(DATA.faq&&DATA.faq.length)?DATA.faq:DEFAULTS.faq;
+  document.getElementById('faqList').innerHTML=list.map(f=>
+    `<div class="fitem in"><button class="fq"><span>${esc(f.question)}</span><span class="fx"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></button>
+      <div class="fa"><p>${esc(f.answer)}</p></div></div>`).join('')
+    /* bu yerda faqat show_on_home savollar — qolgani to'liq FAQ sahifasida */
+    +`<a class="faq-all" href="/${PAGE_LANG}/faq/">Все вопросы<span class="fx" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>`;
+}
 function renderOrgSchema(){
   const el=document.getElementById('orgSchema');if(!el)return;
   const contacts=DATA.contacts||[];
@@ -1727,15 +1746,16 @@ function renderOrgSchema(){
     "contactPoint":[contactPoint],"sameAs":sameAs};
   el.textContent=JSON.stringify(schema);
 }
-function renderAll(){renderFilters();renderCases();renderTestimonials();renderContacts();renderSocials();renderOrgSchema();}
+function renderAll(){renderFilters();renderCases();renderTestimonials();renderContacts();renderSocials();renderFaq();renderOrgSchema();}
 renderAll();
 
-/* ══════════ FAQ ══════════ */
-document.querySelectorAll('.fitem .fq').forEach(q=>q.addEventListener('click',()=>{
+/* ══════════ FAQ — delegatsiya, chunki savollar DATA orqali dinamik chiqadi ══════════ */
+document.getElementById('faqList').addEventListener('click',e=>{
+  const q=e.target.closest('.fq');if(!q)return;
   const item=q.closest('.fitem'),a=item.querySelector('.fa'),open=item.classList.contains('open');
   document.querySelectorAll('.fitem.open').forEach(i=>{i.classList.remove('open');i.querySelector('.fa').style.maxHeight=null;});
   if(!open){item.classList.add('open');a.style.maxHeight=a.scrollHeight+'px';}
-}));
+});
 
 /* ══════════ FORMA ══════════ */
 document.getElementById('contactForm').addEventListener('submit',async e=>{

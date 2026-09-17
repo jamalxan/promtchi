@@ -555,6 +555,18 @@ section{position:relative}
 .fitem.open .fq .fx{transform:rotate(45deg);background:var(--acid);color:var(--blk);border-color:var(--acid)}
 .fa{max-height:0;overflow:hidden;transition:max-height .5s var(--ease)}
 .fa p{padding:0 .2rem 1.6rem;color:rgba(252,251,247,.66);max-width:62ch}
+/* ro'yxat oxiridagi "barcha savollar" qatori — to'liq /{lang}/faq/ sahifasiga
+   o'tkazadi (bosh sahifada faqat show_on_home=True savollar ko'rinadi).
+   Blog bo'limidagi .pst-all bilan bir xil naqsh. */
+.faq-all{display:flex;justify-content:space-between;align-items:center;gap:1.2rem;padding:1.6rem .2rem;min-height:52px;
+  border-bottom:1px solid var(--line-w);text-decoration:none;color:var(--acid);
+  font-family:var(--anton);font-size:clamp(1.1rem,2.4vw,1.6rem);text-transform:uppercase;line-height:1.2;
+  transition:padding-left .3s var(--ease)}
+.faq-all .fx{width:40px;height:40px;border:2px solid currentColor;border-radius:50%;display:grid;place-items:center;flex:none;
+  transition:transform .4s var(--ease),background .3s,color .3s}
+.faq-all .fx svg{width:15px;height:15px;stroke:currentColor;stroke-width:2.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.faq-all:hover{padding-left:.9rem}
+.faq-all:hover .fx{background:var(--acid);color:var(--blk);transform:translateX(4px)}
 
 /* ══════════ ALOQA ══════════ */
 .contact-sec{background:var(--acid);color:var(--blk)}
@@ -1715,7 +1727,9 @@ function renderFaq(){
   const list=(DATA.faq&&DATA.faq.length)?DATA.faq:DEFAULTS.faq;
   document.getElementById('faqList').innerHTML=list.map(f=>
     `<div class="fitem in"><button class="fq"><span>${esc(f.question)}</span><span class="fx"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></button>
-      <div class="fa"><p>${esc(f.answer)}</p></div></div>`).join('');
+      <div class="fa"><p>${esc(f.answer)}</p></div></div>`).join('')
+    /* bu yerda faqat show_on_home savollar — qolgani to'liq FAQ sahifasida */
+    +`<a class="faq-all" href="/${PAGE_LANG}/faq/">Barcha savollar<span class="fx" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>`;
 }
 /* Organization schema — statik HTML'dagi <script id="orgSchema"> faqat
    zaxira; jonli kontent kelgach kontakt/ijtimoiy tarmoqlar shu yerdan
