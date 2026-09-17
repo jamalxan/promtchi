@@ -109,6 +109,55 @@ CONTENT_DEPTH_AUDIT.md — YANGI: so'z soni + tavsiya etilgan bo'limlar
 
 ---
 
+## 2-BOSQICH, IKKINCHI TO'PLAM — TZ'dagi qolgan SEO bandlari (2026-09-17)
+
+Birinchi to'plamdan keyin TZ.md bo'lim-bo'lim kod bilan solishtirildi. Quyidagilar
+kod bilan bajarilishi mumkin bo'lgan barcha qolgan SEO bandlari:
+
+### FIXED
+
+| # | TZ bandi | Muammo | Yechim |
+|---|----------|--------|--------|
+| 1 | §2, §22 | **Tasdiqlanmagan statistika hali ko'rinardi**: hero'dagi `32+ Loyiha`, `98% Qoniqish`, `24+ Mijoz` (HTML'da `0`, JS 1.2s da haqiqiy raqamgacha sanaydi). Katta STATS bandi allaqachon `hidden` edi — hero'dagisi e'tibordan chetda qolgan | `.hero-data` ham `hidden` (uch tilda), izoh bilan. Markup **o'chirilmadi** — raqamlar tasdiqlansa `hidden` ni olib tashlash yetarli (TZ §22: "arxitektura tayyor qoldiriladi"). Qo'shimcha: `[hidden]{display:none!important}` — `.hero-data{display:flex}` `hidden` ni bosib ketmasin |
+| 2 | §9, §13 | **Bo'sh blog indekslari**: `/ru/blog/` va `/en/blog/` da 0 ta maqola, lekin ular indekslanadigan va sitemap'da edi (thin/bo'sh sahifa) | Maqolasiz blog indeksi `noindex,nofollow`; sitemap'dan chiqariladi; hreflang faqat maqolasi BOR tillarga ishora qiladi. Maqola qo'shilishi bilan avtomatik qaytadi |
+| 3 | §9 | FAQ sahifasida `lastmod` yo'q edi | `FaqItem.updated_at` store orqali ochildi, sitemap'ga qo'shildi |
+| 4 | §19 | "Blog → service click" hodisasi yo'q edi | `analytics.js`: maqoladan xizmat sahifasiga o'tish `blog_to_service_click`, boshqa joydan `service_click` |
+| 5 | §17 | Hash'li statik fayllar ham qisqa kesh bilan berilardi | `?v=<hash>` bo'lgan so'rovga `max-age=31536000, immutable`; versiyasiz URL eski qoidada qoladi |
+
+### TUZATILGAN NOANIQLIK (avvalgi hisobotda xato bo'lgan band)
+
+Birinchi to'plam hisobotida "4 ta xizmat description'i 160+ belgi" deb yozilgan edi.
+Bu **noto'g'ri o'lchov** bo'lgan: uzunlik HTML manbasidan olingan, u yerda apostrof
+`&#39;` (5 belgi) sifatida yoziladi. Haqiqiy matnda o'lchanganda barcha description'lar
+**156–159 belgi** — ya'ni chegaradan oshmaydi va tuzatish talab qilmaydi.
+
+### VERIFIED (lokal, 74 URL)
+
+| Tekshiruv | Natija |
+|---|---|
+| Crawl | 74/74 = 200 (sitemap 76 → 74: ikkita bo'sh blog indeksi chiqarildi) |
+| Canonical / hreflang / bitta H1 / JSON-LD | regressiyasiz (0 xato) |
+| `/ru/blog/`, `/en/blog/` | `noindex,nofollow`, sitemap'da yo'q, hreflang faqat `uz-UZ` + `x-default` |
+| `/uz/blog/` | indekslanadi, sitemap'da bor |
+| FAQ sahifasi | `<lastmod>` bor |
+| `site.css?v=…` | `max-age=31536000, immutable`; `site.css` — eski qoida |
+| Hero statistikasi | `display:none`, balandlik 0; hero tuzilishi buzilmadi (`.hero-foot` 171px) |
+| pytest | **71/71** (7 ta yangi test) |
+| ruff | 42 (baseline 39 + 3 ta yangi `E741` — bu `for l in LANGS` konvensiyasi, faylda 25+ marta ishlatilgan) |
+
+### TZ'da qolgan, LEKIN kod bilan bajarib bo'lmaydigan
+
+| TZ bandi | Nima kerak |
+|---|---|
+| §19 Analytics | **GA4 Measurement ID** — ID berilmaguncha barcha hodisa kodi ishlamaydi (soxta ID qo'yilmaydi) |
+| §19 Search Console | Tasdiqlash tokeni (env tayyor) |
+| §13, §15 | **Blog RU/EN kontenti** — arxitektura 3 tilni qo'llab-quvvatlaydi, maqolalar faqat uz'da (8 ta). AI-filler yozilmadi (TZ §26 taqiqlaydi) |
+| §22, §23 | LocalBusiness — **manzil + ish vaqti**; real statistika — **raqamlar tasdig'i**; jamoa profillari; ko'proq case study; pricing sahifalari; knowledge hub/glossary; real sharhlar (tizim tayyor, hozir 0 ta tasdiqlangan sharh) |
+| §20 | Backup/restore — server cron yoki hosting snapshot (kodda endpoint yo'q, ataylab) |
+| §9, §17 | `ENV=production` (hozir `/docs` ochiq, HSTS yo'q), HTTP/2, CDN/TTFB |
+
+---
+
 # 1-BOSQICH ARXIVI (2026-09-15 — 2026-09-16)
 
 **Loyiha:** promtchi.uz — FastAPI (Python) backend, Jinja2 SSR ichki sahifalar + statik HTML bosh sahifa (uz/ru/en), SQLite/Postgres (SQLAlchemy async), vanilla JS admin panel. Node/npm build tizimi YO'Q — bu Python loyihasi.

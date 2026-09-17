@@ -16,6 +16,16 @@
       gtag('event', 'telegram_click', { link_url: href });
     } else if (/\/portfolio\/[^/]+\/?(#.*)?$/.test(href)) {
       gtag('event', 'portfolio_click', { link_url: href });
+    } else if (/\/xizmatlar\/[^/]+\/?(#.*)?$/.test(href)) {
+      /* TZ 19-bo'lim: "Blog -> service click" — maqoladan xizmat sahifasiga
+         o'tish alohida hodisa sifatida yoziladi (qaysi maqola konvertsiya
+         beradi degan savolga javob); boshqa sahifalardan kelgan klik esa
+         oddiy service_click bo'lib qoladi. */
+      var fromBlog = /\/blog\//.test(location.pathname);
+      gtag('event', fromBlog ? 'blog_to_service_click' : 'service_click', {
+        link_url: href,
+        page_path: location.pathname,
+      });
     }
 
     if (a.classList.contains('btn-acid')) {

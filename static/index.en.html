@@ -53,6 +53,10 @@ body{background:var(--blk);color:var(--w);font-family:var(--grot);line-height:1.
   -webkit-font-smoothing:antialiased}
 ::selection{background:var(--acid);color:var(--blk)}
 img{max-width:100%;display:block}
+/* `hidden` atributi har doim ishlasin — .hero-data kabi display:flex
+   qoidalari uni bosib ketmasin (TZ 2/22: tasdiqlanmagan statistika
+   bloklari real qiymat kelguncha yashirin turadi). */
+[hidden]{display:none!important}
 a,button{cursor:pointer;font-family:inherit}
 :focus-visible{outline:3px solid var(--acid);outline-offset:3px}
 /* kursor yoqilganda hech bir element brauzer strelkasini ko'rsatmasin
@@ -776,7 +780,12 @@ body.menu-open,body.modal-open{overflow:hidden}
         <a href="#aloqa" class="btn btn-coral mag">Free consultation</a>
       </div>
     </div>
-    <div class="hero-data rv">
+    <!-- Hero statistikasi — hozircha yashirilgan: 32+/98%/24+ raqamlari
+         biznes tomonidan TASDIQLANMAGAN (TZ 2 va 22-bo'lim: real qiymat
+         kelguncha statistika bloklari ko'rsatilmaydi). Pastdagi katta
+         STATS bandi ham xuddi shunday `hidden` bilan turibdi.
+         Raqamlar tasdiqlangach — `hidden` atributini olib tashlash yetarli. -->
+    <div class="hero-data rv" hidden>
       <div class="hd-i"><b data-count="32" data-suffix="+">0</b><small>Projects</small></div>
       <div class="hd-i"><b data-count="98" data-suffix="%">0</b><small>Satisfaction</small></div>
       <div class="hd-i"><b data-count="24" data-suffix="+">0</b><small>Clients</small></div>

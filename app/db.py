@@ -524,6 +524,8 @@ class FaqItem(Base):
             "category": self.category,
             "service_key": self.service_key,
             "show_on_home": bool(self.show_on_home),
+            # sitemap <lastmod> uchun (app/pages.py::_all_urls)
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "uz": {"question": self.question_uz, "answer": self.answer_uz},
             "ru": {"question": self.question_ru, "answer": self.answer_ru},
             "en": {"question": self.question_en, "answer": self.answer_en},

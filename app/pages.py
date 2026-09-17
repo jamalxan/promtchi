@@ -514,6 +514,12 @@ async def blog_index(request: Request, lang: str):
             .order_by(Post.created_at.desc(), Post.id.desc()).limit(50)
         )
         rows = res.scalars().all()
+        # Qaysi tillarda umuman maqola bor — bo'sh blog sahifasi indeksga
+        # tushmasligi va hreflang faqat HAQIQATAN mavjud tarjimalarga
+        # ishora qilishi uchun (hozir maqolalar faqat uz'da).
+        langs_with_posts = set(await session.scalars(
+            select(Post.lang).where(Post.published == True, Post.noindex == False).distinct()  # noqa: E712
+        ))
     posts = [{
         "slug": _slugify(p.title, p.id),
         "title": p.title,
@@ -529,8 +535,13 @@ async def blog_index(request: Request, lang: str):
         "ru": "Блог — об автоматизации, CRM и AI | promtchi",
         "en": "Blog — automation, CRM and AI insights | promtchi",
     }[lang]
+    # Maqolasiz blog sahifasi — "bo'sh sahifa" sifatida indekslanmasin
+    # (Google buni soft-404/thin content deb baholaydi). Maqola qo'shilishi
+    # bilan avtomatik indekslanadigan holatga qaytadi.
+    hreflang_paths = {l: f"/{l}/blog/" for l in LANGS if l in langs_with_posts} or None
     ctx = await _base_ctx(request, lang, path_by_lang, title=seo_title, desc=desc,
-                     breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"), (NAV[lang]["blog"], None)])
+                     breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"), (NAV[lang]["blog"], None)],
+                     noindex=not posts, hreflang_paths=hreflang_paths)
     ctx.update(posts=posts, t_h1=title, t_empty=empty)
     return templates.TemplateResponse(request, "blog_index.html", ctx)
 
@@ -613,6 +624,9 @@ async def _all_urls() -> list[tuple[dict, str]]:
         blog_last = await session.scalar(
             select(func.max(Post.updated_at)).where(Post.published == True, Post.noindex == False)  # noqa: E712
         )
+        blog_post_langs = set(await session.scalars(
+            select(Post.lang).where(Post.published == True, Post.noindex == False).distinct()  # noqa: E712
+        ))
     blog_day = blog_last.date().isoformat() if blog_last else None
     urls = []
     for l in LANGS:
@@ -628,10 +642,15 @@ async def _all_urls() -> list[tuple[dict, str]]:
     urls.append(({l: f"/{l}/portfolio/" for l in LANGS}, _newest(cases)))
     for c in cases:
         urls.append(({l: f"/{l}/portfolio/{c['slugs'][l]}/" for l in LANGS}, _day(c.get("updated_at"))))
-    urls.append(({l: f"/{l}/faq/" for l in LANGS}, None))
+    urls.append(({l: f"/{l}/faq/" for l in LANGS}, _newest(await faq_store.get_all())))
     urls.append(({l: f"/{l}/biz-haqimizda/" for l in LANGS}, None))
     urls.append(({l: f"/{l}/aloqa/" for l in LANGS}, None))
-    urls.append(({l: f"/{l}/blog/" for l in LANGS}, blog_day))
+    # bo'sh blog indekslari (hozir ru/en) sitemap'ga qo'shilmaydi — ular
+    # noindex, ya'ni "yuboramiz-u, indekslama" degan qarama-qarshi signal
+    # bermaslik kerak
+    blog_langs = [l for l in LANGS if l in blog_post_langs]
+    if blog_langs:
+        urls.append(({l: f"/{l}/blog/" for l in blog_langs}, blog_day))
     urls.append(({l: f"/{l}/{LEGAL_SLUGS['privacy'][l]}/" for l in LANGS}, None))
     urls.append(({l: f"/{l}/{LEGAL_SLUGS['terms'][l]}/" for l in LANGS}, None))
     # duplikatlarni olib tashlaymiz (services_index N marta qo'shildi — soddalik uchun)
@@ -652,7 +671,9 @@ async def sitemap(request: Request):
              '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
              'xmlns:xhtml="http://www.w3.org/1999/xhtml">']
     for path_by_lang, hint in await _all_urls():
-        for lang in LANGS:
+        # LANGS emas, yozuvning O'Z tillari — ba'zi sahifalar (bo'sh blog
+        # indeksi) barcha tillarda mavjud bo'lmaydi
+        for lang in path_by_lang:
             loc = seo.abs_url(path_by_lang[lang])
             alt_tags = "".join(
                 f'<xhtml:link rel="alternate" hreflang="{h}" href="{u}"/>'

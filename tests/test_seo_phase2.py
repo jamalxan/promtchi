@@ -150,3 +150,59 @@ def test_no_verification_meta_without_token(client):
     """Token o'rnatilmagan — soxta/taxminiy meta chiqmasligi kerak."""
     for path in ("/uz/", "/uz/faq/"):
         assert "google-site-verification" not in client.get(path).text
+
+
+# ── TZ qoldiq bandlari (2026-09-17, ikkinchi to'plam) ────────────────────────
+
+def test_unverified_hero_stats_are_hidden(client):
+    """TZ 2/22: 32+/98%/24+/3+ raqamlari tasdiqlanmagan — ko'rsatilmaydi.
+
+    Markup ATAYLAB saqlanadi (raqamlar tasdiqlansa `hidden` olib tashlanadi),
+    lekin `hidden` atributi CSS bilan bosib ketilmasligi kerak.
+    """
+    for lang in ("uz", "ru", "en"):
+        html = client.get(f"/{lang}/").text
+        assert '<div class="hero-data rv" hidden>' in html, lang
+        assert "[hidden]{display:none!important}" in html, lang
+        stats_band = html.split('class="stats pad"')[1][:40]
+        assert stats_band.startswith(" hidden"), lang
+
+
+def test_empty_blog_index_is_noindex(client):
+    """Maqolasiz blog sahifasi thin/bo'sh sahifa sifatida indekslanmasin."""
+    assert '<meta name="robots" content="noindex,nofollow">' in client.get("/ru/blog/").text
+    assert '<meta name="robots" content="noindex,nofollow">' in client.get("/en/blog/").text
+    assert 'name="robots"' not in client.get("/uz/blog/").text  # maqolalar bor
+
+
+def test_sitemap_skips_empty_blog_indexes(client):
+    root = ET.fromstring(client.get("/sitemap.xml").text)
+    locs = [u.find("s:loc", SM_NS).text for u in root.findall("s:url", SM_NS)]
+    assert "https://promtchi.uz/uz/blog/" in locs
+    assert "https://promtchi.uz/ru/blog/" not in locs
+    assert "https://promtchi.uz/en/blog/" not in locs
+
+
+def test_empty_blog_hreflang_only_points_to_existing_translations(client):
+    html = client.get("/ru/blog/").text
+    assert 'hreflang="uz-UZ"' in html
+    assert 'hreflang="ru-RU"' not in html and 'hreflang="en"' not in html
+
+
+def test_faq_page_has_lastmod(client):
+    root = ET.fromstring(client.get("/sitemap.xml").text)
+    faq = [u for u in root.findall("s:url", SM_NS) if u.find("s:loc", SM_NS).text.endswith("/uz/faq/")]
+    assert faq and faq[0].find("s:lastmod", SM_NS) is not None
+
+
+def test_versioned_static_asset_cached_immutably(client):
+    versioned = client.get("/static/site.css?v=abc123").headers["cache-control"]
+    plain = client.get("/static/site.css").headers["cache-control"]
+    assert "immutable" in versioned and "31536000" in versioned
+    assert "immutable" not in plain  # versiyasiz URL eski qoida bilan qoladi
+
+
+def test_analytics_tracks_blog_to_service_click():
+    """TZ 19: "Blog -> service click" hodisasi."""
+    js = open("static/analytics.js", encoding="utf-8").read()
+    assert "blog_to_service_click" in js and "service_click" in js

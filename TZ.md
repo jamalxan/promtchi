@@ -798,3 +798,25 @@ Ushbu TZ v3.0 mavjud kod bilan solishtirib chiqildi. Ko'p bo'limlar (URL arxitek
 
 **Ops-darajadagi, kod bilan hal qilinmaydigan band**: "Backup va restore mexanizmi" (TZ 20-bo'lim) — SQLite fayli (`promtchi.db`)ni muntazam zaxiralash infratuzilma darajasida (server cron/hosting snapshot) sozlanishi kerak; ilova kodida alohida backup endpoint yo'q.
 
+---
+
+## Amalga oshirish holati — 2026-09-17 (SEO 2-bosqich)
+
+To'liq tafsilot: `SEO_IMPLEMENTATION_REPORT.md`. Qisqacha, TZ bandlari bo'yicha:
+
+**Yopildi:** §2/§22 — hero'dagi tasdiqlanmagan statistika (32+/98%/24+) yashirildi
+(markup saqlandi, raqamlar tasdiqlansa `hidden` olib tashlanadi); §7/§8 — barcha
+sahifalarda noyob, search-intent'ga mos title/description; §9 — sitemap'da real
+`lastmod`, bo'sh blog indekslari noindex va sitemapdan tashqarida, `/favicon.ico`,
+`/docs`/`/api` uchun `X-Robots-Tag: noindex`; §10 — JSON-LD `@id` grafi (bitta
+Organization tuguni); §17 — hash'li statik fayllar uchun `immutable` kesh;
+§19 — "Blog → service click" hodisasi; §21/§24 — og:image 1200x630 va Twitter
+`summary_large_image`.
+
+**Ochiq qolgan (biznes ma'lumoti yoki server sozlamasi kerak):** GA4 Measurement ID;
+Search Console tasdiqlash tokeni; blog RU/EN kontenti; LocalBusiness uchun manzil va
+ish vaqti; real statistika raqamlari; §20 backup (server cron/snapshot);
+serverda `ENV=production` (hozir `/docs` ochiq va HSTS header yo'q); HTTP/2 va CDN.
+
+**Prinsip o'zgarmadi:** soxta statistika, soxta sharh, uydirma natija yoki
+taxminiy biznes ma'lumoti qo'shilmadi (TZ §22, §26, §28).

@@ -61,6 +61,11 @@ _UPLOADS_CACHE = "public, max-age=31536000, immutable"
 # deploy qilinadi, fayl nomi versiyalanmagan (hash yo'q), shu sabab
 # immutable EMAS — o'rtacha TTL bilan muddat tugagach qayta tekshiriladi.
 _STATIC_ASSET_CACHE = "public, max-age=86400, must-revalidate"
+# `site.css?v=<hash>` / `site.js?v=<hash>` — URL fayl mazmuniga bog'langan
+# (hash o'zgarsa URL ham o'zgaradi), shuning uchun bunday so'rovlar uchun
+# uzoq muddatli immutable kesh xavfsiz: qayta tekshirish so'rovi ham ketmaydi.
+# Versiyasiz (`/static/site.css`) so'rov esa eski qoida bilan qoladi.
+_STATIC_VERSIONED_CACHE = "public, max-age=31536000, immutable"
 
 
 class SecurityHeadersMiddleware:
@@ -77,6 +82,7 @@ class SecurityHeadersMiddleware:
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
         path = scope["path"]
+        versioned = b"v=" in scope.get("query_string", b"")
 
         async def send_wrapper(message):
             if message["type"] == "http.response.start":
@@ -114,7 +120,9 @@ class SecurityHeadersMiddleware:
                     and path.startswith("/static/")
                     and "cache-control" not in h
                 ):
-                    h["Cache-Control"] = _STATIC_ASSET_CACHE
+                    h["Cache-Control"] = (
+                        _STATIC_VERSIONED_CACHE if versioned else _STATIC_ASSET_CACHE
+                    )
                 elif (
                     200 <= message["status"] < 300
                     and not path.startswith("/api/")
