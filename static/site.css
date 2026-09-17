@@ -289,15 +289,18 @@ section.sec.alt::before{content:'';position:absolute;inset:0 calc(50% - 50vw);ba
   font-family:var(--mono);font-size:.72rem;opacity:.55;text-transform:uppercase}
 .ft-meta a{text-decoration:none}
 .ft-meta a:hover{opacity:.85}
-/* footer wordmark — bosh sahifadagi .f-word kabi har bir harf alohida
-   hover'da ko'tariladi va acid rangga o'tadi (shuning uchun gradient-fill
-   emas, oddiy rang ishlatiladi — gradient bilan harf rangi o'zgarmaydi) */
-/* Rangli qirra (to'q sariq/ko'k fringe) bo'lmasin: subpiksel matn
+/* footer wordmark — bosh sahifadagi .f-word bilan AYNAN bir xil: o'sha
+   font-size/line-height/margin va translateY(14%) (pastki qismi footer
+   overflow:hidden bilan qirqiladi). Har bir harf alohida hover'da
+   ko'tariladi va acid rangga o'tadi (shuning uchun gradient-fill emas,
+   oddiy rang — gradient bilan harf rangi o'zgarmaydi).
+   Rangli qirra (to'q sariq/ko'k fringe) bo'lmasin: subpiksel matn
    tekislashini o'chirish uchun alohida kompozit qatlam + kulrang tekislash;
    text-shadow/filter/pseudo qatlamlar ham bloklanadi. */
-.ft-word{font-family:var(--anton);font-size:clamp(3.4rem,14vw,10.5rem);line-height:.8;text-transform:uppercase;
-  text-align:center;margin-top:1.8rem;letter-spacing:.01em;color:var(--w);padding-bottom:.08em;
-  transform:translateZ(0);will-change:transform;
+.ft-word{font-family:var(--anton);font-size:clamp(4.6rem,17.6vw,16rem);line-height:.78;text-transform:uppercase;
+  text-align:center;margin-top:2.2rem;letter-spacing:.01em;color:var(--w);
+  padding:0 clamp(18px,4vw,48px);
+  transform:translateY(14%) translateZ(0);will-change:transform;
   -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
   text-shadow:none;filter:none;-webkit-text-stroke:0}
 .ft-word::before,.ft-word::after{content:none}
