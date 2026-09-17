@@ -1417,6 +1417,48 @@ document.querySelectorAll('#menu a').forEach(a=>a.addEventListener('click',()=>{
   spy();
 })();
 
+/* ══════════ URL HASH SYNC — scroll paytida ko'rinayotgan sectionga mos hash
+   (faqat history.replaceState — tarixga yangi entry qo'shilmaydi, pushState ishlatilmaydi) ══════════ */
+(function(){
+  const header=document.querySelector('header');
+  const sections=NAV_SECTIONS.map(s=>document.getElementById(s.id)).filter(Boolean);
+  if(!sections.length)return;
+  let lastHash=location.hash;
+  /* sahifa hash bilan ochilgan bo'lsa, brauzerning o'z scroll-to-hash harakati
+     tugaguncha observer hash'ni ustidan yozib yubormasin */
+  let ready=!lastHash;
+  let io;
+  function headerH(){return header?Math.ceil(header.getBoundingClientRect().height):0;}
+  function setHash(id){
+    const h='#'+id;
+    if(!ready||h===lastHash)return;
+    lastHash=h;
+    /* replaceState'ga id bilan mos hash berilsa, brauzer "scroll to the
+       fragment" qadamini qayta ishga tushirib, sahifani sakratib yuboradi
+       (scroll loop). Shu sabab id vaqtincha olib tashlanadi. */
+    const el=document.getElementById(id);
+    if(el){
+      el.removeAttribute('id');
+      history.replaceState(null,'',h);
+      el.id=id;
+    }else{
+      history.replaceState(null,'',h);
+    }
+  }
+  function build(){
+    if(io)io.disconnect();
+    const hH=headerH();
+    const band=Math.min(innerHeight*.4,300);
+    io=new IntersectionObserver(entries=>{
+      entries.forEach(e=>{if(e.isIntersecting)setHash(e.target.id);});
+    },{rootMargin:`-${hH+1}px 0px -${Math.max(innerHeight-hH-band,0)}px 0px`,threshold:0});
+    sections.forEach(s=>io.observe(s));
+  }
+  build();
+  addEventListener('resize',build,{passive:true});
+  if(!ready)setTimeout(()=>{ready=true;},900);
+})();
+
 /* ══════════ REVEAL ══════════ */
 /* threshold past (.05) — baland elementlar kichik mobil ekranda ham ishonchli trigger bo'lsin */
 var _io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');_io.unobserve(e.target);}}),{threshold:.05});
