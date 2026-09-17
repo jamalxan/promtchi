@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="hero-in wrap">
-  <span class="eyebrow">{{ nav.services }}</span>
+  <span class="eyebrow" aria-hidden="true">{{ nav.services }}</span>
   <h1>{{ t_h1 }}</h1>
   <p class="lead">{{ t_intro }}</p>
 </section>
 <section class="sec wrap">
+  <h2 class="sr-only">{{ common.services_list_h2 }}</h2>
   <div class="card-grid">
     {% for s in services %}
     <a class="card" href="/{{ lang }}/xizmatlar/{{ s.slug }}/">

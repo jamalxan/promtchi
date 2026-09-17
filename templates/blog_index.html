@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="hero-in wrap">
-  <span class="eyebrow">{{ nav.blog }}</span>
+  <span class="eyebrow" aria-hidden="true">{{ nav.blog }}</span>
   <h1>{{ t_h1 }}</h1>
 </section>
 <section class="sec wrap">
   {% if posts %}
+  <h2 class="sr-only">{{ common.posts_list_h2 }}</h2>
   <div class="card-grid">
     {% for p in posts %}
     <a class="card" href="/{{ lang }}/blog/{{ p.slug }}/">

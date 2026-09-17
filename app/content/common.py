@@ -149,6 +149,10 @@ COMMON = {
         "form_consent_link": "Maxfiylik siyosati",
         "skip_to_content": "Asosiy kontentga o'tish",
         "main_nav_label": "Asosiy navigatsiya",
+        "services_list_h2": "Xizmatlar ro'yxati",
+        "solutions_list_h2": "Yechimlar ro'yxati",
+        "portfolio_list_h2": "Loyihalar ro'yxati",
+        "posts_list_h2": "Maqolalar ro'yxati",
     },
     "ru": {
         "for_whom": "Кому подходит",
@@ -200,6 +204,10 @@ COMMON = {
         "form_consent_link": "Политикой конфиденциальности",
         "skip_to_content": "Перейти к основному содержанию",
         "main_nav_label": "Основная навигация",
+        "services_list_h2": "Список услуг",
+        "solutions_list_h2": "Список решений",
+        "portfolio_list_h2": "Список проектов",
+        "posts_list_h2": "Список статей",
     },
     "en": {
         "for_whom": "Who it's for",
@@ -251,6 +259,10 @@ COMMON = {
         "form_consent_link": "Privacy Policy",
         "skip_to_content": "Skip to main content",
         "main_nav_label": "Main navigation",
+        "services_list_h2": "List of services",
+        "solutions_list_h2": "List of solutions",
+        "portfolio_list_h2": "List of projects",
+        "posts_list_h2": "List of articles",
     },
 }
 

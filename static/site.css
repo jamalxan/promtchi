@@ -18,6 +18,8 @@ summary:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--acid);out
   padding:.6rem 1rem;border-radius:8px;text-decoration:none;font-family:var(--mono);font-size:.8rem;
   font-weight:700;transition:top .2s}
 .skip-link:focus{top:1rem}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0}
 
 /* custom kursor — progressive enhancement (/static/site.js qo'shsa faollashadi).
    JS o'chirilganda .cur elementlari doim opacity:0 bo'lib qoladi — sahifaga ta'sir qilmaydi. */
@@ -139,8 +141,10 @@ section.sec.alt{background:rgba(252,251,247,.03)}
 .tag-row span{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;padding:.35rem .7rem;border:1px solid var(--line);border-radius:999px;opacity:.85}
 
 /* card grids */
-.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.1rem;margin-top:1.6rem}
-.card{display:block;text-decoration:none;color:var(--blk);padding:1.4rem;border:3px solid var(--blk);border-radius:18px;background:var(--cream);transition:transform .3s var(--ease),box-shadow .3s var(--ease)}
+/* flex (grid emas) — 4-ustunga to'lmagan oxirgi qator "teshik" qoldirmasdan
+   o'z-o'zidan markazlashadi, karta sonidan qat'i nazar (7, 5, 3 ta va h.k.) */
+.card-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:1.1rem;margin-top:1.6rem}
+.card{flex:1 1 260px;max-width:340px;display:block;text-decoration:none;color:var(--blk);padding:1.4rem;border:3px solid var(--blk);border-radius:18px;background:var(--cream);transition:transform .3s var(--ease),box-shadow .3s var(--ease)}
 .card:hover{transform:translateY(-8px) rotate(-.7deg);box-shadow:0 30px 60px rgba(217,255,63,.14)}
 .card .no{font-family:var(--mono);font-size:.7rem;opacity:.55}
 .card h3{margin:.4rem 0 .5rem}
