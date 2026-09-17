@@ -213,6 +213,25 @@ class SocialIn(BaseModel):
     icon: str = Field(default="link", max_length=24)     # telegram/instagram/…
 
 
+class StatIn(BaseModel):
+    """Bosh sahifadagi statistika katagi (masalan "32+" / "Loyiha").
+
+    TZ 2 va 22-bo'lim: bu raqamlar BIZNES tomonidan tasdiqlanmaguncha
+    ko'rsatilmaydi — shuning uchun sukut bo'yicha ro'yxat BO'SH va bo'lim
+    umuman render qilinmaydi. Admin panelga qiymat kiritilganda blok
+    avtomatik paydo bo'ladi (soxta raqam kodda saqlanmaydi).
+    """
+
+    value: str = Field(min_length=1, max_length=12)      # "32+", "98%", "3+"
+    label: str = Field(min_length=1, max_length=48)      # "Loyiha", "Qoniqish"
+
+
+class StatsByLang(BaseModel):
+    uz: list[StatIn] = Field(default_factory=list, max_length=6)
+    ru: list[StatIn] = Field(default_factory=list, max_length=6)
+    en: list[StatIn] = Field(default_factory=list, max_length=6)
+
+
 class PackagesByLang(BaseModel):
     """Paketlar — 3 tilda, RU/EN bosh sahifasi endi shu yerdan avtomatik
     o'qiydi (ilgari alohida qattiq yozilgan edi — TZ 1-bo'lim: admin panel
@@ -257,6 +276,8 @@ class ContentDoc(BaseModel):
     packages: PackagesByLang
     team: TeamByLang
     testimonials: TestimonialsByLang
+    # Sukut bo'yicha bo'sh — tasdiqlanmagan statistika ko'rsatilmaydi (TZ 2/22)
+    stats: StatsByLang = Field(default_factory=StatsByLang)
     contacts: list[ContactIn] = Field(default_factory=list, max_length=12)
     socials: list[SocialIn] = Field(default_factory=list, max_length=12)
 
@@ -679,6 +700,9 @@ DEFAULT_CONTENT: dict = {
             {"name": "Samandar Orifjonov", "role": "IT Specialist", "photo": "", "role_type": "member"},
         ],
     },
+    # TZ 2/22: tasdiqlanmagan statistika ko'rsatilmaydi — sukut bo'yicha BO'SH.
+    # Admin panelga qiymat kiritilsa, bosh sahifadagi blok avtomatik chiqadi.
+    "stats": {"uz": [], "ru": [], "en": []},
     "testimonials": {
         "uz": [
             {

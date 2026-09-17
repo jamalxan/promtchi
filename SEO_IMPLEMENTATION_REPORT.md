@@ -158,6 +158,62 @@ Bu **noto'g'ri o'lchov** bo'lgan: uzunlik HTML manbasidan olingan, u yerda apost
 
 ---
 
+## 2-BOSQICH, UCHINCHI TO'PLAM — TZ'ning qolgan bandlari to'liq yopildi (2026-09-17)
+
+Bu to'plamda TZ'dagi kod bilan bajarilishi mumkin bo'lgan **barcha** qolgan bandlar
+yakunlandi: blog lokalizatsiyasi, statistika CMS'i, LocalBusiness tayyorligi,
+analitika uchun CSP, zaxira/tiklash mexanizmi.
+
+### FIXED
+
+| # | TZ bandi | Nima qilindi |
+|---|----------|--------------|
+| 1 | §15, §8 | **Blog RU/EN lokalizatsiyasi**: 7 maqolaning ruscha va inglizcha versiyasi (`app/content/blog_seed_ru.py`, `blog_seed_en.py`). Bu **tarjima** — yangi da'vo, statistika yoki mijoz qo'shilmagan; ichki havolalar har tilning O'Z slug'iga moslangan (`razrabotka-saitov`, `web-development`, …). Natijada `/ru/blog/` va `/en/blog/` bo'sh emas va indekslanadi; sayt **74 → 90** indekslanadigan URL |
+| 2 | §9 | **Kirill sarlavhalar uchun transliteratsiya**: `/ru/blog/post-14/` kabi mazmunsiz URL o'rniga `/ru/blog/s-chego-nachat-avtomatizatsiyu-biznesa-14/`. Lotin (uz/en) slug'lari o'zgarmadi |
+| 3 | — | **Xavfsizlik tuzatishi (eski migratsiyada)**: "blog kannibalizatsiya" migratsiyasi qat'iy post ID xaritasiga (1..8 → 9..15) tayanardi. RU/EN postlar qo'shilgach yangi bazada ID'lar siljib, u **boshqa tildagi** postni nashrdan olib qo'yishi mumkin edi. Endi turli tildagi juftlik o'tkazib yuboriladi va yangi seed eng oxirida ishlaydi |
+| 4 | §19, §24 | **GA4 uchun CSP**: `script-src 'self'` va `connect-src 'self'` gtag.js va beacon'larni bloklardi — ya'ni Measurement ID qo'yilsa ham analitika **jim ishlamas edi**. Endi ID berilganda googletagmanager/google-analytics domenlari ochiladi, berilmaganda CSP avvalgidek qat'iy qoladi |
+| 5 | §2, §22, §23 | **Statistika CMS'i**: `Content.data.stats` (3 til, `StatIn`/`StatsByLang` validatsiyasi), admin panelda **"Statistika"** bo'limi, `/api/content` javobida `stats`. Bo'sh bo'lsa hero bloki ham, rangli band ham **umuman render qilinmaydi** — TZ §22 "arxitektura tayyor qoldiriladi" talabi shu bilan bajarildi. Raqamlar tasdiqlangach admin panelga kiritiladi, kod tahrirlanmaydi |
+| 6 | §22, §23 | **LocalBusiness tayyorligi**: `BUSINESS_STREET_ADDRESS` + `BUSINESS_OPENING_HOURS` berilsa, Organization tuguni **ayni o'zi** `["Organization","ProfessionalService"]` bo'lib e'lon qilinadi (ikkinchi entity emas, bitta `@id`), `streetAddress`/`postalCode`/`openingHours`/`geo`/`priceRange` qo'shiladi. Ma'lumot berilmasa hech narsa o'ylab topilmaydi. Bosh sahifa schema'si ham (splice + JS merge) shu holatni meros oladi |
+| 7 | §20 | **Backup va restore mexanizmi** (`app/backup.py`): SQLite `VACUUM INTO` + gzip (izchil snapshot), rotatsiya (`BACKUP_KEEP`), fon rejalashtiruvchisi (`BACKUP_INTERVAL_HOURS`), CLI (`python -m app.backup create|list|restore`), admin API (`GET/POST /api/admin/backups`). Zaxirani **HTTP orqali yuklab olish ataylab yo'q** — faylda mijoz arizalari bor. Postgres'da zaxira olinmaydi (server darajasida `pg_dump`), soxta "tayyor" yozilmaydi |
+| 8 | §9, §17 | **Deploy xatosini ushlash**: `ENV != production` bo'lsa-yu, `CANONICAL_HOST` haqiqiy domen bo'lsa — startupda aniq ogohlantirish (`/docs` ochiq, HSTS yo'q, admin cookie `Secure` emas). `.env.example` yangi o'zgaruvchilar bilan to'ldirildi |
+| 9 | — | **Tiklashdagi xato tuzatildi**: eski `-wal`/`-shm` fayllari tiklangan baza ustida qolib, uni buzishi mumkin edi (dev bazasida aynan shu sabab `database disk image is malformed` yuz berdi). Endi restore ularni o'chiradi |
+
+### VERIFIED (lokal, 90 URL)
+
+| Tekshiruv | Natija |
+|---|---|
+| Crawl | **90/90 = 200** (74 → 90: +16 lokalizatsiya qilingan maqola) |
+| Canonical o'zini ko'rsatadi | 90/90 |
+| Sahifada bitta H1 | 90/90 |
+| Noyob title / description | 90/90 · 90/90 |
+| JSON-LD parse xatolari | 0 |
+| Blog | har tilda 8 URL (indeks + 7 maqola), o'rtacha 388 so'z |
+| RU slug'lar | o'qiladigan (`7-priznakov-togo-chto-vashemu-biznesu-nuzhna-crm-8`), `post-N` yo'q |
+| RU/EN maqola sxemasi | `Article` + `BreadcrumbList` + `Organization(@id)` |
+| Maqoladagi ichki havolalar | tekshirildi — barchasi 200 |
+| Statistika | `stats` bo'sh → hero va band `display:none`; admin orqali kiritilganda API'da ko'rinadi (test bilan) |
+| LocalBusiness | manzil+ish vaqti berilganda `["Organization","ProfessionalService"]`, aks holda `Organization` |
+| Zaxira | create → gzip ichida `SQLite format 3`, rotatsiya, restore → ma'lumot tiklandi, `.before-restore` saqlandi |
+| pytest | **79/79** (15 ta yangi test) |
+| ruff | 42 (baseline 39 + 3 ta `for l in LANGS` — fayl konvensiyasi) |
+
+### TZ bo'yicha yakuniy holat
+
+Kod bilan bajarilishi mumkin bo'lgan bandlar **yopildi**. Qolgani faqat biznes
+ma'lumoti yoki server sozlamasiga bog'liq va kodda kutib turadi:
+
+| Kerak | Kod holati |
+|---|---|
+| GA4 Measurement ID | `GA_MEASUREMENT_ID` → gtag + hodisalar + CSP avtomatik yoqiladi |
+| Search Console tokeni | `SEARCH_CONSOLE_VERIFICATION` → meta uch tilda va ichki sahifalarda |
+| `ENV=production` | HSTS, `/docs` yopilishi, `Secure` cookie — hammasi shu bayroqqa bog'langan |
+| Manzil + ish vaqti | `BUSINESS_STREET_ADDRESS`, `BUSINESS_OPENING_HOURS` (+ ixtiyoriy `BUSINESS_GEO`, `BUSINESS_PRICE_RANGE`) → LocalBusiness |
+| Statistika raqamlari | Admin panel → "Statistika" bo'limi |
+| Zaxirani serverdan tashqariga nusxalash | `backups/` papkasi — cron yoki hosting snapshot |
+| HTTP/2, CDN | nginx/hosting darajasida (repo'dan boshqarilmaydi) |
+
+---
+
 # 1-BOSQICH ARXIVI (2026-09-15 — 2026-09-16)
 
 **Loyiha:** promtchi.uz — FastAPI (Python) backend, Jinja2 SSR ichki sahifalar + statik HTML bosh sahifa (uz/ru/en), SQLite/Postgres (SQLAlchemy async), vanilla JS admin panel. Node/npm build tizimi YO'Q — bu Python loyihasi.

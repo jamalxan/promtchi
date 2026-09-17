@@ -23,3 +23,7 @@ venv/
 
 # OG banner generatori yuklab oladigan shrift (OFL, qayta yuklanadi)
 tools/Anton-Regular.ttf
+
+# Ma'lumotlar bazasi zaxiralari (mijoz arizalari bor — repoga tushmasin)
+backups/
+*.before-restore

@@ -15,6 +15,20 @@ from .ratelimit import MinInterval, TokenBucket, client_ip
 # shuning uchun 'unsafe-inline' shart. Tashqi skript yuklashni esa bloklaydi.
 # upgrade-insecure-requests faqat production'da: HTTPS'siz (faqat HTTP) muhitda
 # brauzer API so'rovlarini https'ga majburan o'tkazib, saytni ishlamay qo'yadi.
+# GA4 faqat GA_MEASUREMENT_ID berilganda ulanadi — shuning uchun uning
+# domenlari ham FAQAT o'shanda CSP'ga qo'shiladi (analitika yoqilmagan saytda
+# ruxsat ochiq turmaydi). Busiz gtag.js "script-src 'self'"ga urilib bloklanar,
+# hodisalar esa "connect-src 'self'" sababli hech qayerga yetib bormas edi.
+_GA_SCRIPT = ["https://www.googletagmanager.com"]
+_GA_CONNECT = [
+    "https://www.google-analytics.com",
+    "https://analytics.google.com",
+    "https://*.analytics.google.com",
+    "https://*.google-analytics.com",
+    "https://www.googletagmanager.com",
+]
+_ga_on = bool(settings.GA_MEASUREMENT_ID)
+
 CSP = "; ".join([
     "default-src 'self'",
     "base-uri 'self'",
@@ -25,8 +39,8 @@ CSP = "; ".join([
     "frame-src https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' data: https://fonts.gstatic.com",
-    "script-src 'self' 'unsafe-inline'",
-    "connect-src 'self'",
+    " ".join(["script-src 'self' 'unsafe-inline'"] + (_GA_SCRIPT if _ga_on else [])),
+    " ".join(["connect-src 'self'"] + (_GA_CONNECT if _ga_on else [])),
     "form-action 'self'",
 ] + (["upgrade-insecure-requests"] if settings.is_production else []))
 

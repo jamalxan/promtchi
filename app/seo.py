@@ -48,15 +48,33 @@ def json_ld(data: dict) -> str:
     return json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c")
 
 
+def _geo() -> dict:
+    """`BUSINESS_GEO="41.31,69.24"` -> GeoCoordinates (noto'g'ri format — e'tiborsiz)."""
+    raw = settings.BUSINESS_GEO.replace(" ", "")
+    if raw.count(",") != 1:
+        return {}
+    lat, _, lon = raw.partition(",")
+    try:
+        return {"geo": {"@type": "GeoCoordinates",
+                        "latitude": float(lat), "longitude": float(lon)}}
+    except ValueError:
+        return {}
+
+
 def organization_schema(org: dict | None = None) -> dict:
     """`org` — admin panelda tahrirlanadigan aloqa ma'lumotlari bilan
     yangilangan dict (app/pages.py::_live_org) berilsa ishlatiladi; aks
     holda statik ORG fallback (bu funksiya main.py'dagi bosh sahifa
     JSON-LD'i uchun ham to'g'ridan-to'g'ri chaqiriladi)."""
     o = org or ORG
+    # TZ 22/23: LocalBusiness FAQAT ko'cha manzili va ish vaqti tasdiqlanganda.
+    # Ikkalasi ham berilsa — alohida ikkinchi tugun emas, AYNAN SHU tugunning
+    # turi kengaytiriladi (bitta korxona, bitta @id): Google uchun bu to'liq
+    # LocalBusiness, qidiruv esa ikkita "promtchi" ko'rmaydi.
+    local = bool(settings.BUSINESS_STREET_ADDRESS and settings.BUSINESS_OPENING_HOURS)
     return {
         "@context": "https://schema.org",
-        "@type": "Organization",
+        "@type": ["Organization", "ProfessionalService"] if local else "Organization",
         # @id — sahifadagi boshqa tugunlar (WebSite.publisher, Service.provider,
         # Article.author/publisher) shu bitta kompaniya tugunini ko'rsatadi,
         # ya'ni har bir sxemada yarim ma'lumotli nusxa yaratilmaydi.
@@ -71,7 +89,15 @@ def organization_schema(org: dict | None = None) -> dict:
             "@type": "PostalAddress",
             "addressLocality": o["city_en"],
             "addressCountry": "UZ",
+            **({"streetAddress": settings.BUSINESS_STREET_ADDRESS}
+               if settings.BUSINESS_STREET_ADDRESS else {}),
+            **({"postalCode": settings.BUSINESS_POSTAL_CODE}
+               if settings.BUSINESS_POSTAL_CODE else {}),
         },
+        **({"openingHours": settings.BUSINESS_OPENING_HOURS} if local else {}),
+        **({"priceRange": settings.BUSINESS_PRICE_RANGE}
+           if local and settings.BUSINESS_PRICE_RANGE else {}),
+        **(_geo() if local else {}),
         "contactPoint": [{
             "@type": "ContactPoint",
             "contactType": "customer service",

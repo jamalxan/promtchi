@@ -146,6 +146,28 @@ class Settings:
     MAX_UPLOAD_BYTES: int = _int("MAX_UPLOAD_BYTES", 30 * 1024 * 1024)
     HSTS_SECONDS: int = _int("HSTS_SECONDS", 31536000)
 
+    # ── Biznes manzili (TZ 22/23: LocalBusiness faqat TASDIQLANGAN ma'lumot
+    # bilan) ────────────────────────────────────────────────────────────────
+    # Ko'cha manzili VA ish vaqti berilgan bo'lsagina Organization tuguni
+    # `ProfessionalService` (LocalBusiness turi) sifatida ham e'lon qilinadi.
+    # Bo'sh bo'lsa hech narsa o'ylab topilmaydi — schema o'zgarishsiz qoladi.
+    BUSINESS_STREET_ADDRESS: str = os.getenv("BUSINESS_STREET_ADDRESS", "").strip()
+    BUSINESS_POSTAL_CODE: str = os.getenv("BUSINESS_POSTAL_CODE", "").strip()
+    # schema.org formati, masalan: "Mo-Fr 09:00-18:00"
+    BUSINESS_OPENING_HOURS: str = os.getenv("BUSINESS_OPENING_HOURS", "").strip()
+    # "41.311081,69.240562" (ixtiyoriy)
+    BUSINESS_GEO: str = os.getenv("BUSINESS_GEO", "").strip()
+    BUSINESS_PRICE_RANGE: str = os.getenv("BUSINESS_PRICE_RANGE", "").strip()
+
+    # ── Zaxira (TZ 20-bo'lim) ───────────────────────────────────────────────
+    # SQLite bazasi `VACUUM INTO` orqali davriy zaxiralanadi (app/backup.py).
+    # Postgres'da bu o'chirilgan bo'lishi kerak — u yerda zaxira server
+    # darajasida (pg_dump / managed snapshot) olinadi.
+    BACKUP_ENABLED: bool = _bool("BACKUP_ENABLED", True)
+    BACKUP_DIR: str = os.getenv("BACKUP_DIR", "").strip() or str(BASE_DIR / "backups")
+    BACKUP_INTERVAL_HOURS: int = _int("BACKUP_INTERVAL_HOURS", 24)
+    BACKUP_KEEP: int = _int("BACKUP_KEEP", 7)
+
     # ── Kesh ─────────────────────────────────────────────────────────────────
     STATIC_CACHE_SECONDS: int = _int("STATIC_CACHE_SECONDS", 3600)
 
@@ -180,6 +202,17 @@ class Settings:
                     "ADMIN_PASSWORD hash qilinmagan holda ishlatilmoqda — production'da "
                     "ADMIN_PASSWORD_HASH ishlating:  python -m app.config hash \"parolingiz\""
                 )
+        # Eng ko'p uchraydigan deploy xatosi: sayt haqiqiy domenda ishlayapti,
+        # lekin ENV=production emas. Oqibati jim va jiddiy: /docs va /openapi.json
+        # ochiq qoladi, HSTS header yuborilmaydi, admin sessiya cookie'si esa
+        # `Secure` bayrog'isiz ketadi (app/auth.py). Buni faqat ogohlantirish
+        # sifatida beramiz — ishga tushirishni to'xtatmaydi.
+        if not self.is_production and self.CANONICAL_HOST not in ("localhost", "127.0.0.1"):
+            p.append(
+                f"ENV={self.ENV}, lekin CANONICAL_HOST={self.CANONICAL_HOST} — haqiqiy "
+                "domenda production rejimisiz ishlayapsiz: /docs ochiq, HSTS yo'q, "
+                "admin cookie Secure emas. Server env'ida ENV=production qo'ying."
+            )
         if self.is_production and "*" in self.CORS_ORIGINS:
             p.append("CORS_ORIGINS='*' — production'da aniq domen yozing.")
         if self.is_production and self.is_sqlite:

@@ -90,7 +90,7 @@ from .schemas import (
     PostIn, RemoveEmailRequestIn, ResetPasswordIn, ReviewCodeIn, ReviewIn, ServiceIn,
     SetPrimaryRequestIn, TelegramAdminIn, TelegramSettingsIn,
 )
-from . import crm_api, crm_service, crypto, faq_store, pages, services_store
+from . import backup, crm_api, crm_service, crypto, faq_store, pages, seo, services_store
 from . import crm_constants as crm
 from .telegram import bot
 from .security import (
@@ -159,6 +159,7 @@ class _LangContentCache:
                 "packages": data.get("packages", {}).get(lang, []),
                 "team": data.get("team", {}).get(lang, []),
                 "testimonials": data.get("testimonials", {}).get(lang, []),
+                "stats": data.get("stats", {}).get(lang, []),
                 "contacts": data.get("contacts", []),
                 "socials": data.get("socials", []),
             }
@@ -279,6 +280,17 @@ def _inject_live_contacts(data: bytes) -> bytes:
         phone = next((c for c in contacts if c.get("icon") == "phone" and c.get("url", "").startswith("tel:")), None)
         if phone:
             org.setdefault("contactPoint", [{}])[0]["telephone"] = phone["url"][len("tel:"):]
+        # Manzil/ish vaqti (BUSINESS_* env) sozlangan bo'lsa — bosh sahifa
+        # schema'si ham ichki sahifalar bilan bir xil bo'lsin: u yerda
+        # seo.organization_schema() ayni shu maydonlarni qo'shadi.
+        built = seo.organization_schema()
+        org["@type"] = built["@type"]
+        org["address"] = built["address"]
+        for key in ("openingHours", "priceRange", "geo"):
+            if key in built:
+                org[key] = built[key]
+            else:
+                org.pop(key, None)
         new_json = json.dumps(org, ensure_ascii=False, separators=(",", ":")).encode()
         return b'<script type="application/ld+json" id="orgSchema">' + new_json + b"</script>"
 
@@ -413,6 +425,12 @@ async def lifespan(app: FastAPI):
         t.add_done_callback(_bg_tasks.discard)
     if settings.TELEGRAM_POLLING:
         t = asyncio.create_task(bot.poll_loop())
+        _bg_tasks.add(t)
+        t.add_done_callback(_bg_tasks.discard)
+
+    # ── Zaxira (TZ 20-bo'lim) — faqat SQLite'da va yoqilgan bo'lsa ──
+    if settings.BACKUP_ENABLED and settings.is_sqlite:
+        t = asyncio.create_task(backup.scheduler_loop())
         _bg_tasks.add(t)
         t.add_done_callback(_bg_tasks.discard)
 
@@ -1292,6 +1310,34 @@ async def delete_portfolio_case(
 # /{lang}/faq/ sahifasining to'liq savol-javob ro'yxati — ilgira
 # app/content/faq.py'da qattiq yozilgan edi, endi DB (app/db.py FaqItem)
 # yagona manba; app/pages.py faq_store keshidan o'qiydi.
+
+@app.get("/api/admin/backups")
+async def list_backups_admin(_: str = Depends(require_admin)):
+    """Mavjud zaxiralar ro'yxati (eng yangisi birinchi).
+
+    Faylni YUKLAB OLISH endpointi ataylab yo'q — zaxira mijoz arizalarini
+    o'z ichiga oladi, uni HTTP orqali tarqatmaymiz. Serverdan nusxa olish
+    yoki tiklash uchun: `python -m app.backup restore <fayl>`.
+    """
+    return {
+        "dir": settings.BACKUP_DIR,
+        "enabled": settings.BACKUP_ENABLED and settings.is_sqlite,
+        "interval_hours": settings.BACKUP_INTERVAL_HOURS,
+        "keep": settings.BACKUP_KEEP,
+        "items": [
+            {"name": p.name, "size": p.stat().st_size, "mtime": p.stat().st_mtime}
+            for p in backup.list_backups()
+        ],
+    }
+
+
+@app.post("/api/admin/backups", status_code=201)
+async def create_backup_admin(_: str = Depends(require_admin)):
+    path = await backup.create_backup()
+    if path is None:
+        raise HTTPException(400, "Zaxira olinmadi — Postgres yoki baza fayli topilmadi")
+    return {"name": path.name, "size": path.stat().st_size}
+
 
 @app.get("/api/admin/faq")
 async def list_faq_admin(

@@ -813,10 +813,21 @@ Organization tuguni); §17 — hash'li statik fayllar uchun `immutable` kesh;
 §19 — "Blog → service click" hodisasi; §21/§24 — og:image 1200x630 va Twitter
 `summary_large_image`.
 
-**Ochiq qolgan (biznes ma'lumoti yoki server sozlamasi kerak):** GA4 Measurement ID;
-Search Console tasdiqlash tokeni; blog RU/EN kontenti; LocalBusiness uchun manzil va
-ish vaqti; real statistika raqamlari; §20 backup (server cron/snapshot);
-serverda `ENV=production` (hozir `/docs` ochiq va HSTS header yo'q); HTTP/2 va CDN.
+**Shu kuni yopilgan qolgan bandlar:** §15 — blog RU/EN lokalizatsiyasi (7 maqola
+uch tilda, sayt 74 → 90 indekslanadigan URL; kirill sarlavhalar uchun
+transliteratsiya); §19/§24 — GA4 uchun CSP (ID berilganda avtomatik ochiladi, aks
+holda qat'iy); §2/§22/§23 — statistika CMS'i (`Content.data.stats`, admin
+panelda "Statistika"; bo'sh bo'lsa blok umuman ko'rinmaydi); §22/§23 —
+LocalBusiness tayyorligi (`BUSINESS_STREET_ADDRESS` + `BUSINESS_OPENING_HOURS`
+berilsa Organization tuguni `ProfessionalService` sifatida ham e'lon qilinadi);
+§20 — zaxira va tiklash mexanizmi (`app/backup.py`: VACUUM INTO + gzip,
+rotatsiya, fon rejalashtiruvchisi, CLI restore, admin API).
+
+**Ochiq qolgan — faqat biznes ma'lumoti yoki server sozlamasi:** GA4 Measurement
+ID; Search Console tasdiqlash tokeni; serverda `ENV=production` (hozir `/docs`
+ochiq va HSTS header yo'q); LocalBusiness uchun manzil va ish vaqti; real
+statistika raqamlari; zaxirani serverdan tashqariga nusxalash (cron/snapshot);
+HTTP/2 va CDN. Bularning HAR BIRI uchun kod tayyor va kutib turibdi.
 
 **Prinsip o'zgarmadi:** soxta statistika, soxta sharh, uydirma natija yoki
 taxminiy biznes ma'lumoti qo'shilmadi (TZ §22, §26, §28).

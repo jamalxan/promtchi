@@ -363,6 +363,10 @@ tr:hover td{background:rgba(217,255,63,.08)}
         <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         Jamoa
       </a>
+      <a href="#" data-page="stats">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Statistika
+      </a>
       <a href="#" data-page="testimonials">
         <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         Fikrlar (zaxira)
@@ -694,7 +698,7 @@ async function showApp() {
 /* Rolga qarab yon menyuni cheklash — server ham har bir endpointda mustaqil
    tekshiradi (bu yerdagi yashirish faqat UX, xavfsizlik chegarasi emas). */
 const MANAGER_HIDDEN_PAGES = new Set([
-  'dashboard', 'packages', 'team', 'testimonials', 'contacts', 'socials',
+  'dashboard', 'packages', 'team', 'stats', 'testimonials', 'contacts', 'socials',
   'posts', 'services', 'portfolio', 'faqpage', 'telegram', 'crmtelegram', 'stats',
 ]);
 function applyRoleVisibility() {
@@ -817,6 +821,7 @@ function navigate(page) {
     leads: renderLeads,
     packages: () => renderContentPage('packages', 'Paketlar'),
     team: () => renderContentPage('team', 'Jamoa'),
+    stats: () => renderContentPage('stats', 'Statistika'),
     testimonials: () => renderContentPage('testimonials', 'Fikrlar (zaxira)'),
     contacts: () => renderContentPage('contacts', 'Aloqa havolalari'),
     socials: () => renderContentPage('socials', 'Ijtimoiy tarmoqlar'),
@@ -1367,7 +1372,7 @@ async function renderStats() {
 /* packages/team/testimonials/faq — endi til bo'yicha saqlanadi ({uz:[],ru:[],en:[]},
    TZ 1-bo'lim: RU/EN bosh sahifasi ham admin o'zgarishlarini avtomatik ko'rishi
    uchun); contacts/socials tilga bog'liq EMAS (bitta umumiy ro'yxat). */
-const LANG_TAB_SECTIONS = new Set(['packages', 'team', 'testimonials']);
+const LANG_TAB_SECTIONS = new Set(['packages', 'team', 'stats', 'testimonials']);
 let contentTab = 'packages';
 let contentLangTab = 'uz';
 let _saveTimer = null;
@@ -1402,6 +1407,7 @@ function rerenderSection() { renderContentPage(contentTab, SECTION_TITLES[conten
 const SECTION_HINTS = {
   packages: "Landing'dagi \"Narxlar\" bo'limi paketlari — 3 tilda. Avtomatik saqlanadi.",
   team: "Landing'dagi \"Jamoa\" bo'limi — 3 tilda (ism/rasm har tilda takrorlanadi, faqat lavozim tarjima qilinadi). Avtomatik saqlanadi.",
+  stats: "Bosh sahifadagi statistika (hero va rangli band) — 3 tilda. BO'SH qoldirilsa bloklar UMUMAN ko'rinmaydi (TZ 2/22: tasdiqlanmagan raqam ko'rsatilmaydi). Qiymat '32+' yoki '98%' ko'rinishida yoziladi — raqam qismi animatsiya bilan sanaladi.",
   testimonials: "Landing'dagi \"Mijozlar fikri\" bo'limining ZAXIRA matni — 3 tilda. Real mijoz fikrlari (Review tizimi, \"Fikrlar\" menyusi) mavjud bo'lsa, ular ko'rsatiladi; bu faqat ular hali yo'q bo'lganda ko'rinadi.",
   contacts: "Landing'dagi \"Aloqa\" bo'limidagi havolalar (Telegram, Email, Telefon...) — barcha 3 tilda BIR XIL (telefon raqami tilga qarab o'zgarmaydi). Bo'sh havola ko'rsatilmaydi.",
   socials: "Footer pastidagi ijtimoiy tarmoq ikonkalari — barcha 3 tilda bir xil. Bo'sh yoki o'chirilgan havola ko'rsatilmaydi."
@@ -1466,6 +1472,12 @@ function renderContentCards() {
         </div>
         ${makeRoleTypeField(i, item.role_type)}
         ${makeMediaField('Rasm', 'photo', i, item.photo)}`;
+    } else if (contentTab === 'stats') {
+      fields = `
+        <div class="field-row">
+          ${makeField('Qiymat (masalan 32+ yoki 98%)', 'value', i, item.value)}
+          ${makeField('Izoh (masalan Loyiha)', 'label', i, item.label)}
+        </div>`;
     } else if (contentTab === 'testimonials') {
       fields = `
         ${makeField('Matn', 'text', i, item.text, true)}
@@ -1680,6 +1692,7 @@ function addItem() {
   const templates = {
     packages: { name: 'Yangi paket', price: '0$', popular: false, features: ['Xususiyat'] },
     team: { name: "Yangi a'zo", role: 'Rol', photo: '', role_type: 'member' },
+    stats: { value: '0', label: "Ko'rsatkich" },
     testimonials: { text: 'Fikr matni', name: 'Ism', role: 'Rol', photo: '' },
     contacts: { label: 'Telegram', value: '', url: '', icon: 'telegram' },
     socials: { name: 'Telegram', url: '', icon: 'telegram' }

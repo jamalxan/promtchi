@@ -51,13 +51,10 @@ if settings.is_sqlite:
         cur.execute("PRAGMA cache_size=-16000")  # ~16 MB sahifa keshi
         cur.close()
 
-
 SessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
 
 class Base(DeclarativeBase):
     pass
-
 
 class Content(Base):
     """Sayt kontenti — bitta JSON hujjat (packages/team/testimonials/cases).
@@ -74,7 +71,6 @@ class Content(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
-
 
 class Lead(Base):
     """Aloqa formasi arizalari — CRM Kanban voronkasining asosiy jadvali.
@@ -182,7 +178,6 @@ class Lead(Base):
             "stage_changed_at": self.stage_changed_at.isoformat() if self.stage_changed_at else None,
         }
 
-
 class LeadStageHistory(Base):
     """Har bir bosqich o'tishi — Kanban'dagi "Tarix" timeline'i shu yerdan o'qiladi.
 
@@ -216,7 +211,6 @@ class LeadStageHistory(Base):
             "duration_seconds": self.duration_seconds,
         }
 
-
 class LeadNote(Base):
     """Menejer qo'ng'iroqdan keyin yozadigan qisqa izoh."""
 
@@ -239,7 +233,6 @@ class LeadNote(Base):
             "text": self.text,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
-
 
 class Post(Base):
     """Blog/yangilik postlari — landing'da alohida bo'limda va /{lang}/blog/{slug}/
@@ -300,7 +293,6 @@ class Post(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
-
 class Review(Base):
     """Mijoz fikri — FOYDALANUVCHI yozadi, admin tahrirlay OLMAYDI.
 
@@ -341,7 +333,6 @@ class Review(Base):
             d["code"] = self.code
         return d
 
-
 class ReviewCode(Base):
     """Fikr yozish uchun bir martalik kod — admin mijozga beradi."""
 
@@ -364,7 +355,6 @@ class ReviewCode(Base):
             "used_at": self.used_at.isoformat() if self.used_at else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
-
 
 class Service(Base):
     """Xizmat sahifasi (/{lang}/xizmatlar/{slug}/) — admin-tahrirlanadigan (TZ 19-bo'lim).
@@ -418,7 +408,6 @@ class Service(Base):
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
 
-
 class PortfolioCase(Base):
     """Portfolio case (/{lang}/portfolio/{slug}/) — admin-tahrirlanadigan (TZ 19-bo'lim).
 
@@ -470,7 +459,6 @@ class PortfolioCase(Base):
             # sitemap <lastmod> uchun — faqat qator haqiqatan o'zgarganda yangilanadi
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
-
 
 class FaqItem(Base):
     """/{lang}/faq/ sahifasidagi to'liq savol-javob — admin-tahrirlanadigan (TZ 19-bo'lim).
@@ -531,7 +519,6 @@ class FaqItem(Base):
             "en": {"question": self.question_en, "answer": self.answer_en},
         }
 
-
 class SlugRedirect(Base):
     """Xizmat/portfolio slug'i o'zgarganda avtomatik yaratiladigan 301 (TZ 27-bo'lim:
     "Slugs o'zgarsa 301 redirect yaratiladi"). `old_path`/`new_path` — to'liq
@@ -547,7 +534,6 @@ class SlugRedirect(Base):
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
     )
 
-
 class Setting(Base):
     """Kalit-qiymat sozlamalar (masalan Telegram bot token/chat ID).
 
@@ -559,7 +545,6 @@ class Setting(Base):
 
     key: Mapped[str] = mapped_column(String(64), primary_key=True)
     value: Mapped[str] = mapped_column(Text, default="", nullable=False)
-
 
 class AdminToken(Base):
     """Parolni tiklash / email qo'shish-o'chirishni tasdiqlash uchun bir martalik token.
@@ -584,7 +569,6 @@ class AdminToken(Base):
         default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
-
 
 class AdminAccount(Base):
     """Admin panelga kira oladigan hisob — har birining o'z paroli bor.
@@ -624,7 +608,6 @@ class AdminAccount(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
-
 class TelegramSettings(Base):
     """CRM Kanban'ning Telegram integratsiyasi sozlamalari — bitta qator (id=1).
 
@@ -651,7 +634,6 @@ class TelegramSettings(Base):
     edit_on_update: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     last_health_check: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_health_status: Mapped[str] = mapped_column(Text, default="")
-
 
 # Eski bazalarga yangi ustunlarni qo'shish (create_all mavjud jadvalni o'zgartirmaydi)
 _MIGRATIONS = [
@@ -697,7 +679,6 @@ _MIGRATIONS = [
     "ALTER TABLE faq_items ADD COLUMN show_on_home BOOLEAN NOT NULL DEFAULT 0",
 ]
 
-
 async def run_migrations(eng) -> None:
     """Yo'q ustunlarni qo'shadi; allaqachon mavjud bo'lsa jim o'tadi.
 
@@ -710,7 +691,6 @@ async def run_migrations(eng) -> None:
                 await conn.execute(text(stmt))
         except Exception:
             pass  # ustun allaqachon bor
-
 
 async def run_data_fixups(session: AsyncSession) -> None:
     """Sxema o'zgarishidan keyingi BIR MARTALIK ma'lumot ko'chirishlar.
@@ -908,6 +888,7 @@ async def run_data_fixups(session: AsyncSession) -> None:
             ))
         session.add(Setting(key="blog_seo_articles_v1_done", value="1"))
 
+
     # 9. PRODUCTION_SEO_AUDIT.md (2026-09-16), bo'lim 1 — Content.data["contacts"]
     #    ichida eski/yasama qiymatlar (placeholder telefon +998 90 000 00 00,
     #    eski Telegram @promtchi/@promtchiuz) production DB'da qolib ketgan edi.
@@ -987,6 +968,12 @@ async def run_data_fixups(session: AsyncSession) -> None:
         for old_id, new_id in _OLD_TO_NEW_POST_ID.items():
             old_p, new_p = by_id.get(old_id), by_id.get(new_id)
             if old_p is None or new_p is None or not old_p.published:
+                continue
+            # Xarita production'dagi UZ postlarining ID'lariga bog'langan.
+            # Yangi (bo'sh) bazada RU/EN tarjimalari ham qo'shilgani uchun
+            # ID'lar boshqacha joylashishi mumkin — turli tildagi juftlikni
+            # HECH QACHON dublikat deb hisoblamaymiz.
+            if old_p.lang != new_p.lang:
                 continue
             old_path = f"/{old_p.lang}/blog/{_slugify(old_p.title, old_p.id)}/"
             new_path = f"/{new_p.lang}/blog/{_slugify(new_p.title, new_p.id)}/"
@@ -1080,8 +1067,38 @@ async def run_data_fixups(session: AsyncSession) -> None:
                 item.service_key = ""
         session.add(Setting(key="faq_items_linked_dup_unlink_v1_done", value="1"))
 
-    await session.commit()
+    # 14. Shu 7 maqolaning RU va EN lokalizatsiyasi (TZ 15-bo'lim: "RU/EN
+    #    versiyalar ham lokalizatsiya qilinadi"). Ilgari blog faqat uz'da
+    #    edi — /ru/blog/ va /en/blog/ bo'sh sahifa bo'lib turardi.
+    #    Yangi da'vo yoki statistika qo'shilmaydi, bu — TARJIMA; ichki
+    #    havolalar esa har til o'z slug'iga moslangan.
+    #    Bir martalik: admin tahrirlasa/o'chirsa qayta yaratilmaydi.
+    blog_i18n_marker = await session.scalar(
+        select(Setting.value).where(Setting.key == "blog_i18n_ru_en_v1_done")
+    )
+    if blog_i18n_marker is None:
+        from .content.blog_seed_en import ARTICLES_EN
+        from .content.blog_seed_ru import ARTICLES_RU
 
+        for lang, arts in (("ru", ARTICLES_RU), ("en", ARTICLES_EN)):
+            # Agar shu tilda post allaqachon bo'lsa (admin o'zi qo'shgan
+            # bo'lishi mumkin) — tegmaymiz, dublikat yaratmaymiz.
+            has_lang = await session.scalar(
+                select(func.count()).select_from(Post).where(Post.lang == lang)
+            )
+            if has_lang:
+                continue
+            for art in arts:
+                session.add(Post(
+                    title=art["title"], body=art["body"], excerpt=art["excerpt"],
+                    category=art["category"], tags=art["tags"], author="promtchi",
+                    lang=lang, seo_title=art["seo_title"],
+                    seo_description=art["seo_description"],
+                    noindex=False, published=True,
+                ))
+        session.add(Setting(key="blog_i18n_ru_en_v1_done", value="1"))
+
+    await session.commit()
 
 async def get_session() -> AsyncSession:
     async with SessionLocal() as session:

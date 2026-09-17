@@ -489,8 +489,24 @@ for _l in LANGS:
 _SLUG_RE = re.compile(r"[^a-z0-9]+")
 
 
+# Kirilldan lotinga — RU maqolalari uchun. Busiz NFKD normalizatsiyasi kirill
+# harflarini butunlay tashlab yuborardi va slug "post-14" ko'rinishida chiqardi
+# (URL'da mavzu ko'rinmaydi — qidiruv uchun ham, odam uchun ham foydasiz).
+_CYR2LAT = {
+    "а": "a", "б": "b", "в": "v", "г": "g", "д": "d", "е": "e", "ё": "yo",
+    "ж": "zh", "з": "z", "и": "i", "й": "y", "к": "k", "л": "l", "м": "m",
+    "н": "n", "о": "o", "п": "p", "р": "r", "с": "s", "т": "t", "у": "u",
+    "ф": "f", "х": "h", "ц": "ts", "ч": "ch", "ш": "sh", "щ": "sch",
+    "ъ": "", "ы": "y", "ь": "", "э": "e", "ю": "yu", "я": "ya",
+}
+
+
+def _translit(text: str) -> str:
+    return "".join(_CYR2LAT.get(ch, ch) for ch in text.lower())
+
+
 def _slugify(text: str, post_id: int) -> str:
-    norm = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
+    norm = unicodedata.normalize("NFKD", _translit(text)).encode("ascii", "ignore").decode()
     slug = _SLUG_RE.sub("-", norm.lower()).strip("-")[:80] or "post"
     return f"{slug}-{post_id}"
 

@@ -1741,6 +1741,25 @@ function renderFaq(){
     /* bu yerda faqat show_on_home savollar — qolgani to'liq FAQ sahifasida */
     +`<a class="faq-all" href="/${PAGE_LANG}/faq/">All questions<span class="fx" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>`;
 }
+function renderStats(){
+  /* TZ 2/22: statistika FAQAT admin panelda tasdiqlangan qiymat kiritilganda
+     chiqadi — DATA.stats bo'sh bo'lsa ikkala blok ham yashirin qoladi.
+     Qiymat "32+"/"98%" ko'rinishida saqlanadi: raqam qismi count-up
+     animatsiyasiga, qolgani suffiksga ajratiladi. */
+  const list=(DATA.stats&&DATA.stats.length)?DATA.stats:[];
+  const cell=(s,cls)=>{
+    const m=String(s.value||'').match(/^(\d+)(.*)$/);
+    const b=m?`<b data-count="${m[1]}" data-suffix="${esc(m[2])}">0</b>`:`<b>${esc(s.value||'')}</b>`;
+    return `<div class="${cls}">${b}<small>${esc(s.label||'')}</small></div>`;
+  };
+  const hero=document.querySelector('.hero-data'), band=document.querySelector('.stats');
+  if(hero){hero.innerHTML=list.map(s=>cell(s,'hd-i')).join('');hero.hidden=!list.length;}
+  if(band&&band.querySelector('.wrap')){
+    band.querySelector('.wrap').innerHTML=list.map(s=>cell(s,'stt rv in')).join('');
+    band.hidden=!list.length;
+  }
+  if(list.length)document.querySelectorAll('.hero-data [data-count],.stats [data-count]').forEach(el=>_cio.observe(el));
+}
 function renderOrgSchema(){
   const el=document.getElementById('orgSchema');if(!el)return;
   const contacts=DATA.contacts||[];
@@ -1752,13 +1771,19 @@ function renderOrgSchema(){
   if(email&&email.value)contactPoint.email=email.value;
   if(phone&&phone.url&&phone.url.startsWith('tel:'))contactPoint.telephone=phone.url.slice(4);
   const sameAs=[...new Set([tg&&tg.url,...( DATA.socials||[]).map(s=>s.url)].filter(Boolean))];
-  const schema={"@context":"https://schema.org","@type":"Organization","@id":"https://promtchi.uz/#organization","name":"promtchi","url":"https://promtchi.uz/",
-    "logo":{"@type":"ImageObject","url":"https://promtchi.uz/static/logo.png"},"foundingDate":"2023",
-    "address":{"@type":"PostalAddress","addressLocality":"Tashkent","addressCountry":"UZ"},
-    "contactPoint":[contactPoint],"sameAs":sameAs};
+  /* Schema'ni noldan qurmaymiz — server allaqachon to'g'ri holatni beradi
+     (app/main.py::_inject_live_contacts + app/seo.py::organization_schema:
+     @id, logo, manzil, ish vaqti, LocalBusiness turi). Bu yerda FAQAT jonli
+     kontaktlar yangilanadi, aks holda manzil/ish vaqti kabi maydonlar JS
+     ishga tushishi bilan yo'qolib ketardi. */
+  let schema;
+  try{schema=JSON.parse(el.textContent);}catch(e){schema=null;}
+  if(!schema||typeof schema!=='object')return;
+  schema.contactPoint=[contactPoint];
+  schema.sameAs=sameAs;
   el.textContent=JSON.stringify(schema);
 }
-function renderAll(){renderFilters();renderCases();renderTestimonials();renderContacts();renderSocials();renderFaq();renderOrgSchema();}
+function renderAll(){renderFilters();renderCases();renderTestimonials();renderContacts();renderSocials();renderFaq();renderStats();renderOrgSchema();}
 renderAll();
 
 /* ══════════ FAQ — delegatsiya, chunki savollar DATA orqali dinamik chiqadi ══════════ */

@@ -146,14 +146,24 @@ def test_blog_cannibalization_fixup_redirects_old_to_new():
 
     async def _run():
         now = datetime.datetime.now(datetime.timezone.utc)
+        # Blog RU/EN lokalizatsiyasi qo'shilgach (app/db.py, 14-fixup) id=12
+        # sinov bazasida RUSCHA postga to'g'ri kelishi mumkin. Migratsiya esa
+        # ataylab TURLI TILDAGI juftlikni o'tkazib yuboradi — shu sabab
+        # mexanizmni tekshirish uchun ikkala postni ham vaqtincha uz qilamiz
+        # va test oxirida asl holatiga qaytaramiz.
+        restore = {}
         async with SessionLocal() as s:
             marker = await s.get(Setting, "blog_cannibalization_fix_v1_done")
             if marker is not None:
                 await s.delete(marker)
-            if await s.get(Post, 1) is None:
-                s.add(Post(id=1, title="Sinov maqolasi 1", body="x", lang="uz", published=True, created_at=now))
-            if await s.get(Post, 12) is None:
-                s.add(Post(id=12, title="Sinov maqolasi 12", body="x" * 50, lang="uz", published=True, created_at=now))
+            for pid, body in ((1, "x"), (12, "x" * 50)):
+                p = await s.get(Post, pid)
+                if p is None:
+                    s.add(Post(id=pid, title=f"Sinov maqolasi {pid}", body=body,
+                               lang="uz", published=True, created_at=now))
+                else:
+                    restore[pid] = (p.lang, p.published)
+                    p.lang, p.published = "uz", True
             await s.commit()
 
         async with SessionLocal() as s:
@@ -169,6 +179,12 @@ def test_blog_cannibalization_fixup_redirects_old_to_new():
             redirect = await s.scalar(select(SlugRedirect).where(SlugRedirect.old_path == old_path))
             assert redirect is not None
             assert redirect.new_path == new_path
+
+        async with SessionLocal() as s:  # boshqa testlar uchun holatni tiklaymiz
+            for pid, (lang, published) in restore.items():
+                p = await s.get(Post, pid)
+                p.lang, p.published = lang, published
+            await s.commit()
 
     asyncio.run(_run())
 
