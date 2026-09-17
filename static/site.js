@@ -63,25 +63,89 @@
   })();
 
   /* ---------- FAQ akkordeon: bir vaqtda faqat bitta savol ochiq ----------
-     Bosh sahifadagi #faqList bilan bir xil xatti-harakat. Zamonaviy brauzerlar
-     buni <details name="faq"> orqali o'zi bajaradi, bu kod esa eski
-     brauzerlar (Chrome<120, Safari<17.2, Firefox<130) uchun zaxira.
-     JS o'chiq bo'lsa savollar oddiy <details> bo'lib ochilaveradi — kontent
-     baribir DOM'da, SEO/GEO'ga ta'sir qilmaydi. */
+     Bosh sahifadagi #faqList bilan AYNAN bir xil xatti-harakat: bosilgan
+     savol ochiladi, qolganlari yopiladi, javob balandligi 0 <-> kontent
+     balandligi orasida silliq animatsiya qilinadi (.fa-body'dagi max-height
+     o'tishi), ochiq savol qayta bosilsa yopiladi.
+
+     Nega JS: <details name="faq"> brauzerning o'zida faqat BIR ZUMDA yopadi
+     (avvalgi javob sakrab yo'qoladi) va ochilishda 0 -> 60em o'tishi ham
+     animatsiya qilinmaydi. Shuning uchun JS bor ekan, 'name' olib
+     tashlanadi va yopish/ochish shu yerda boshqariladi.
+
+     JS o'chiq bo'lsa hech narsa buzilmaydi: HTML'da 'name="faq"' saqlanadi,
+     ya'ni zamonaviy brauzer baribir bittadan ochadi, CSS esa
+     details[open] .fa-body{max-height:60em} bilan javobni ko'rsatadi.
+     Kontent har doim DOM'da — SEO/GEO'ga ta'sir qilmaydi. */
   (function () {
     var each = Array.prototype.forEach;
-    each.call(document.querySelectorAll('.faq-list'), function (list) {
-      /* 'toggle' hodisasi asinxron ishlaydi va ikkala savol bir lahza ochiq
-         qolardi — shuning uchun 'click'da, brauzer <details>ni ochishidan
-         oldin qolganlarini yopamiz. Enter/Probel bilan ham 'click' keladi. */
+    var lists = document.querySelectorAll('.faq-list');
+    if (!lists.length) return;
+
+    function bodyOf(d) { return d.querySelector('.fa-body'); }
+
+    /* yopish — avval joriy balandlikni px'da qotiramiz, keyin 0 ga
+       o'tkazamiz; o'tish tugagach <details>ni yopamiz (kontent a11y
+       daraxtidan ham chiqib ketsin). '.closing' klassi + belgisini darhol
+       qaytaradi, xuddi bosh sahifadagi .fitem.open klassi olib tashlangandek. */
+    function closeItem(d) {
+      var b = bodyOf(d);
+      if (!b) { d.open = false; return; }
+      d.classList.add('closing');
+      b.style.maxHeight = b.scrollHeight + 'px';
+      void b.offsetHeight;
+      b.style.maxHeight = '0px';
+      var timer;
+      function done(e) {
+        if (e && e.propertyName && e.propertyName !== 'max-height') return;
+        b.removeEventListener('transitionend', done);
+        clearTimeout(timer);
+        if (!d.classList.contains('closing')) return; // oraliqda qayta ochilgan
+        d.classList.remove('closing');
+        d.open = false;
+        b.style.maxHeight = '';
+      }
+      b.addEventListener('transitionend', done);
+      timer = setTimeout(done, 700); // transition kelmasa ham yopilsin
+    }
+
+    function openItem(d) {
+      var b = bodyOf(d);
+      d.classList.remove('closing');
+      d.open = true;
+      if (!b) return;
+      b.style.maxHeight = '0px';
+      void b.offsetHeight;
+      b.style.maxHeight = b.scrollHeight + 'px';
+      function grown(e) {
+        if (e.propertyName && e.propertyName !== 'max-height') return;
+        b.removeEventListener('transitionend', grown);
+        /* ochiq javob keyin ham kesilmasin (shrift kech yuklansa, oyna
+           kengligi o'zgarsa) — qat'iy px o'rniga cheklovni olib tashlaymiz */
+        if (d.open && !d.classList.contains('closing')) b.style.maxHeight = 'none';
+      }
+      b.addEventListener('transitionend', grown);
+    }
+
+    each.call(lists, function (list) {
+      each.call(list.children, function (d) {
+        /* animatsiyali yopishni JS boshqaradi — aks holda brauzer guruhdagi
+           avvalgi savolni bir zumda yopib qo'yadi */
+        if (d.tagName === 'DETAILS') d.removeAttribute('name');
+      });
+      /* Enter/Probel bilan ham 'click' keladi, shuning uchun 'toggle' emas,
+         'click' ushlanadi va brauzerning o'z ochishi bekor qilinadi. */
       list.addEventListener('click', function (e) {
-        var s = e.target.closest('summary');
+        var s = e.target.closest && e.target.closest('summary');
         if (!s) return;
         var d = s.parentElement;
         if (!d || d.tagName !== 'DETAILS' || d.parentElement !== list) return;
+        e.preventDefault();
+        var isOpen = d.open && !d.classList.contains('closing');
         each.call(list.querySelectorAll('details[open]'), function (other) {
-          if (other !== d) other.open = false;
+          if (other !== d) closeItem(other);
         });
+        if (isOpen) closeItem(d); else openItem(d);
       });
     });
   })();

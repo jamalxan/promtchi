@@ -196,7 +196,7 @@ section.sec.alt::before{content:'';position:absolute;inset:0 calc(50% - 50vw);ba
 .sec.alt .faq-list details{border-top-color:rgba(11,11,14,.16)}
 .sec.alt .faq-list details:last-child{border-bottom-color:rgba(11,11,14,.16)}
 .sec.alt .faq-list .fx{border-color:var(--blk)}
-.sec.alt .faq-list details[open] .fx{background:var(--blue);color:var(--w);border-color:var(--blue)}
+.sec.alt .faq-list details[open]:not(.closing) .fx{background:var(--blue);color:var(--w);border-color:var(--blue)}
 .sec.alt .faq-list .fa-body{opacity:.78}
 .sec.alt .case-meta{border-color:rgba(11,11,14,.18)}
 .sec.alt a:focus-visible,.sec.alt summary:focus-visible{outline-color:var(--blue)}
@@ -254,7 +254,9 @@ section.sec.alt::before{content:'';position:absolute;inset:0 calc(50% - 50vw);ba
 .faq-list .fx{width:40px;height:40px;border:2px solid var(--w);border-radius:50%;display:grid;place-items:center;flex:none;
   transition:transform .4s var(--ease),background .3s,color .3s,border-color .3s}
 .faq-list .fx svg{width:15px;height:15px;stroke:currentColor;stroke-width:2.6;fill:none;stroke-linecap:round}
-.faq-list details[open] .fx{transform:rotate(45deg);background:var(--acid);color:var(--blk);border-color:var(--acid)}
+/* yopilish animatsiyasi paytida (.closing) belgi darhol asl holatiga qaytsin —
+   bosh sahifada .fitem.open klassi olib tashlangandagidek */
+.faq-list details[open]:not(.closing) .fx{transform:rotate(45deg);background:var(--acid);color:var(--blk);border-color:var(--acid)}
 .faq-list .fa-body{max-height:0;overflow:hidden;transition:max-height .5s var(--ease)}
 .faq-list details[open] .fa-body{max-height:60em}
 .faq-list .fa-body{padding:0 .2rem 1.6rem;opacity:.75;font-size:.94rem;max-width:62ch}
