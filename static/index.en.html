@@ -106,16 +106,23 @@ header{position:fixed;top:0;left:0;right:0;z-index:1000;padding:clamp(14px,2.4vw
 .brand b{font-family:var(--anton);font-size:1.3rem;letter-spacing:.03em;text-transform:uppercase}
 .brand sup{font-family:var(--mono);font-size:.6rem}
 .h-right{display:flex;align-items:center;gap:1.2rem}
+/* til kaliti — og'ish tanlangan tilga bog'liq bo'lsin:
+   UZ = asl holat (chapga og'gan), RU = tekis, EN = teskari tomonga.
+   Burchaklar o'zgaruvchida, shuning uchun :hover va boshqa qoidalar
+   o'z holicha ishlayveradi. */
+:root{--lang-tilt:-3deg;--lang-tilt-on:4deg;--lang-tilt-menu:-2deg}
+html[lang="ru"]{--lang-tilt:0deg;--lang-tilt-on:0deg;--lang-tilt-menu:0deg}
+html[lang="en"]{--lang-tilt:3deg;--lang-tilt-on:-4deg;--lang-tilt-menu:2deg}
 .lang-mini{display:flex;gap:2px;background:rgba(252,251,247,.05);border:1.5px solid var(--line-w);
-  border-radius:999px;padding:3px;transform:rotate(-3deg);transition:transform .35s var(--ease)}
+  border-radius:999px;padding:3px;transform:rotate(var(--lang-tilt));transition:transform .35s var(--ease)}
 .lang-mini:hover{transform:rotate(0deg)}
 .lang-mini a{display:grid;place-items:center;width:28px;height:22px;border-radius:999px;
   font-family:var(--mono);font-size:.62rem;font-weight:700;letter-spacing:.02em;
   color:rgba(252,251,247,.5);text-decoration:none;transition:all .25s var(--ease)}
-.lang-mini a.on{background:var(--acid);color:var(--blk);transform:rotate(4deg) scale(1.05)}
+.lang-mini a.on{background:var(--acid);color:var(--blk);transform:rotate(var(--lang-tilt-on)) scale(1.05)}
 .lang-mini a:not(.on):hover{color:var(--w);transform:rotate(-5deg) scale(1.1)}
 @media(max-width:680px){.header-lang{display:none}}
-.menu-lang{transform:rotate(-2deg);gap:4px;padding:4px;margin-bottom:1.4rem}
+.menu-lang{transform:rotate(var(--lang-tilt-menu));gap:4px;padding:4px;margin-bottom:1.4rem}
 .menu-lang a{width:42px;height:34px;font-size:.76rem}
 .clock{font-family:var(--mono);font-size:.72rem;letter-spacing:.16em;color:rgba(255,255,255,.7)}
 .menu-btn{display:flex;align-items:center;gap:.6rem;background:none;border:0;color:#fff;
