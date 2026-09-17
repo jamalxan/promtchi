@@ -78,7 +78,8 @@
   <div class="wrap ft-top">
     <div class="ft-cta">
       <h2>{{ footer.tagline }}</h2>
-      <a href="/{{ lang }}/aloqa/" class="btn btn-acid">{{ footer.cta }}</a>
+      <a href="/{{ lang }}/aloqa/" class="btn btn-acid">{{ footer.cta }}
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
     </div>
     <nav class="ft-col" aria-label="{{ footer.nav_title }}">
       <b>{{ footer.nav_title }}</b>
@@ -102,7 +103,7 @@
     <a href="{{ legal.privacy }}">{{ footer.privacy }}</a>
     <a href="{{ legal.terms }}">{{ footer.terms }}</a>
   </div>
-  <div class="ft-word" aria-hidden="true">PROMTCHI</div>
+  <div class="ft-word" aria-hidden="true"><span>P</span><span>R</span><span>O</span><span>M</span><span>T</span><span>C</span><span>H</span><span>I</span></div>
 </footer>
 <script src="/static/site.js?v={{ asset_v }}" defer></script>
 {% if ga_id %}
