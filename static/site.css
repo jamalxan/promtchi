@@ -246,11 +246,12 @@ section.sec.alt::before{content:'';position:absolute;inset:0 calc(50% - 50vw);ba
 .faq-list{display:grid;margin-top:1.4rem}
 .faq-list details{border-top:1px solid var(--line)}
 .faq-list details:last-child{border-bottom:1px solid var(--line)}
+/* bosh sahifadagi .fq bilan bir xil bo'shliq va o'lcham */
 .faq-list summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:1.2rem;
-  padding:1.5rem .2rem;min-height:52px}
+  padding:1.6rem .2rem;min-height:52px}
 .faq-list summary::-webkit-details-marker{display:none}
 .faq-list summary::marker{content:''}
-.faq-list summary>span:first-child{font-family:var(--anton);font-size:clamp(1.05rem,2.2vw,1.4rem);text-transform:uppercase;line-height:1.2}
+.faq-list summary>span:first-child{font-family:var(--anton);font-size:clamp(1.1rem,2.4vw,1.6rem);text-transform:uppercase;line-height:1.2}
 .faq-list .fx{width:40px;height:40px;border:2px solid var(--w);border-radius:50%;display:grid;place-items:center;flex:none;
   transition:transform .4s var(--ease),background .3s,color .3s,border-color .3s}
 .faq-list .fx svg{width:15px;height:15px;stroke:currentColor;stroke-width:2.6;fill:none;stroke-linecap:round}
@@ -265,7 +266,8 @@ section.sec.alt::before{content:'';position:absolute;inset:0 calc(50% - 50vw);ba
 .faq-list .fa-body{max-height:0;overflow:hidden;padding:0 .2rem;transition:max-height .5s var(--ease)}
 .faq-list .fa-body::after{content:'';display:block;height:1.6rem}
 .faq-list details[open] .fa-body{max-height:60em}
-.faq-list .fa-body{opacity:.75;font-size:.94rem;max-width:62ch}
+/* javob matni ham bosh sahifadagi .fa p bilan bir xil: 1rem va .66 shaffoflik */
+.faq-list .fa-body{opacity:.66;max-width:62ch}
 
 /* case / portfolio detail */
 .case-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin:1.4rem 0;padding:1.2rem;border:1px solid var(--line);border-radius:14px}
