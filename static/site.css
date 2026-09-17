@@ -106,6 +106,8 @@ p{margin:0 0 1em}
 .btn-acid:hover{filter:brightness(1.08)}
 .btn-outline{background:transparent;color:var(--w);border-color:var(--line)}
 .btn-outline:hover{border-color:var(--acid);color:var(--acid)}
+.btn-blk{background:var(--blk);color:var(--w)}
+.btn-blk:hover{filter:brightness(1.4)}
 
 /* hero (inner pages) */
 .hero-in{padding-top:clamp(50px,7vw,90px);padding-bottom:clamp(30px,4vw,50px)}
@@ -156,14 +158,22 @@ section.sec.alt{background:rgba(252,251,247,.03)}
 /* pricing-note box */
 .note-box{padding:1.2rem 1.4rem;border:1.5px dashed var(--line);border-radius:14px;background:rgba(217,255,63,.04);margin-top:1rem}
 
-/* FAQ accordion — native <details>, no JS needed */
-.faq-list{display:grid;gap:.7rem;margin-top:1.4rem}
-.faq-list details{border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;background:rgba(252,251,247,.02)}
-.faq-list summary{cursor:pointer;font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:1rem;align-items:center}
+/* FAQ accordion — native <details>, no JS needed; visually matches bosh sahifadagi .fitem/.fq/.fx */
+.faq-list{display:grid;margin-top:1.4rem}
+.faq-list details{border-top:1px solid var(--line)}
+.faq-list details:last-child{border-bottom:1px solid var(--line)}
+.faq-list summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:1.2rem;
+  padding:1.5rem .2rem;min-height:52px}
 .faq-list summary::-webkit-details-marker{display:none}
-.faq-list summary::after{content:"+";font-family:var(--mono);font-size:1.2rem;color:var(--acid);flex:none}
-.faq-list details[open] summary::after{content:"\2212"}
-.faq-list .fa-body{margin-top:.7rem;opacity:.82;font-size:.94rem}
+.faq-list summary::marker{content:''}
+.faq-list summary>span:first-child{font-family:var(--anton);font-size:clamp(1.05rem,2.2vw,1.4rem);text-transform:uppercase;line-height:1.2}
+.faq-list .fx{width:40px;height:40px;border:2px solid var(--w);border-radius:50%;display:grid;place-items:center;flex:none;
+  transition:transform .4s var(--ease),background .3s,color .3s,border-color .3s}
+.faq-list .fx svg{width:15px;height:15px;stroke:currentColor;stroke-width:2.6;fill:none;stroke-linecap:round}
+.faq-list details[open] .fx{transform:rotate(45deg);background:var(--acid);color:var(--blk);border-color:var(--acid)}
+.faq-list .fa-body{max-height:0;overflow:hidden;transition:max-height .5s var(--ease)}
+.faq-list details[open] .fa-body{max-height:60em}
+.faq-list .fa-body{padding:0 .2rem 1.6rem;opacity:.75;font-size:.94rem;max-width:62ch}
 
 /* case / portfolio detail */
 .case-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin:1.4rem 0;padding:1.2rem;border:1px solid var(--line);border-radius:14px}
@@ -210,9 +220,27 @@ section.sec.alt{background:rgba(252,251,247,.03)}
 .cform textarea{min-height:120px;resize:vertical}
 .cform input:focus,.cform select:focus,.cform textarea:focus{outline:2px solid var(--acid);border-color:var(--acid)}
 .ok-msg{min-height:1.4em;font-size:.88rem;opacity:.85}
-.contact-links{display:grid;gap:.7rem;margin-top:1.2rem}
-.contact-links a{display:flex;gap:.6rem;align-items:center;text-decoration:none;padding:.8rem 1rem;border:1px solid var(--line);border-radius:12px}
-.contact-links a:hover{border-color:var(--acid);color:var(--acid)}
+
+/* aloqa (contact) sahifasi — bosh sahifadagi acid-banner + con-a/cform uslubiga mos */
+.contact-sec{background:var(--acid);color:var(--blk);padding:clamp(36px,5vw,64px) 0;margin-top:1rem}
+.con-links{display:grid;gap:.9rem}
+.con-a{display:flex;justify-content:space-between;align-items:center;gap:1rem;text-decoration:none;color:var(--blk);
+  border:3px solid var(--blk);border-radius:14px;padding:1.05rem 1.3rem;background:var(--w);font-weight:700;
+  transition:transform .3s var(--ease),background .3s}
+.con-a:hover{transform:translate(3px,-3px);background:var(--cream)}
+.con-a .cwrap{display:flex;align-items:center;gap:.8rem;min-width:0}
+.con-a .ci{width:34px;height:34px;border-radius:10px;background:var(--blk);color:var(--acid);display:grid;place-items:center;flex:none}
+.con-a .ci svg{width:17px;height:17px;fill:currentColor;stroke:none}
+.con-a .ctxt{min-width:0;overflow:hidden}
+.con-a .ctxt small{display:block;font-family:var(--mono);font-weight:400;font-size:.74rem;letter-spacing:.06em;opacity:.65;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.con-a>svg{width:18px;height:18px;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.contact-sec .cform{background:var(--w);border:3px solid var(--blk);border-radius:20px;padding:2rem;box-shadow:10px 10px 0 var(--blk)}
+.contact-sec .cform label{color:var(--blk);opacity:.75}
+.contact-sec .cform input,.contact-sec .cform select,.contact-sec .cform textarea{background:var(--cream);border:2px solid var(--blk);color:var(--blk)}
+.contact-sec .cform input:focus,.contact-sec .cform select:focus,.contact-sec .cform textarea:focus{outline:0;box-shadow:0 0 0 4px rgba(43,43,255,.3);border-color:var(--blk)}
+.contact-sec .consent-note{color:var(--blk);opacity:.7}
+.contact-sec .ok-msg{color:var(--blue);font-weight:700}
 
 /* 404 */
 .err-page{text-align:center;padding:clamp(70px,10vw,120px) 0}

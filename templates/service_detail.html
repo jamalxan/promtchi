@@ -78,7 +78,7 @@
   <h2>{{ common.faq_title }}</h2>
   <div class="faq-list">
     {% for q, a in s.faq %}
-    <details><summary>{{ q }}</summary><div class="fa-body">{{ a }}</div></details>
+    <details><summary><span>{{ q }}</span><span class="fx" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></summary><div class="fa-body">{{ a }}</div></details>
     {% endfor %}
   </div>
 </section>
