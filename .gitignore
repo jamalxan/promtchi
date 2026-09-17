@@ -20,3 +20,6 @@ venv/
 # IDE
 .idea/
 .vscode/
+
+# OG banner generatori yuklab oladigan shrift (OFL, qayta yuklanadi)
+tools/Anton-Regular.ttf

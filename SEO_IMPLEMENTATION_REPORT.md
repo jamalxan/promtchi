@@ -1,5 +1,116 @@
 # SEO_IMPLEMENTATION_REPORT.md — promtchi.uz
 
+> **2-BOSQICH (2026-09-17)** quyida. Avvalgi bosqich (2026-09-15/16) o'zgarishsiz saqlangan — "1-BOSQICH ARXIVI" sarlavhasidan boshlab o'qing.
+
+---
+
+# 2-BOSQICH — LIVE AUDIT ASOSIDAGI TUZATISHLAR (2026-09-17)
+
+**Kirish holati:** production'dagi 77 URL bo'yicha jonli crawl. Texnik poydevor (robots, sitemap, canonical,
+hreflang, JSON-LD, redirectlar, 404, Googlebot kirishi, gzip, H1) PASS edi — ular QAYTA YOZILMADI,
+faqat aniqlangan P0/P1/P2 kamchiliklar tuzatildi va har bir o'zgarishdan keyin regression crawl qilindi.
+
+**Deploy holati:** o'zgarishlar repo'da; production'da HALI YO'Q. Quyidagi "VERIFIED" natijalar
+lokal serverda (`uvicorn`, haqiqiy DB, 76 URL) olingan — production tasdiqlash deploydan keyin
+qayta crawl talab qiladi. Soxta production-verification berilmagan.
+
+---
+
+## FIXED — repo'da real tuzatilgan
+
+| # | Muammo (audit) | Nima qilindi | Fayl |
+|---|----------------|--------------|------|
+| 1 | 29 ta title 30 belgidan qisqa, kalit so'zsiz | 30 ta URL uchun search-intent'ga mos `<title>`; H1 tegilmadi (`<title>` alohida `seo_title` o'zgaruvchisida) | `app/pages.py`, `static/index*.html` |
+| 2 | 5 juft takroriy title (portfolio/blog) | Case title endi case'ning O'Z `cat` maydoni bilan farqlanadi (DB'dagi tasdiqlangan kategoriya, uydirma emas) | `app/pages.py` |
+| 3 | og:image = 256x256 logotip | 1200x630 brend banneri + `og:image:width/height` (faqat standart banner uchun) + `twitter:card=summary_large_image` | `static/og-cover.png`, `tools/make_og_image.py`, `templates/base.html`, `static/index*.html` |
+| 4 | `/favicon.ico` 404 | Ildizdan `image/x-icon` bilan 200 qaytaradigan route + `<link rel="icon" href="/favicon.ico">` | `app/pages.py`, `static/favicon.ico` |
+| 5 | sitemap'da lastmod faqat 8 URL'da | Real `updated_at` bo'lgan sahifalarga lastmod (xizmat/portfolio/ular indeksi/blog) — statik kontentga SUN'IY sana yozilmadi | `app/pages.py`, `app/db.py` |
+| 6 | JSON-LD'da har sahifada yarim ma'lumotli takroriy "promtchi" tugunlari | `@id` grafi: bitta `Organization` tuguni, `WebSite.publisher` / `Service.provider` / `Article.author+publisher` unga havola qiladi; `logo` → `ImageObject` | `app/seo.py`, `static/index*.html` |
+| 7 | GSC tasdiqlash uchun kod tayyor emas | `SEARCH_CONSOLE_VERIFICATION` env → ichki sahifalarda `base.html`, statik bosh sahifalarda `_inject_verification()` splice. Token yo'q bo'lsa meta umuman chiqmaydi | `app/config.py`, `app/main.py`, `templates/base.html` |
+| 8 | `/docs`, `/redoc`, `/openapi.json` production'da ochiq va indekslanishi mumkin | robots.txt'ga `Disallow` + `X-Robots-Tag: noindex, nofollow` (`/api/*`, `/admin*`, docs yo'llari) | `app/pages.py`, `app/security.py` |
+| 9 | `/ru/blog/` description 69 belgi (juda qisqa) | Uch tilda ham qiymat va'dasi bilan kengaytirildi | `app/pages.py` |
+
+## VERIFIED — lokal serverda o'lchandi (76 URL crawl)
+
+| Tekshiruv | Natija |
+|---|---|
+| HTTP status | 76/76 = 200 |
+| Canonical o'zini ko'rsatadi | 76/76 |
+| hreflang + x-default | 76/76 |
+| Sahifada bitta H1 | 76/76 |
+| JSON-LD parse xatolari | 0 |
+| Noyob title | 76/76 (takroriy 0) |
+| Noyob description | 76/76 (takroriy 0) |
+| Title > 65 belgi | 0 |
+| Title < 30 belgi | 2 (faqat EN huquqiy sahifalar — qidiruv maqsadi emas) |
+| og:image | 76/76 → 1200x630 banner |
+| `/favicon.ico` | 200, `image/x-icon`, 3031 bayt |
+| sitemap.xml | XML valid, 76 URL, 46 tasida real `lastmod` |
+| `X-Robots-Tag` | `/docs`, `/openapi.json`, `/api/*`, `/admin` → noindex; ommaviy sahifalarda YO'Q |
+| pytest | 41/41 PASS |
+
+**Ilova javob vaqti (lokal, tarmoqsiz):** `/uz/` 4 ms · `/uz/faq/` 5 ms · xizmat sahifasi 11 ms · `/sitemap.xml` 14 ms.
+
+## PENDING MANUAL ACTION — kod bilan bajarib bo'lmaydi
+
+| # | Ish | Nima kerak |
+|---|-----|-----------|
+| 1 | **SEARCH_CONSOLE_VERIFICATION_PENDING** | GSC → property qo'shish → HTML-tag usuli → tokenni `SEARCH_CONSOLE_VERIFICATION` env'ga yozib deploy qilish. Token TAXMIN QILINMADI |
+| 2 | Sitemap submit | GSC → Sitemaps → `sitemap.xml` (faqat foydalanuvchi bajaradi) |
+| 3 | Request indexing | GSC → URL Inspection → bosh sahifa + muhim sahifalar |
+| 4 | **MANUAL_ACTION_REQUIRED** — Bing Webmaster | robots/sitemap mos; property tasdiqlash va sitemap yuborish qo'lda |
+| 5 | **MANUAL_ACTION_REQUIRED** — Yandex Webmaster | UZ bozori uchun muhim; tasdiqlash + sitemap qo'lda |
+| 6 | **GA4 Measurement ID** | `GA_MEASUREMENT_ID` env o'rnatilmagan → saytda analitika umuman yo'q. Kod tayyor (`_inject_ga` + `base.html`), faqat ID kerak. Soxta ID qo'yilmadi |
+| 7 | **BUSINESS_DATA_REQUIRED** — LocalBusiness/ProfessionalService | Ko'cha manzili va ish vaqti ma'lum emas. Ular berilmaguncha `ProfessionalService` qo'shilmadi: manzilsiz LocalBusiness Google talablariga javob bermaydi va Search Console'da xato beradi. Hozir `Organization` + `PostalAddress(addressLocality=Tashkent, UZ)` + telefon + `sameAs` — hammasi tasdiqlangan ma'lumot |
+| 8 | **ENV=production o'rnatilmagan (production'da)** | Dalil: `/docs`, `/redoc`, `/openapi.json` jonli saytda 200 qaytaradi (`ENABLE_DOCS` default `ENV != production`) va `Strict-Transport-Security` header yo'q (`security.py` uni faqat `is_production`da qo'shadi). Bu, shuningdek, `auth.py` admin cookie'sini `secure=False` qiladi. Server env'ida `ENV=production` qo'yilishi kerak |
+| 9 | HSTS | **DO_NOT_FAKE** — kod tayyor (`HSTS_SECONDS=31536000`), faqat `ENV=production` yetishmayapti. nginx konfiguratsiyasi repo'dan boshqarilmaydi |
+
+## CANNOT VERIFY — platforma/deploy cheklovlari
+
+- **Google indeks holati.** `site:promtchi.uz` bo'yicha ishlatilgan qidiruv vositasi (Google emas) saytdan hech narsa qaytarmadi — bu "indekslanmagan" degani EMAS. Aniq javob faqat Search Console'da.
+- **Production headerlari** (HSTS, X-Robots-Tag) va yangi title'lar — deploydan keyin qayta crawl kerak.
+- **Core Web Vitals (LCP/CLS/INP)** — real foydalanuvchi maydon ma'lumoti; GA4/CrUX ulanmagani uchun o'lchanmadi.
+- **Google Rich Results / Schema validator** — tashqi xizmat; JSON-LD lokal sxema bo'yicha valid (0 parse xatosi), Google'ning o'z tekshiruvi deploydan keyin.
+
+## REMAINING — qolgan texnik ish (ustuvorlik bo'yicha)
+
+1. **TTFB ~1.2 s — sabab tarmoq, ilova emas.** O'lchov: TCP connect 468 ms, TLS 785 ms, TTFB 1439 ms; lokal ilova esa 4–14 ms. Vaqt RTT'da ketmoqda. Yechim: sayt oldiga CDN (masalan Cloudflare) yoki foydalanuvchilarga yaqinroq hosting. **Blind optimizatsiya qilinmadi** — ilova kodida bottleneck yo'q.
+2. **HTTP/2 yoqilmagan** — jonli sayt HTTP/1.1 (`nginx/1.24.0`). Yuqori RTT'da h2 sezilarli yordam beradi (`listen 443 ssl http2;`).
+3. **Statik fayllar keshi** — `max-age=86400, must-revalidate`. `?v=<hash>` bilan yuklanadigan `site.css`/`site.js` uchun `max-age=31536000, immutable` mumkin (`_STATIC_ASSET_CACHE`).
+4. **4 ta xizmat sahifasining description'i 160+ belgi** (`mobil-ilova-yaratish`, `crm`, `erp`, `avtomatlashtirish`). Matn DB'da (admin panel) — kod seed'ini o'zgartirish production'ga ta'sir qilmaydi, shuning uchun admin panel orqali qisqartirish kerak.
+5. **Kontent chuqurligi** — `CONTENT_DEPTH_AUDIT.md`ga qarang: portfolio keyslari (~180 so'z) va yechim sahifalari (~270 so'z) eng kam. Tavsiya etilgan bo'limlar faqat REAL ma'lumot bilan to'ldirilishi kerak (skrinshot, integratsiyalar, jarayon) — uydirma natija/mijoz/ko'rsatkich qo'shilmaydi.
+6. **Blog post title'lari** qisqa (`CRM nima? — promtchi®`). `Post.seo_title` maydoni mavjud — admin panel orqali har bir post uchun alohida SEO title yozish mumkin.
+7. **FAQ sahifasi uchun `lastmod`** — `FaqItem.updated_at` store orqali chiqarilmagan; kerak bo'lsa qo'shiladi.
+
+## Yangilangan/yaratilgan fayllar
+
+```
+app/pages.py           — title'lar, portfolio case title, sitemap lastmod, /favicon.ico, robots Disallow, og default, gsc_token
+app/seo.py             — ORG_ID/@id grafi, OG_DEFAULT, logo -> ImageObject
+app/security.py        — X-Robots-Tag (api/admin/docs)
+app/config.py          — SEARCH_CONSOLE_VERIFICATION
+app/main.py            — _inject_verification() (statik bosh sahifalar uchun)
+app/db.py              — Service/PortfolioCase as_dict() ichida updated_at (sitemap lastmod uchun)
+templates/base.html    — GSC meta, og:image o'lchamlari, twitter summary_large_image, favicon.ico
+static/index*.html     — title/og:title/twitter:title, og-cover, favicon.ico, JSON-LD @id grafi
+static/og-cover.png    — YANGI 1200x630 banner
+static/favicon.ico     — YANGI (16/32/48)
+tools/make_og_image.py — YANGI generator (bannerni qayta ishlab chiqarish uchun)
+SEO_TITLE_AUDIT.md     — YANGI: 84 URL bo'yicha title inventarizatsiyasi
+CONTENT_DEPTH_AUDIT.md — YANGI: so'z soni + tavsiya etilgan bo'limlar
+```
+
+## Keyingi qadam (tartib bilan)
+
+1. Deploy → `ENV=production` va (token olingach) `SEARCH_CONSOLE_VERIFICATION` env'larini o'rnatish.
+2. Deploydan keyin production crawl: 77/77 = 200, title'lar yangilangani, `/favicon.ico` 200, HSTS header, `/docs` yopiqligi.
+3. GSC: verify → sitemap submit → Request indexing.
+4. GA4 ID berilsa — analitikani yoqish (privacy siyosati allaqachon `/{lang}/maxfiylik-siyosati/` da; cookie-consent talabi qayta ko'rib chiqiladi).
+
+---
+
+# 1-BOSQICH ARXIVI (2026-09-15 — 2026-09-16)
+
 **Loyiha:** promtchi.uz — FastAPI (Python) backend, Jinja2 SSR ichki sahifalar + statik HTML bosh sahifa (uz/ru/en), SQLite/Postgres (SQLAlchemy async), vanilla JS admin panel. Node/npm build tizimi YO'Q — bu Python loyihasi.
 
 **Sana:** 2026-09-15 — 2026-09-16 (bir necha ketma-ket sessiya, shu jumladan yakuniy to'liq audit).

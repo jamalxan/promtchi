@@ -96,6 +96,9 @@ class Settings:
     # Google Analytics 4 (GA4) o'lchov ID'si (masalan G-XXXXXXXXXX). Bo'sh bo'lsa
     # gtag/analytics.js hech qaysi sahifaga qo'shilmaydi — hodisalar kuzatilmaydi.
     GA_MEASUREMENT_ID: str = os.getenv("GA_MEASUREMENT_ID", "").strip()
+    # Google Search Console tasdiqlash tokeni (meta tag usuli). Bo'sh bo'lsa
+    # meta umuman chiqmaydi — token TAXMIN QILINMAYDI, uni GSC beradi.
+    SEARCH_CONSOLE_VERIFICATION: str = os.getenv("SEARCH_CONSOLE_VERIFICATION", "").strip()
 
     # Saytning haqiqiy domeni (canonical/OG teglarda ishlatiladi). Shu domendan
     # boshqa Host bilan (masalan to'g'ridan-to'g'ri IP orqali) kirilsa, bosh

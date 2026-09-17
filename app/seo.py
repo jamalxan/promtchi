@@ -10,6 +10,12 @@ from .content import LANGS
 from .content.common import ORG
 
 SITE_URL = settings.SITE_URL.rstrip("/")
+# Kompaniya tugunining barqaror identifikatori — barcha sahifalarda bir xil,
+# shu sababli qidiruv tizimi uchta-to'rtta alohida "promtchi" emas, bitta
+# korxona ko'radi (WebSite/Service/Article shu @id'ga havola qiladi).
+ORG_ID = SITE_URL + "/#organization"
+# Ijtimoiy tarmoq/qidiruv preview rasmi — 1200x630 (og:image tavsiyasi).
+OG_DEFAULT = SITE_URL + "/static/og-cover.png"
 
 
 def abs_url(path: str) -> str:
@@ -51,9 +57,15 @@ def organization_schema(org: dict | None = None) -> dict:
     return {
         "@context": "https://schema.org",
         "@type": "Organization",
+        # @id — sahifadagi boshqa tugunlar (WebSite.publisher, Service.provider,
+        # Article.author/publisher) shu bitta kompaniya tugunini ko'rsatadi,
+        # ya'ni har bir sxemada yarim ma'lumotli nusxa yaratilmaydi.
+        "@id": ORG_ID,
         "name": o["name"],
         "url": SITE_URL + "/",
-        "logo": o["logo"],
+        # ImageObject shaklida — Article rich-result'i publisher.logo'ni shu
+        # ko'rinishda kutadi; @id havolasi orqali bitta manbadan o'qiladi.
+        "logo": {"@type": "ImageObject", "url": o["logo"]},
         "foundingDate": o["founded"],
         "address": {
             "@type": "PostalAddress",
@@ -77,9 +89,11 @@ def website_schema(lang: str) -> dict:
     return {
         "@context": "https://schema.org",
         "@type": "WebSite",
+        "@id": abs_url(f"/{lang}/") + "#website",
         "name": "promtchi",
         "url": abs_url(f"/{lang}/"),
         "inLanguage": hreflang_code(lang),
+        "publisher": {"@id": ORG_ID},
     }
 
 
@@ -101,7 +115,7 @@ def service_schema(name: str, description: str, url: str, lang: str) -> dict:
         "name": name,
         "description": description,
         "url": url,
-        "provider": {"@type": "Organization", "name": "promtchi", "url": SITE_URL + "/"},
+        "provider": {"@id": ORG_ID},
         "areaServed": "UZ",
         "inLanguage": hreflang_code(lang),
     }
@@ -131,8 +145,8 @@ def article_schema(title: str, description: str, url: str, date_published: str, 
         "description": description,
         "url": url,
         "datePublished": date_published,
-        "author": {"@type": "Organization", "name": "promtchi"},
-        "publisher": {"@type": "Organization", "name": "promtchi", "logo": {"@type": "ImageObject", "url": ORG["logo"]}},
+        "author": {"@id": ORG_ID},
+        "publisher": {"@id": ORG_ID},
         "inLanguage": hreflang_code(lang),
     }
     if image:

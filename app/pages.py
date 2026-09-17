@@ -14,9 +14,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from . import faq_store, seo, services_store
 from .content.markdown_lite import render_body
@@ -158,7 +158,7 @@ async def _base_ctx(request: Request, lang: str, path_by_lang: dict, title: str,
         "alt_links": alt,
         "og_type": og_type,
         "og_locale": seo.hreflang_code(lang).replace("-", "_"),
-        "og_image": og_image or org["logo"],
+        "og_image": og_image or seo.OG_DEFAULT,
         "org": org,
         "nav": NAV[lang],
         "footer": FOOTER[lang],
@@ -166,6 +166,7 @@ async def _base_ctx(request: Request, lang: str, path_by_lang: dict, title: str,
         "page_title": title,
         "page_desc": desc,
         "ga_id": settings.GA_MEASUREMENT_ID,
+        "gsc_token": settings.SEARCH_CONSOLE_VERIFICATION,
         "asset_v": ASSET_V,
         "legal": {
             "privacy": f"/{lang}/{LEGAL_SLUGS['privacy'][lang]}/",
@@ -224,9 +225,15 @@ async def services_index(request: Request, lang: str):
         "ru": "От веб- и мобильных приложений до AI и CRM/ERP систем — все цифровые решения, нужные вашему бизнесу.",
         "en": "From web and mobile apps to AI and CRM/ERP systems — every digital solution your business needs.",
     }[lang]
-    title = {"uz": "Xizmatlar", "ru": "Услуги", "en": "Services"}[lang]
+    # <title> H1'dan alohida: H1 qisqa va sahifa ichida tabiiy ko'rinadi,
+    # <title> esa qidiruv natijasida nima taklif qilinishini aytadi.
+    seo_title = {
+        "uz": "Xizmatlar — veb-sayt, mobil ilova, CRM/ERP va AI | promtchi",
+        "ru": "Услуги — сайты, мобильные приложения, CRM/ERP и AI | promtchi",
+        "en": "Services — web, mobile, CRM/ERP and AI development | promtchi",
+    }[lang]
     ctx = await _base_ctx(request, lang, path_by_lang,
-                     title=f"{title} — promtchi®", desc=intro,
+                     title=seo_title, desc=intro,
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"), (NAV[lang]["services"], None)])
     ctx.update(services=_service_cards(lang, services), t_h1=NAV[lang]["services"], t_intro=intro)
     return templates.TemplateResponse(request, "services_index.html", ctx)
@@ -278,8 +285,12 @@ async def solutions_index(request: Request, lang: str):
         "ru": "Цифровое решение под вашу отрасль — CRM/ERP/автоматизация на основе реального опыта для продаж, логистики и производства.",
         "en": "A digital solution for your industry — CRM/ERP/automation grounded in real experience for sales, logistics and manufacturing.",
     }[lang]
-    title = {"uz": "Yechimlar", "ru": "Решения", "en": "Solutions"}[lang]
-    ctx = await _base_ctx(request, lang, path_by_lang, title=f"{title} — promtchi®", desc=intro,
+    seo_title = {
+        "uz": "Yechimlar — savdo, logistika va ishlab chiqarish | promtchi",
+        "ru": "Решения — продажи, логистика и производство | promtchi",
+        "en": "Solutions — sales, logistics and manufacturing | promtchi",
+    }[lang]
+    ctx = await _base_ctx(request, lang, path_by_lang, title=seo_title, desc=intro,
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"), (NAV[lang]["solutions"], None)])
     solutions = [{"slug": SOLUTION_SLUGS[k][lang], "nav": SOLUTIONS[k][lang]["nav"],
                   "intro": SOLUTIONS[k][lang]["intro"]} for k in SOLUTION_KEYS]
@@ -324,8 +335,12 @@ async def portfolio_index(request: Request, lang: str):
         "ru": "Наши реальные проекты — с проблемой, решением и результатом. Каждый разработан для реального клиента (или как наш собственный продукт).",
         "en": "Our real projects — with the problem, solution and result. Each was built for a real client (or as our own product).",
     }[lang]
-    title = {"uz": "Portfolio", "ru": "Портфолио", "en": "Portfolio"}[lang]
-    ctx = await _base_ctx(request, lang, path_by_lang, title=f"{title} — promtchi®", desc=intro,
+    seo_title = {
+        "uz": "Portfolio — real loyihalar va keyslar | promtchi",
+        "ru": "Портфолио — реальные проекты и кейсы | promtchi",
+        "en": "Portfolio — real projects and case studies | promtchi",
+    }[lang]
+    ctx = await _base_ctx(request, lang, path_by_lang, title=seo_title, desc=intro,
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"), (NAV[lang]["portfolio"], None)])
     ctx.update(cases=_case_cards(lang, cases), t_h1=NAV[lang]["portfolio"], t_intro=intro)
     return templates.TemplateResponse(request, "portfolio_index.html", ctx)
@@ -344,7 +359,14 @@ async def portfolio_detail(request: Request, lang: str, slug: str):
     c = match[lang]
     slugs = match["slugs"]
     path_by_lang = {l: f"/{l}/portfolio/{slugs[l]}/" for l in LANGS}
-    ctx = await _base_ctx(request, lang, path_by_lang, title=f"{c['title']} — promtchi®", desc=c["meta"],
+    # Case title uch tilda ham bir xil (brend nomi) edi — endi case'ning O'Z
+    # `cat` maydoni (DB'dagi tasdiqlangan kategoriya) bilan farqlanadi.
+    case_title = {
+        "uz": f"{c['title']} — {c.get('cat', '')} keysi | promtchi",
+        "ru": f"{c['title']} — кейс: {c.get('cat', '')} | promtchi",
+        "en": f"{c['title']} — {c.get('cat', '')} case study | promtchi",
+    }[lang].replace("  ", " ").replace(" —  ", " — ")
+    ctx = await _base_ctx(request, lang, path_by_lang, title=case_title, desc=c["meta"],
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"),
                                   (NAV[lang]["portfolio"], f"/{lang}/portfolio/"),
                                   (c["title"], None)],
@@ -364,7 +386,12 @@ async def faq_page(request: Request, lang: str):
             "ru": "Часто задаваемые вопросы о promtchi: цена, сроки, оплата, техподдержка и услуги.",
             "en": "Frequently asked questions about promtchi: pricing, timelines, payment, support and services."}[lang]
     title = {"uz": "Savol-javob (FAQ)", "ru": "Вопросы и ответы (FAQ)", "en": "FAQ"}[lang]
-    ctx = await _base_ctx(request, lang, path_by_lang, title=f"{title} — promtchi®", desc=desc,
+    seo_title = {
+        "uz": "Savol-javob — narx, muddat va ish jarayoni | promtchi",
+        "ru": "Вопросы и ответы — цены, сроки и процесс работы | promtchi",
+        "en": "FAQ — pricing, timelines and how we work | promtchi",
+    }[lang]
+    ctx = await _base_ctx(request, lang, path_by_lang, title=seo_title, desc=desc,
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"), (NAV[lang]["faq"], None)])
     ctx.update(items=items, t_h1=title, faq_schema=seo.json_ld(seo.faq_schema(items)))
     return templates.TemplateResponse(request, "faq.html", ctx)
@@ -406,10 +433,15 @@ async def contact_page(request: Request, lang: str):
     _check_lang(lang)
     path_by_lang = {l: f"/{l}/aloqa/" for l in LANGS}
     title = {"uz": "Aloqa", "ru": "Контакты", "en": "Contact"}[lang]
+    seo_title = {
+        "uz": "Aloqa — loyihangizni muhokama qilamiz | promtchi",
+        "ru": "Контакты — обсудим ваш проект | promtchi",
+        "en": "Contact — let's discuss your project | promtchi",
+    }[lang]
     desc = {"uz": "promtchi bilan bog'laning — Telegram, email yoki forma orqali. 24 soat ichida javob beramiz.",
             "ru": "Свяжитесь с promtchi — через Telegram, email или форму. Ответим в течение 24 часов.",
             "en": "Get in touch with promtchi — via Telegram, email or the form. We reply within 24 hours."}[lang]
-    ctx = await _base_ctx(request, lang, path_by_lang, title=f"{title} — promtchi®", desc=desc,
+    ctx = await _base_ctx(request, lang, path_by_lang, title=seo_title, desc=desc,
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"), (NAV[lang]["contact"], None)])
     sub = {"uz": "G'oyangizni yozing — 24 soat ichida bog'lanamiz.",
            "ru": "Опишите идею — свяжемся с вами в течение 24 часов.",
@@ -473,9 +505,9 @@ async def blog_index(request: Request, lang: str):
     _check_lang(lang)
     path_by_lang = {l: f"/{l}/blog/" for l in LANGS}
     title = {"uz": "Blog", "ru": "Блог", "en": "Blog"}[lang]
-    desc = {"uz": "promtchi blogi — AI, avtomatlashtirish, CRM/ERP va dasturiy ta'minot haqida maqolalar.",
-            "ru": "Блог promtchi — статьи об AI, автоматизации, CRM/ERP и разработке ПО.",
-            "en": "The promtchi blog — articles on AI, automation, CRM/ERP and software development."}[lang]
+    desc = {"uz": "promtchi blogi — AI, avtomatlashtirish, CRM/ERP va dasturiy ta'minot haqida amaliy maqolalar: nimadan boshlash va qaysi yechim kimga mos.",
+            "ru": "Блог promtchi — практические статьи об AI, автоматизации, CRM/ERP и разработке ПО: с чего начать и какое решение кому подходит.",
+            "en": "The promtchi blog — practical articles on AI, automation, CRM/ERP and software development: where to start and which solution fits whom."}[lang]
     async with SessionLocal() as session:
         res = await session.execute(
             select(Post).where(Post.published == True, Post.lang == lang)  # noqa: E712
@@ -492,7 +524,12 @@ async def blog_index(request: Request, lang: str):
     empty = {"uz": "Hozircha maqolalar yo'q — tez orada qo'shiladi.",
              "ru": "Пока нет статей — скоро появятся.",
              "en": "No articles yet — coming soon."}[lang]
-    ctx = await _base_ctx(request, lang, path_by_lang, title=f"{title} — promtchi®", desc=desc,
+    seo_title = {
+        "uz": "Blog — avtomatlashtirish, CRM va AI haqida | promtchi",
+        "ru": "Блог — об автоматизации, CRM и AI | promtchi",
+        "en": "Blog — automation, CRM and AI insights | promtchi",
+    }[lang]
+    ctx = await _base_ctx(request, lang, path_by_lang, title=seo_title, desc=desc,
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"), (NAV[lang]["blog"], None)])
     ctx.update(posts=posts, t_h1=title, t_empty=empty)
     return templates.TemplateResponse(request, "blog_index.html", ctx)
@@ -550,28 +587,51 @@ async def blog_detail(request: Request, lang: str, slug: str):
 
 # ══════════ SITEMAP / ROBOTS ══════════
 
+def _day(iso: str | None) -> str | None:
+    """ISO vaqt tamg'asidan YYYY-MM-DD — sitemap <lastmod> uchun."""
+    return iso.split("T")[0] if iso else None
+
+
+def _newest(rows: list[dict]) -> str | None:
+    days = [d for d in (_day(r.get("updated_at")) for r in rows) if d]
+    return max(days) if days else None
+
+
 async def _all_urls() -> list[tuple[dict, str]]:
-    """[(path_by_lang, lastmod_hint), ...] — har biri uchun hreflang alternate qatorlari chiqadi."""
+    """[(path_by_lang, lastmod_hint), ...] — har biri uchun hreflang alternate qatorlari chiqadi.
+
+    lastmod FAQAT kontenti qachon o'zgargani REAL ma'lum bo'lgan sahifalarga
+    qo'yiladi (DB qatorining `updated_at`i): xizmat/portfolio sahifalari, ularning
+    indekslari va blog. Statik kontentli sahifalarga (bosh sahifa, yechimlar,
+    biz haqimizda, aloqa, huquqiy sahifalar) sana YOZILMAYDI — hammasiga bir xil
+    "bugun"ni yozish noto'g'ri signal bo'lardi va Google bunday lastmod'ga
+    ishonishni to'xtatadi.
+    """
     services = await services_store.get_services()
     cases = await services_store.get_cases()
+    async with SessionLocal() as session:
+        blog_last = await session.scalar(
+            select(func.max(Post.updated_at)).where(Post.published == True, Post.noindex == False)  # noqa: E712
+        )
+    blog_day = blog_last.date().isoformat() if blog_last else None
     urls = []
     for l in LANGS:
         urls.append(({lang: f"/{lang}/" for lang in LANGS}, None))
     for sv in services:
-        urls.append(({l: f"/{l}/xizmatlar/" for l in LANGS}, None))
+        urls.append(({l: f"/{l}/xizmatlar/" for l in LANGS}, _newest(services)))
     for sv in services:
-        urls.append(({l: f"/{l}/xizmatlar/{sv['slugs'][l]}/" for l in LANGS}, None))
+        urls.append(({l: f"/{l}/xizmatlar/{sv['slugs'][l]}/" for l in LANGS}, _day(sv.get("updated_at"))))
     for k in SOLUTION_KEYS:
         urls.append(({l: f"/{l}/yechimlar/" for l in LANGS}, None))
     for k in SOLUTION_KEYS:
         urls.append(({l: f"/{l}/yechimlar/{SOLUTION_SLUGS[k][l]}/" for l in LANGS}, None))
-    urls.append(({l: f"/{l}/portfolio/" for l in LANGS}, None))
+    urls.append(({l: f"/{l}/portfolio/" for l in LANGS}, _newest(cases)))
     for c in cases:
-        urls.append(({l: f"/{l}/portfolio/{c['slugs'][l]}/" for l in LANGS}, None))
+        urls.append(({l: f"/{l}/portfolio/{c['slugs'][l]}/" for l in LANGS}, _day(c.get("updated_at"))))
     urls.append(({l: f"/{l}/faq/" for l in LANGS}, None))
     urls.append(({l: f"/{l}/biz-haqimizda/" for l in LANGS}, None))
     urls.append(({l: f"/{l}/aloqa/" for l in LANGS}, None))
-    urls.append(({l: f"/{l}/blog/" for l in LANGS}, None))
+    urls.append(({l: f"/{l}/blog/" for l in LANGS}, blog_day))
     urls.append(({l: f"/{l}/{LEGAL_SLUGS['privacy'][l]}/" for l in LANGS}, None))
     urls.append(({l: f"/{l}/{LEGAL_SLUGS['terms'][l]}/" for l in LANGS}, None))
     # duplikatlarni olib tashlaymiz (services_index N marta qo'shildi — soddalik uchun)
@@ -591,14 +651,15 @@ async def sitemap(request: Request):
     parts = ['<?xml version="1.0" encoding="UTF-8"?>',
              '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
              'xmlns:xhtml="http://www.w3.org/1999/xhtml">']
-    for path_by_lang, _hint in await _all_urls():
+    for path_by_lang, hint in await _all_urls():
         for lang in LANGS:
             loc = seo.abs_url(path_by_lang[lang])
             alt_tags = "".join(
                 f'<xhtml:link rel="alternate" hreflang="{h}" href="{u}"/>'
                 for h, u in seo.alternates(path_by_lang)
             )
-            parts.append(f"<url><loc>{loc}</loc>{alt_tags}</url>")
+            lastmod = f"<lastmod>{hint}</lastmod>" if hint else ""
+            parts.append(f"<url><loc>{loc}</loc>{lastmod}{alt_tags}</url>")
     # blog postlari — real DB'dan; noindex postlar va boshqa tilning
     # mavjud bo'lmagan "tarjimasi" (hreflang alternate) sitemap'ga qo'shilmaydi.
     async with SessionLocal() as session:
@@ -619,6 +680,20 @@ async def sitemap(request: Request):
     return Response("".join(parts), media_type="application/xml")
 
 
+# Brauzerlar va ba'zi kroulerlar faviconni HTML'dagi <link>dan qat'i nazar
+# ildizdan (/favicon.ico) so'raydi — ilgari bu 404 qaytarardi.
+_FAVICON = Path(__file__).resolve().parent.parent / "static" / "favicon.ico"
+
+
+@router.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return FileResponse(
+        _FAVICON,
+        media_type="image/x-icon",
+        headers={"Cache-Control": "public, max-age=604800"},
+    )
+
+
 @router.get("/robots.txt", include_in_schema=False)
 async def robots():
     body = (
@@ -626,6 +701,12 @@ async def robots():
         "Allow: /\n"
         "Disallow: /admin\n"
         "Disallow: /api/admin/\n"
+        # Interaktiv API hujjatlari qidiruv natijasida chiqmasligi kerak
+        # (ENABLE_DOCS=false bo'lganda ular umuman ochilmaydi — bu esa
+        # yoqib qo'yilgan holat uchun qo'shimcha himoya).
+        "Disallow: /docs\n"
+        "Disallow: /redoc\n"
+        "Disallow: /openapi.json\n"
         f"Sitemap: {settings.SITE_URL}/sitemap.xml\n"
     )
     return Response(body, media_type="text/plain")

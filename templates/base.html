@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0B0B0E">
 <title>{{ page_title }}</title>
+{% if gsc_token %}<meta name="google-site-verification" content="{{ gsc_token }}">{% endif %}
 <meta name="description" content="{{ page_desc }}">
 {% if noindex %}<meta name="robots" content="noindex,nofollow">{% endif %}
 <meta property="og:type" content="{{ og_type|default('website') }}">
@@ -13,14 +14,19 @@
 <meta property="og:description" content="{{ page_desc }}">
 <meta property="og:url" content="{{ canonical }}">
 <meta property="og:image" content="{{ og_image }}">
+{# o'lchamlar faqat standart banner uchun — case/post rasmlari boshqa o'lchamda #}
+{% if og_image.endswith('/og-cover.png') %}<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+{% endif %}
 <meta property="og:locale" content="{{ og_locale }}">
-<meta name="twitter:card" content="summary">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{{ page_title }}">
 <meta name="twitter:description" content="{{ page_desc }}">
 <meta name="twitter:image" content="{{ og_image }}">
 <link rel="canonical" href="{{ canonical }}">
 {% for hreflang, href in alt_links %}<link rel="alternate" hreflang="{{ hreflang }}" href="{{ href }}">
 {% endfor %}<link rel="icon" href="/static/favicon.png" type="image/png">
+<link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">

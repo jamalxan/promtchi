@@ -414,6 +414,8 @@ class Service(Base):
             "uz": {**self.data_uz, "slug": self.slug_uz},
             "ru": {**self.data_ru, "slug": self.slug_ru},
             "en": {**self.data_en, "slug": self.slug_en},
+            # sitemap <lastmod> uchun — faqat qator haqiqatan o'zgarganda yangilanadi
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
 
 
@@ -465,6 +467,8 @@ class PortfolioCase(Base):
             "uz": {**self.data_uz, "slug": self.slug_uz},
             "ru": {**self.data_ru, "slug": self.slug_ru},
             "en": {**self.data_en, "slug": self.slug_en},
+            # sitemap <lastmod> uchun — faqat qator haqiqatan o'zgarganda yangilanadi
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
 
 

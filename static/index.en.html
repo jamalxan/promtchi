@@ -4,26 +4,29 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0B0B0E">
-<title>promtchi® — digital product studio</title>
+<title>promtchi® — web, CRM and AI development studio in Tashkent</title>
 <meta name="description" content="We bring your business to life in one system — design, development, automation and AI.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="promtchi® — digital product studio">
+<meta property="og:title" content="promtchi® — web, CRM and AI development studio in Tashkent">
 <meta property="og:description" content="We bring your business to life in one system — design, development, automation and AI.">
 <meta property="og:url" content="https://promtchi.uz/en/">
-<meta property="og:image" content="https://promtchi.uz/static/logo.png">
+<meta property="og:image" content="https://promtchi.uz/static/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta property="og:locale" content="en_US">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="promtchi® — digital product studio">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="promtchi® — web, CRM and AI development studio in Tashkent">
 <meta name="twitter:description" content="We bring your business to life in one system — design, development, automation and AI.">
-<meta name="twitter:image" content="https://promtchi.uz/static/logo.png">
+<meta name="twitter:image" content="https://promtchi.uz/static/og-cover.png">
 <link rel="canonical" href="https://promtchi.uz/en/">
 <link rel="alternate" hreflang="uz-UZ" href="https://promtchi.uz/uz/">
 <link rel="alternate" hreflang="ru-RU" href="https://promtchi.uz/ru/">
 <link rel="alternate" hreflang="en" href="https://promtchi.uz/en/">
 <link rel="alternate" hreflang="x-default" href="https://promtchi.uz/uz/">
 <link rel="icon" href="/static/favicon.png" type="image/png">
-<script type="application/ld+json" id="orgSchema">{"@context":"https://schema.org","@type":"Organization","name":"promtchi","url":"https://promtchi.uz/","logo":"https://promtchi.uz/static/logo.png","foundingDate":"2023","address":{"@type":"PostalAddress","addressLocality":"Tashkent","addressCountry":"UZ"},"contactPoint":[{"@type":"ContactPoint","contactType":"customer service","url":"https://t.me/promtchiadmin","areaServed":"UZ","availableLanguage":["uz","ru","en"]}],"sameAs":["https://t.me/promtchiadmin"]}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"promtchi","url":"https://promtchi.uz/en/","inLanguage":"en"}</script>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<script type="application/ld+json" id="orgSchema">{"@context":"https://schema.org","@type":"Organization","@id":"https://promtchi.uz/#organization","name":"promtchi","url":"https://promtchi.uz/","logo":{"@type":"ImageObject","url":"https://promtchi.uz/static/logo.png"},"foundingDate":"2023","address":{"@type":"PostalAddress","addressLocality":"Tashkent","addressCountry":"UZ"},"contactPoint":[{"@type":"ContactPoint","contactType":"customer service","url":"https://t.me/promtchiadmin","areaServed":"UZ","availableLanguage":["uz","ru","en"]}],"sameAs":["https://t.me/promtchiadmin"]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","@id":"https://promtchi.uz/en/#website","name":"promtchi","url":"https://promtchi.uz/en/","publisher":{"@id":"https://promtchi.uz/#organization"},"inLanguage":"en"}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -1740,8 +1743,8 @@ function renderOrgSchema(){
   if(email&&email.value)contactPoint.email=email.value;
   if(phone&&phone.url&&phone.url.startsWith('tel:'))contactPoint.telephone=phone.url.slice(4);
   const sameAs=[...new Set([tg&&tg.url,...( DATA.socials||[]).map(s=>s.url)].filter(Boolean))];
-  const schema={"@context":"https://schema.org","@type":"Organization","name":"promtchi","url":"https://promtchi.uz/",
-    "logo":"https://promtchi.uz/static/logo.png","foundingDate":"2023",
+  const schema={"@context":"https://schema.org","@type":"Organization","@id":"https://promtchi.uz/#organization","name":"promtchi","url":"https://promtchi.uz/",
+    "logo":{"@type":"ImageObject","url":"https://promtchi.uz/static/logo.png"},"foundingDate":"2023",
     "address":{"@type":"PostalAddress","addressLocality":"Tashkent","addressCountry":"UZ"},
     "contactPoint":[contactPoint],"sameAs":sameAs};
   el.textContent=JSON.stringify(schema);

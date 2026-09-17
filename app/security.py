@@ -86,6 +86,17 @@ class SecurityHeadersMiddleware:
                 # admin/API javoblari keshlanmasin (parol so'raladigan yoki
                 # sessiyaga bog'liq har qanday sahifa/API — brauzer/oraliq
                 # keshlar hech qachon eski holatni ko'rsatmasin)
+                # Qidiruv tizimlari indekslamasligi kerak bo'lgan yo'llar —
+                # robots.txt "so'ramaslikni" aytadi, X-Robots-Tag esa tashqi
+                # havola orqali kelib qolgan holatda ham indeksdan chetda
+                # qoldiradi (robots.txt bloklagan sahifa baribir indeksga
+                # tushishi mumkin — Google buni alohida ogohlantiradi).
+                if (
+                    path.startswith("/api/")
+                    or path.startswith("/admin")
+                    or path in ("/docs", "/redoc", "/openapi.json")
+                ):
+                    h.setdefault("X-Robots-Tag", "noindex, nofollow")
                 if (
                     path.startswith("/api/admin")
                     or path.startswith("/api/auth/")

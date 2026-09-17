@@ -216,6 +216,20 @@ def _inject_ga(data: bytes, ga_id: str) -> bytes:
     return data
 
 
+def _inject_verification(data: bytes, token: str) -> bytes:
+    """Google Search Console tasdiqlash metasini <head>ga qo'shadi.
+
+    Ichki sahifalar buni templates/base.html orqali oladi; statik bosh
+    sahifalar (index*.html) Jinja bilan render qilinmagani uchun shu yerda
+    splice qilinadi — _inject_ga bilan bir xil usul. Token bo'sh bo'lsa
+    (SEARCH_CONSOLE_VERIFICATION env o'rnatilmagan) meta umuman qo'shilmaydi.
+    """
+    if b"google-site-verification" in data:  # ikki marta qo'shilmasin
+        return data
+    meta = f'<meta name="google-site-verification" content="{token}">\n'.encode("utf-8")
+    return data.replace(b"</head>", meta + b"</head>", 1) if b"</head>" in data else data
+
+
 _ORG_SCHEMA_RE = re.compile(
     rb'<script type="application/ld\+json" id="orgSchema">(.*?)</script>', re.DOTALL
 )
@@ -305,6 +319,8 @@ class _PageCache:
         if st.st_mtime_ns != self.mtime or content_version != self.content_version:
             data = self.path.read_bytes()
             data = _inject_live_contacts(data)
+            if settings.SEARCH_CONSOLE_VERIFICATION:
+                data = _inject_verification(data, settings.SEARCH_CONSOLE_VERIFICATION)
             if settings.GA_MEASUREMENT_ID:
                 data = _inject_ga(data, settings.GA_MEASUREMENT_ID)
             self.raw = data
