@@ -257,9 +257,15 @@ section.sec.alt::before{content:'';position:absolute;inset:0 calc(50% - 50vw);ba
 /* yopilish animatsiyasi paytida (.closing) belgi darhol asl holatiga qaytsin —
    bosh sahifada .fitem.open klassi olib tashlangandagidek */
 .faq-list details[open]:not(.closing) .fx{transform:rotate(45deg);background:var(--acid);color:var(--blk);border-color:var(--acid)}
-.faq-list .fa-body{max-height:0;overflow:hidden;transition:max-height .5s var(--ease)}
+/* Pastki bo'shliq padding emas, ichkaridagi ::after bilan beriladi:
+   padding max-height:0 da ham qolib ketardi va qator ~26px balandlikda
+   "osilib" turib, faqat animatsiya oxirida birdan yo'qolardi (yopilish
+   o'rtasida to'xtab qolgandek ko'rinardi). Endi bo'shliq ham qirqiladigan
+   qutining ichida — bosh sahifadagi .fa > p padding'i bilan bir xil. */
+.faq-list .fa-body{max-height:0;overflow:hidden;padding:0 .2rem;transition:max-height .5s var(--ease)}
+.faq-list .fa-body::after{content:'';display:block;height:1.6rem}
 .faq-list details[open] .fa-body{max-height:60em}
-.faq-list .fa-body{padding:0 .2rem 1.6rem;opacity:.75;font-size:.94rem;max-width:62ch}
+.faq-list .fa-body{opacity:.75;font-size:.94rem;max-width:62ch}
 
 /* case / portfolio detail */
 .case-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin:1.4rem 0;padding:1.2rem;border:1px solid var(--line);border-radius:14px}
