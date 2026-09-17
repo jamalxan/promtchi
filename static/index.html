@@ -1262,19 +1262,22 @@ function renderPosts(){
 /* ══════════ PRELOADER ══════════ */
 (function(){
   const L=document.getElementById('loader');
-  if(reduced){L.classList.add('done');startHero();return;}
+  let seen=false;
+  try{seen=sessionStorage.getItem('pc_intro_seen')==='1';sessionStorage.setItem('pc_intro_seen','1');}catch(e){}
+  /* qayta tashrifda (shu sessiyada) yoki reduced-motion'da og'ir intro ko'rsatilmaydi */
+  if(reduced||seen){L.classList.add('done');startHero();return;}
   const words=['DIZAYN','KOD','AVTOMAT','AI','PROMTCHI'];
   const wEl=document.getElementById('lWord'),cEl=document.getElementById('lCount'),bar=document.getElementById('lBar');
   let n=0,wi=0;
-  const wt=setInterval(()=>{wi=(wi+1)%words.length;wEl.innerHTML=words[wi]+'<em>.</em>';},340);
+  const wt=setInterval(()=>{wi=(wi+1)%words.length;wEl.innerHTML=words[wi]+'<em>.</em>';},260);
   const t=setInterval(()=>{
-    n+=Math.random()*13+4;if(n>=100)n=100;
+    n+=Math.random()*24+14;if(n>=100)n=100;
     cEl.textContent=Math.floor(n);bar.style.width=n+'%';
     if(n>=100){clearInterval(t);clearInterval(wt);
-      setTimeout(()=>{L.classList.add('done');startHero();},260);}
-  },90);
-  /* fallback — nima bo'lsa ham 4.5s da ochilsin */
-  setTimeout(()=>{if(!L.classList.contains('done')){clearInterval(t);clearInterval(wt);L.classList.add('done');startHero();}},4500);
+      setTimeout(()=>{L.classList.add('done');startHero();},180);}
+  },70);
+  /* fallback — nima bo'lsa ham 1s da ochilsin (ilgari 4.5s edi) */
+  setTimeout(()=>{if(!L.classList.contains('done')){clearInterval(t);clearInterval(wt);L.classList.add('done');startHero();}},1000);
 })();
 
 /* ══════════ SPLIT-TEXT ══════════ */

@@ -31,24 +31,38 @@
 {% block extra_schema %}{% endblock %}
 </head>
 <body>
+<div class="cur cur-dot" aria-hidden="true"></div>
+<div class="cur cur-tag" id="curTag" aria-hidden="true" data-default-label="{{ common.read_more }}"></div>
+<input type="checkbox" id="navToggle" class="nav-toggle" aria-hidden="true">
 <a class="skip-link" href="#main-content">{{ common.skip_to_content }}</a>
 <header class="site-hd">
   <a class="brand" href="/{{ lang }}/"><picture><source srcset="/static/logo.webp" type="image/webp"><img src="/static/logo.png" alt="promtchi" width="30" height="30"></picture><b>promtchi</b><sup>&reg;</sup></a>
   <nav class="site-nav" aria-label="{{ common.main_nav_label }}">
-    <a href="/{{ lang }}/xizmatlar/">{{ nav.services }}</a>
-    <a href="/{{ lang }}/yechimlar/">{{ nav.solutions }}</a>
-    <a href="/{{ lang }}/portfolio/">{{ nav.portfolio }}</a>
-    <a href="/{{ lang }}/blog/">{{ nav.blog }}</a>
-    <a href="/{{ lang }}/faq/">{{ nav.faq }}</a>
-    <a href="/{{ lang }}/biz-haqimizda/">{{ nav.about }}</a>
+    <a href="/{{ lang }}/xizmatlar/"><small>01</small>{{ nav.services }}</a>
+    <a href="/{{ lang }}/yechimlar/"><small>02</small>{{ nav.solutions }}</a>
+    <a href="/{{ lang }}/portfolio/"><small>03</small>{{ nav.portfolio }}</a>
+    <a href="/{{ lang }}/blog/"><small>04</small>{{ nav.blog }}</a>
+    <a href="/{{ lang }}/faq/"><small>05</small>{{ nav.faq }}</a>
+    <a href="/{{ lang }}/biz-haqimizda/"><small>06</small>{{ nav.about }}</a>
+    <a href="/{{ lang }}/aloqa/"><small>07</small>{{ nav.contact }}</a>
   </nav>
   <div class="site-hd-right">
     <div class="lang-switch">
       {% for l in langs %}<a href="{{ lang_urls[l] }}" class="{{ 'on' if l==lang else '' }}" {{ 'aria-current="true"' if l==lang else '' }}>{{ lang_short[l] }}</a>{% endfor %}
     </div>
-    <a class="btn btn-acid" href="/{{ lang }}/aloqa/">{{ nav.contact }}</a>
+    <label for="navToggle" class="menu-btn" aria-label="{{ common.main_nav_label }}"><span class="mi"><i></i><i></i></span></label>
   </div>
 </header>
+
+<nav class="mob-nav-panel" aria-label="{{ common.main_nav_label }}">
+  <a href="/{{ lang }}/xizmatlar/"><small>01</small>{{ nav.services }}</a>
+  <a href="/{{ lang }}/yechimlar/"><small>02</small>{{ nav.solutions }}</a>
+  <a href="/{{ lang }}/portfolio/"><small>03</small>{{ nav.portfolio }}</a>
+  <a href="/{{ lang }}/blog/"><small>04</small>{{ nav.blog }}</a>
+  <a href="/{{ lang }}/faq/"><small>05</small>{{ nav.faq }}</a>
+  <a href="/{{ lang }}/biz-haqimizda/"><small>06</small>{{ nav.about }}</a>
+  <a href="/{{ lang }}/aloqa/"><small>07</small>{{ nav.contact }}</a>
+</nav>
 
 {% if breadcrumbs %}
 <nav class="crumbs wrap" aria-label="Breadcrumb">
@@ -61,12 +75,12 @@
 </main>
 
 <footer class="site-ft">
-  <div class="wrap ft-grid">
+  <div class="wrap ft-top">
     <div class="ft-cta">
       <h2>{{ footer.tagline }}</h2>
       <a href="/{{ lang }}/aloqa/" class="btn btn-acid">{{ footer.cta }}</a>
     </div>
-    <div class="ft-col">
+    <nav class="ft-col" aria-label="{{ footer.nav_title }}">
       <b>{{ footer.nav_title }}</b>
       <a href="/{{ lang }}/xizmatlar/">{{ nav.services }}</a>
       <a href="/{{ lang }}/yechimlar/">{{ nav.solutions }}</a>
@@ -74,14 +88,13 @@
       <a href="/{{ lang }}/blog/">{{ nav.blog }}</a>
       <a href="/{{ lang }}/faq/">{{ nav.faq }}</a>
       <a href="/{{ lang }}/biz-haqimizda/">{{ nav.about }}</a>
-    </div>
-    <div class="ft-col">
-      <b>{{ footer.contact_title }}</b>
-      <a href="{{ org.telegram_url }}" target="_blank" rel="noopener">Telegram — {{ org.telegram_handle }}</a>
-      <a href="mailto:{{ org.email }}">{{ org.email }}</a>
-      <a href="tel:{{ org.phone_tel }}">{{ org.phone }}</a>
-      <a href="{{ org.instagram_url }}" target="_blank" rel="noopener">Instagram</a>
-    </div>
+    </nav>
+  </div>
+  <div class="wrap ft-social">
+    <a href="{{ org.telegram_url }}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.9 4.3 18.9 19c-.2 1-.8 1.3-1.7.8l-4.6-3.4-2.2 2.1c-.3.3-.5.5-1 .5l.3-4.7L18.4 6c.4-.3-.1-.5-.6-.2L7.2 12.5l-4.6-1.4c-1-.3-1-1 .2-1.5l18-6.9c.8-.3 1.5.2 1.1 1.6z"/></svg><span>Telegram — {{ org.telegram_handle }}</span></a>
+    <a href="mailto:{{ org.email }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4.2-8 5-8-5V6l8 5 8-5z"/></svg><span>{{ org.email }}</span></a>
+    <a href="tel:{{ org.phone_tel }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2a11.4 11.4 0 0 0 3.6.6 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .6 3.6c.1.3 0 .7-.2 1z"/></svg><span>{{ org.phone }}</span></a>
+    <a href="{{ org.instagram_url }}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2c3.2 0 3.6 0 4.9.1 1.2.1 1.8.2 2.2.4.6.2 1 .5 1.4.9.4.4.7.8.9 1.4.2.4.4 1 .4 2.2.1 1.3.1 1.7.1 4.9s0 3.6-.1 4.9c-.1 1.2-.2 1.8-.4 2.2-.2.6-.5 1-.9 1.4-.4.4-.8.7-1.4.9-.4.2-1 .4-2.2.4-1.3.1-1.7.1-4.9.1s-3.6 0-4.9-.1c-1.2-.1-1.8-.2-2.2-.4-.6-.2-1-.5-1.4-.9-.4-.4-.7-.8-.9-1.4-.2-.4-.4-1-.4-2.2C2.2 15.6 2.2 15.2 2.2 12s0-3.6.1-4.9c.1-1.2.2-1.8.4-2.2.2-.6.5-1 .9-1.4.4-.4.8-.7 1.4-.9.4-.2 1-.4 2.2-.4C8.4 2.2 8.8 2.2 12 2.2zm0 3.2A6.6 6.6 0 1 0 18.6 12 6.6 6.6 0 0 0 12 5.4zm0 10.9A4.3 4.3 0 1 1 16.3 12 4.3 4.3 0 0 1 12 16.3zm6.9-11.1a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5z"/></svg><span>Instagram</span></a>
   </div>
   <div class="wrap ft-meta">
     <span>&copy; {{ org.founded }}&ndash;2026 promtchi&reg;</span>
@@ -89,7 +102,9 @@
     <a href="{{ legal.privacy }}">{{ footer.privacy }}</a>
     <a href="{{ legal.terms }}">{{ footer.terms }}</a>
   </div>
+  <div class="ft-word" aria-hidden="true">PROMTCHI</div>
 </footer>
+<script src="/static/site.js" defer></script>
 {% if ga_id %}
 <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga_id }}"></script>
 <script>
