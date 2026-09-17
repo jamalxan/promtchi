@@ -42,7 +42,17 @@ _BASE_HEADERS: list[tuple[str, str]] = [
 ]
 
 
-_PUBLIC_PAGE_CACHE = f"public, max-age={settings.STATIC_CACHE_SECONDS}, must-revalidate"
+# Ichki SSR sahifalar — QISQA kesh (60s), ilgari 3600s (1 soat) edi.
+# Sabab: deploy'dan keyin brauzer 1 soatgacha ESKI HTML'ni ko'rsatardi va
+# foydalanuvchi yangilanishlarni umuman ko'rmasdi (bu muammo bir necha bor
+# kuzatildi — hard reload qilinmaguncha eski dizayn turardi).
+# Nega 0 emas, 60: bu sahifalarda ETag yo'q, ya'ni max-age=0 bo'lsa har bir
+# havolani bosganda HTML to'liq qaytadan yuklanadi. 60s — muvozanat: deploy
+# bir daqiqada yetib boradi, navigatsiya esa keshdan tez ishlaydi.
+# Eski HTML + yangi CSS nomuvofiqligi endi BO'LMAYDI, chunki site.css/js
+# ?v=<mtime> bilan versiyalangan — eski HTML eski CSS'ni, yangisi yangisini
+# chaqiradi, ikkalasi ham o'zaro mos.
+_PUBLIC_PAGE_CACHE = "public, max-age=60, must-revalidate"
 # `/static/uploads/*` fayl nomlari secrets.token_hex(8) bilan yaratiladi
 # (main.py::upload_file) — bir URL HECH QACHON boshqa kontentga almashmaydi
 # (qayta yuklash yangi nom oladi), shuning uchun immutable xavfsiz.

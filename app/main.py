@@ -1691,7 +1691,11 @@ async def delete_review_code(
 # bo'yicha saqlaydi) — DEFAULTS faqat tarmoq/server ishlamay qolgan holat
 # uchun zaxira. Ichki SEO sahifalari (xizmatlar/portfolio/faq/...) app/pages.py'da.
 
-_PAGE_CACHE = f"public, max-age={settings.STATIC_CACHE_SECONDS}, must-revalidate"
+# Bosh sahifa ham har safar ETag bilan tekshiriladi (security.py'dagi
+# _PUBLIC_PAGE_CACHE bilan bir xil sabab): max-age bo'lsa, deploy yoki
+# admin orqali kontent yangilangach foydalanuvchi eski nusxani ko'rib
+# qolardi. ETag/304 mexanizmi allaqachon bor — qayta tekshirish arzon.
+_PAGE_CACHE = "public, max-age=0, must-revalidate"
 
 ru_cache = _PageCache(STATIC_DIR / "index.ru.html")
 en_cache = _PageCache(STATIC_DIR / "index.en.html")
