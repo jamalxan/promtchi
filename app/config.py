@@ -179,6 +179,30 @@ class Settings:
     def is_sqlite(self) -> bool:
         return self.DATABASE_URL.startswith("sqlite")
 
+    def advisories(self) -> list[str]:
+        """Tavsiyalar — chop etiladi, lekin ishga tushirishni TO'XTATMAYDI.
+
+        Bu yerda xavfsizlik teshigi emas, masshtab/konfiguratsiya maslahati
+        turadi. Ilgari SQLite haqidagi maslahat ham `problems()` ichida edi va
+        production'da ishga tushirishni bloklardi — natijada SQLite ishlatgan
+        server `ENV=production` ni umuman yoqa olmas, HSTS, `Secure` cookie va
+        `/docs` yopilishi kabi HIMOYALAR ham ishlamay qolar edi. Maslahat
+        himoyani o'chirib qo'ymasligi kerak.
+        """
+        a: list[str] = []
+        if self.is_production and self.is_sqlite:
+            a.append(
+                "Production'da SQLite ishlatilmoqda — 1000+ bir vaqtdagi yozuv uchun "
+                "PostgreSQL tavsiya etiladi (DATABASE_URL=postgresql+asyncpg://...)."
+            )
+        if not self.is_production and self.CANONICAL_HOST not in ("localhost", "127.0.0.1"):
+            a.append(
+                f"ENV={self.ENV}, lekin CANONICAL_HOST={self.CANONICAL_HOST} — haqiqiy "
+                "domenda production rejimisiz ishlayapsiz: /docs ochiq, HSTS yo'q, "
+                "admin cookie Secure emas. Server env'ida ENV=production qo'ying."
+            )
+        return a
+
     def problems(self) -> list[str]:
         """Xavfsizlik muammolari ro'yxati (production'da ishga tushishni to'xtatadi)."""
         p: list[str] = []
@@ -202,24 +226,8 @@ class Settings:
                     "ADMIN_PASSWORD hash qilinmagan holda ishlatilmoqda — production'da "
                     "ADMIN_PASSWORD_HASH ishlating:  python -m app.config hash \"parolingiz\""
                 )
-        # Eng ko'p uchraydigan deploy xatosi: sayt haqiqiy domenda ishlayapti,
-        # lekin ENV=production emas. Oqibati jim va jiddiy: /docs va /openapi.json
-        # ochiq qoladi, HSTS header yuborilmaydi, admin sessiya cookie'si esa
-        # `Secure` bayrog'isiz ketadi (app/auth.py). Buni faqat ogohlantirish
-        # sifatida beramiz — ishga tushirishni to'xtatmaydi.
-        if not self.is_production and self.CANONICAL_HOST not in ("localhost", "127.0.0.1"):
-            p.append(
-                f"ENV={self.ENV}, lekin CANONICAL_HOST={self.CANONICAL_HOST} — haqiqiy "
-                "domenda production rejimisiz ishlayapsiz: /docs ochiq, HSTS yo'q, "
-                "admin cookie Secure emas. Server env'ida ENV=production qo'ying."
-            )
         if self.is_production and "*" in self.CORS_ORIGINS:
             p.append("CORS_ORIGINS='*' — production'da aniq domen yozing.")
-        if self.is_production and self.is_sqlite:
-            p.append(
-                "Production'da SQLite ishlatilmoqda — 1000+ bir vaqtdagi yozuv uchun "
-                "PostgreSQL tavsiya etiladi (DATABASE_URL=postgresql+asyncpg://...)."
-            )
         if self.is_production and not self.ENCRYPTION_KEY:
             p.append(
                 "ENCRYPTION_KEY sozlanmagan — CRM Telegram bot tokeni JWT_SECRET'dan "
@@ -229,6 +237,8 @@ class Settings:
         return p
 
     def validate(self) -> None:
+        for note in self.advisories():
+            print(f"  [eslatma] {note}", file=sys.stderr)
         probs = self.problems()
         if not probs:
             return

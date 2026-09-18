@@ -348,3 +348,45 @@ def test_backup_rotation_keeps_only_latest(tmp_path, monkeypatch):
 
 def test_backup_api_requires_admin(client):
     assert client.get("/api/admin/backups").status_code in (401, 403)
+
+
+# ── ENV=production yoqilishi SQLite sababli bloklanmasligi kerak ─────────────
+
+def test_sqlite_is_advisory_not_blocking_in_production(monkeypatch):
+    """Ilgari SQLite production'da ishga tushirishni TO'XTATARDI — natijada
+    HSTS, Secure cookie va /docs yopilishi kabi himoyalar yoqilmay qolardi."""
+    import importlib
+    import app.config as cfg
+    monkeypatch.setenv("ENV", "production")
+    monkeypatch.setenv("DATABASE_URL", "sqlite+aiosqlite:///./_x.db")
+    monkeypatch.setenv("JWT_SECRET", "x" * 40)
+    monkeypatch.setenv("ADMIN_PASSWORD_HASH", "$2b$12$" + "a" * 53)
+    monkeypatch.setenv("CORS_ORIGINS", "https://promtchi.uz")
+    monkeypatch.setenv("ENCRYPTION_KEY", "k" * 43 + "=")
+    try:
+        importlib.reload(cfg)
+        s = cfg.Settings()
+        assert s.is_production and s.is_sqlite
+        assert s.problems() == [], s.problems()          # bloklamaydi
+        assert any("SQLite" in a for a in s.advisories())  # lekin aytiladi
+        s.validate()  # SystemExit ko'tarmasligi kerak
+    finally:
+        for k in ("ENV", "DATABASE_URL", "JWT_SECRET", "ADMIN_PASSWORD_HASH",
+                  "CORS_ORIGINS", "ENCRYPTION_KEY"):
+            monkeypatch.delenv(k, raising=False)
+        importlib.reload(cfg)
+
+
+def test_production_still_blocks_real_security_problems(monkeypatch):
+    import importlib
+    import app.config as cfg
+    monkeypatch.setenv("ENV", "production")
+    monkeypatch.setenv("JWT_SECRET", cfg.DEFAULT_JWT_SECRET)
+    try:
+        importlib.reload(cfg)
+        s = cfg.Settings()
+        assert any("JWT_SECRET" in p for p in s.problems())
+    finally:
+        monkeypatch.delenv("ENV", raising=False)
+        monkeypatch.delenv("JWT_SECRET", raising=False)
+        importlib.reload(cfg)
