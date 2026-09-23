@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% block extra_schema %}<script type="application/ld+json">{{ article_schema|safe }}</script>{% endblock %}
 {% block content %}
-<article class="wrap sec" style="max-width:760px">
+<article class="wrap sec narrow">
   <span class="eyebrow">{{ p.category }}{% if p.category %} · {% endif %}{{ p.date }}{% if p.author %} · {{ p.author }}{% endif %}</span>
   <h1>{{ p.title }}</h1>
   {% if p.image %}<img src="{{ p.image }}" alt="{{ p.title }}" loading="lazy" decoding="async" style="border-radius:16px;margin:1.2rem 0;width:100%">{% endif %}
   <div class="article-body">{{ p.body_html }}</div>
   {% if p.tags %}
   <div style="margin-top:1.5rem;display:flex;gap:.5rem;flex-wrap:wrap">
-    {% for tag in p.tags %}<span class="tag" style="font-size:.78rem;opacity:.7;border:1px solid currentColor;border-radius:999px;padding:.2rem .7rem">#{{ tag }}</span>{% endfor %}
+    {% for tag in p.tags %}<span class="tag" style="font-size:.78rem;opacity:.7;border:1px solid currentColor;border-radius:999px;padding:8px 14px;display:inline-block">#{{ tag }}</span>{% endfor %}
   </div>
   {% endif %}
   {% if related_service %}

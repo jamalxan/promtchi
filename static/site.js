@@ -154,6 +154,55 @@
     });
   })();
 
+  /* ---------- hero imzo elementi (UI audit A6, 2026-09-22) ----------
+     Ichki sahifa hero'siga bosh sahifadagi .ghost'ga o'xshash fon matnini
+     qo'shadi — shablonlarga tegmasdan, eyebrow'ning o'z matnidan (masalan
+     "Portfolio", "FAQ") olib. Dekorativ, JS ishlamasa shunchaki ko'rinmaydi
+     (matn/kontent'ga ta'sir qilmaydi). */
+  (function () {
+    var heroes = document.querySelectorAll('.hero-in');
+    Array.prototype.forEach.call(heroes, function (hero) {
+      var eyebrow = hero.querySelector('.eyebrow');
+      var text = eyebrow && eyebrow.textContent.trim();
+      if (!text) return;
+      var word = document.createElement('div');
+      word.className = 'ghost-word';
+      word.setAttribute('aria-hidden', 'true');
+      word.textContent = (text + ' — ').repeat(6);
+      hero.insertBefore(word, hero.firstChild);
+    });
+  })();
+
+  /* ---------- kartalar: scroll-reveal + stagger (UI audit A1-A3, 2026-09-22) ----------
+     Ilgari .card sahifa ochilishi bilan HAMMASI bir vaqtda animatsiya qilardi —
+     ekrandan pastdagi kartalar foydalanuvchi u yerga yetguncha allaqachon
+     tugagan bo'lardi. Endi ko'rinish maydoniga kirganda birma-bir (stagger)
+     ochiladi. JS ishlamasa/IntersectionObserver yo'q bo'lsa — kartalar baribir
+     TO'LIQ o'qiladi (faqat 28px pastda turadi, opacity ishlatilmaydi, yuqoridagi
+     .rise izohiga qarang), shuning uchun SEO/crawler uchun xavfsiz. */
+  (function () {
+    var cards = document.querySelectorAll('.card-grid .card');
+    if (!cards.length) return;
+    Array.prototype.forEach.call(cards, function (el, i) {
+      var grid = el.closest('.card-grid');
+      var idx = grid ? Array.prototype.indexOf.call(grid.children, el) : i;
+      el.style.setProperty('--i', idx % 8);
+    });
+    if (!('IntersectionObserver' in window)) {
+      Array.prototype.forEach.call(cards, function (el) { el.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: .15 });
+    Array.prototype.forEach.call(cards, function (el) { io.observe(el); });
+  })();
+
   /* ---------- scroll progress ---------- */
   (function () {
     var bar = document.getElementById('prog');

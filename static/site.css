@@ -40,7 +40,15 @@ a{color:inherit}
 .hero-in>*{animation:rise .55s var(--ease)}
 .hero-in>*:nth-child(2){animation-duration:.65s}
 .hero-in>*:nth-child(3){animation-duration:.75s}
-.card{animation:rise .5s var(--ease)}
+/* Kartalar — UI audit A1/A2/A3 (2026-09-22): ilgari .card sahifa
+   ochilganda HAMMASI bir vaqtda animatsiya qilardi (ekrandan pastdagilar
+   ko'ringuncha allaqachon tugagan bo'lardi). Endi site.js'dagi
+   IntersectionObserver ko'rinish maydoniga kirganda .in qo'shadi —
+   transform ATAYLAB opacity emas (yuqoridagi izohga qarang): JS ishlamasa
+   ham karta 28px pastda bo'lsa-da TO'LIQ o'qiladigan holda qoladi.
+   --i (site.js beradi) orqali ketma-ket (stagger) ochiladi. */
+.card{transform:translateY(28px);transition:transform .6s var(--ease);transition-delay:calc(var(--i,0) * 60ms)}
+.card.in{transform:none}
 @media(prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
   *,*::before,*::after{animation:none!important;transition-duration:.01ms!important}
@@ -62,15 +70,28 @@ summary:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--acid);out
 .cur-dot{width:10px;height:10px;background:var(--acid);border-radius:50%;mix-blend-mode:difference}
 .cur-tag{padding:.42rem .8rem;border-radius:999px;background:var(--acid);color:var(--blk);
   font-family:var(--mono);font-size:.66rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
-  transform:translate(14px,14px) scale(0);transition:transform .3s var(--ease);white-space:nowrap}
-.cur-tag.show{transform:translate(14px,14px) scale(1)}
+  /* 24px (audit A4) — ilgari 14px edi, yorliq karta matni ustiga tushib qolardi */
+  transform:translate(24px,24px) scale(0);transition:transform .3s var(--ease);white-space:nowrap}
+.cur-tag.show{transform:translate(24px,24px) scale(1)}
 /* .cur-on faqat JS kursorni yoqqanda qo'shiladi — o'sha paytda sahifadagi
    BIRORTA element brauzer kursorini ko'rsatmasligi kerak (ilgari ro'yxatga
    tushmagan .btn/summary kabi elementlarda strelka chiqib qolardi). */
 body.cur-on,body.cur-on *{cursor:none!important}
 @media(hover:none),(max-width:960px){.cur{display:none}}
 .wrap{max-width:1180px;margin:0 auto;padding:0 clamp(18px,4vw,40px)}
-h1,h2,h3{font-family:var(--anton);text-transform:uppercase;line-height:1.05;letter-spacing:.01em;margin:0 0 .6em}
+/* UI audit K2 (2026-09-22): ilgari ba'zi bo'limlar .wrap'ning o'ziga
+   `style="max-width:760px"` qo'yib, uni QAYTA MARKAZLAShtirar edi — natijada
+   o'sha bo'limning chap cheti sahifadagi boshqa (to'liq 1180px) bo'limlardan
+   ancha o'ngda qolardi (173/213/383px kabi turli chetlar). `.narrow` shu
+   o'rniga ICHKARIDAGI blokka qo'llanadi: kenglikni cheklaydi, lekin chap
+   chetini umumiy .wrap bilan bir chiziqda ushlab turadi (margin:auto emas). */
+.narrow{max-width:720px;margin-left:0;margin-right:0}
+/* font-weight:400 (audit C8) — Anton shrifti faqat 400 og'irlikda mavjud;
+   brauzer standart h1-h3 uchun `bold` so'raganda uni sun'iy (faux-bold)
+   chizadi — kichik sarlavhalarda (xizmat kartalari, FAQ savollari) harflar
+   xiralashib ko'rinadi. font-synthesis:none — ba'zi brauzerlarda faux-bold
+   umuman o'chiriladi, font-weight:400 esa uni birinchi navbatda so'ramaydi. */
+h1,h2,h3{font-family:var(--anton);text-transform:uppercase;line-height:1.05;letter-spacing:.01em;margin:0 0 .6em;font-weight:400;font-synthesis:none}
 h1{font-size:clamp(2rem,5vw,3.4rem)}
 h2{font-size:clamp(1.5rem,3.4vw,2.3rem)}
 h3{font-size:1.15rem}
@@ -139,10 +160,20 @@ html[lang="en"]{--lang-tilt:3deg;--lang-tilt-on:-4deg}
 @supports selector(:has(*)){body:has(.nav-toggle:checked){overflow:hidden}}
 
 /* breadcrumbs */
-.crumbs{padding-top:14px;font-family:var(--mono);font-size:.72rem;opacity:.65}
-.crumbs a{text-decoration:none}
+/* padding-bottom (audit M3) — ilgari pastki bo'shliq yo'q edi, undan keyin
+   keladigan eyebrow/H1 bilan ~4px qo'shilib ketardi (blog maqolada ayniqsa
+   sezilarli); endi 28px ajratilgan. */
+.crumbs{padding-top:14px;padding-bottom:28px;font-family:var(--mono);font-size:.72rem;opacity:.65;
+  display:flex;flex-wrap:wrap;align-items:center}
+/* padding (audit M1) — havolalar 15-19px balandlikda edi (tavsiya >=44px
+   tap-target); display:inline-block bo'lmasa padding balandlikka qo'shilmaydi */
+.crumbs a{text-decoration:none;display:inline-block;padding:12px 4px;margin:-12px -4px;flex:none}
 .crumbs a:hover{color:var(--acid)}
-.crumbs .sep{margin:0 .5em}
+.crumbs .sep{margin:0 .5em;flex:none}
+/* oxirgi element (joriy sahifa nomi) uzun bo'lsa 2 qatorga tushib
+   qolmasin (audit M3, ayniqsa blog maqola sarlavhalarida) — bitta qatorda
+   qirqiladi. */
+.crumbs span[aria-current]{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 
 /* buttons — bosh sahifadagi .btn bilan bir xil o'lcham va animatsiya */
 .btn{display:inline-flex;align-items:center;gap:.7rem;padding:1.05rem 1.9rem;border-radius:999px;font-weight:700;
@@ -161,8 +192,20 @@ html[lang="en"]{--lang-tilt:3deg;--lang-tilt-on:-4deg}
 .btn-blk:hover{filter:brightness(1.4)}
 
 /* hero (inner pages) */
-.hero-in{padding-top:clamp(50px,7vw,90px);padding-bottom:clamp(30px,4vw,50px)}
+.hero-in{padding-top:clamp(50px,7vw,90px);padding-bottom:clamp(30px,4vw,50px);position:relative;overflow:hidden}
 .hero-in .lead{font-size:clamp(1.05rem,1.6vw,1.3rem);opacity:.85;max-width:64ch}
+/* imzo elementi (audit A6) — bosh sahifadagi .ghost bilan bir xil g'oya:
+   fonda katta outline so'z, sekin marquee. site.js eyebrow matnidan
+   avtomatik yaratadi (shablonlarga tegilmadi). Faqat dekorativ — matn
+   ustidan chiqmasin deb z-index:-1 va pointer-events:none. */
+.hero-in .ghost-word{position:absolute;top:50%;left:0;transform:translateY(-50%);
+  font-family:var(--anton);font-size:clamp(6rem,18vw,13rem);line-height:1;white-space:nowrap;
+  color:transparent;-webkit-text-stroke:1px rgba(252,251,247,.09);text-stroke:1px rgba(252,251,247,.09);
+  pointer-events:none;user-select:none;z-index:-1;
+  animation:ghost-scroll 26s linear infinite}
+@keyframes ghost-scroll{from{transform:translate(0,-50%)}to{transform:translate(-50%,-50%)}}
+@media(prefers-reduced-motion:reduce){.hero-in .ghost-word{animation:none}}
+@media(max-width:700px){.hero-in .ghost-word{display:none}}
 
 .consent-note{font-size:.76rem;opacity:.55;margin:-.4rem 0 0}
 .consent-note a{text-decoration:underline}
@@ -174,7 +217,14 @@ html[lang="en"]{--lang-tilt:3deg;--lang-tilt-on:-4deg}
 .legal-body p{opacity:.85;line-height:1.6}
 
 /* sections */
-section.sec{padding:clamp(36px,5vw,64px) 0}
+/* UI audit K2 — ROOT CAUSE (2026-09-22): bu qoida ilgari `padding:... 0`
+   qisqartmasi bilan yozilgan edi — `section.sec` (element+klass, specificity
+   0,0,1,1) `.wrap`ning o'zidan (0,0,1,0) KUCHLIROQ bo'lgani uchun .wrap'ning
+   chap/o'ng padding'ini 0'ga tushirib qo'yardi — HAR BIR `<section class="sec
+   wrap">` (deyarli butun sayt) chap chetda 40px kamroq bo'lib, .hero-in.wrap
+   yoki .cta-band.wrap kabi .sec bo'lmagan bo'limlardan surilib qolardi (audit
+   173px/213px). Endi faqat tepa/pastga tegiladi — chap/o'ng .wrap'ga tegishli. */
+section.sec{padding-top:clamp(36px,5vw,64px);padding-bottom:clamp(36px,5vw,64px)}
 
 /* Krem bo'lim — bosh sahifadagi .manifest/.proc ritmi (qora → krem → qora).
    Ichidagi barcha komponentlar krem fonda o'qiladigan ranglarga o'tadi:
@@ -214,16 +264,22 @@ section.sec.alt::before{content:'';position:absolute;inset:0 calc(50% - 50vw);ba
 .tag-row span{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;padding:.35rem .7rem;border:1px solid var(--line);border-radius:999px;opacity:.85}
 
 /* card grids */
-/* flex (grid emas) — 4-ustunga to'lmagan oxirgi qator "teshik" qoldirmasdan
-   o'z-o'zidan markazlashadi, karta sonidan qat'i nazar (7, 5, 3 ta va h.k.) */
-.card-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:1.1rem;margin-top:1.6rem}
-.card{flex:1 1 260px;max-width:340px;display:block;position:relative;text-decoration:none;color:var(--blk);
+/* CSS grid, auto-fill (UI audit K3, 2026-09-22) — ilgari flex-wrap ishlatilgan
+   edi, u har QATORNI mustaqil kenglikka cho'zgani uchun 7 ta karta 4+3 bo'lib
+   bo'linganda ikkala qator har xil eniga chiqardi (masalan 282px vs 340px) va
+   keng ekranda oxirgi qator chetga tegib qolardi. Grid'da barcha qatorlar BIR
+   XIL ustun kengligini bo'lishadi — nechta karta bo'lishidan qat'i nazar. */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.5rem;margin-top:1.6rem}
+.card{display:block;position:relative;text-decoration:none;color:var(--blk);
   padding:1.4rem 1.4rem 4.4rem;border:3px solid var(--blk);border-radius:18px;background:var(--cream);
   transition:transform .3s var(--ease),box-shadow .3s var(--ease)}
 .card:hover{transform:translateY(-8px) rotate(-.7deg);box-shadow:0 30px 60px rgba(217,255,63,.14)}
-.card .no{font-family:var(--mono);font-size:.7rem;opacity:.55}
+/* .7 (audit C4) — ilgari .55 edi, 4.20:1 kontrast berardi (kerak >=4.5:1) */
+.card .no{font-family:var(--mono);font-size:.7rem;opacity:.7}
 .card h3{margin:.4rem 0 .5rem}
-.card p{opacity:.75;font-size:.92rem;margin:0}
+/* margin-bottom (audit K5) — ilgari 0 edi: uzun matnli kartalarda (ERP, AI)
+   oxirgi qator bilan pastdagi ok strelka orasida atigi ~16px qolardi. */
+.card p{opacity:.75;font-size:.92rem;margin:0 0 1.5rem}
 .card .sub{font-family:var(--mono);font-size:.7rem;opacity:.6;text-transform:uppercase;letter-spacing:.06em}
 /* dumaloq strelka — bosh sahifadagi .svc-row .arr kabi, hover'da buriladi */
 .card::after{content:'→';position:absolute;left:1.4rem;bottom:1.4rem;width:44px;height:44px;
@@ -243,8 +299,11 @@ section.sec.alt::before{content:'';position:absolute;inset:0 calc(50% - 50vw);ba
 .note-box{padding:1.2rem 1.4rem;border:1.5px dashed var(--line);border-radius:14px;background:rgba(217,255,63,.04);margin-top:1rem}
 
 /* FAQ accordion — native <details>, no JS needed; visually matches bosh sahifadagi .fitem/.fq/.fx */
-/* ro'yxat eni ham bosh sahifadagi .faq kabi — 860px, markazda */
-.faq-list{display:grid;margin:1.4rem auto 0;max-width:860px}
+/* ro'yxat eni bosh sahifadagi .faq kabi 860px bilan cheklangan, lekin CHAP
+   CHETI markazlashtirilmaydi (audit K2, 2026-09-22) — avvalgi `margin:auto`
+   ro'yxatni yuqoridagi sarlavhadan o'ngga siljitib qo'yardi (masalan
+   /faq/ va xizmat sahifalaridagi FAQ bo'limida). */
+.faq-list{display:grid;margin:1.4rem 0 0;max-width:860px}
 .faq-list details{border-top:1px solid var(--line)}
 .faq-list details:last-child{border-bottom:1px solid var(--line)}
 /* bosh sahifadagi .fq bilan bir xil bo'shliq va o'lcham */
@@ -274,7 +333,11 @@ section.sec.alt::before{content:'';position:absolute;inset:0 calc(50% - 50vw);ba
 .case-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin:1.4rem 0;padding:1.2rem;border:1px solid var(--line);border-radius:14px}
 .case-meta div small{display:block;font-family:var(--mono);font-size:.66rem;text-transform:uppercase;letter-spacing:.1em;opacity:.55;margin-bottom:.3rem}
 .case-block{margin:1.4rem 0}
-.case-block .lab{font-family:var(--mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.14em;color:var(--blue);margin-bottom:.3rem;display:block}
+/* var(--acid) (audit C2) — bu bo'lim qora fonli .sec.wrap ichida chiqadi;
+   ilgari var(--blue) 2.71:1 kontrast berardi (kerak >=4.5:1), lime esa
+   qora fonda saytning boshqa joylarida (.eyebrow) ishlatilgan urg'u rangi
+   bilan bir xil, ~15:1 kontrast beradi. */
+.case-block .lab{font-family:var(--mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.14em;color:var(--acid);margin-bottom:.3rem;display:block}
 
 /* CTA band */
 /* CTA band — bosh sahifadagi .contact-sec kabi acid urg'u bo'limi */
@@ -304,7 +367,9 @@ section.sec.alt::before{content:'';position:absolute;inset:0 calc(50% - 50vw);ba
 @media(max-width:600px){.ft-social a span{display:none}.ft-social a{padding:.72rem;border-radius:50%}}
 .ft-meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem 1.2rem;margin-top:2.4rem;padding-top:1.4rem;border-top:1px solid var(--line);
   font-family:var(--mono);font-size:.72rem;opacity:.55;text-transform:uppercase}
-.ft-meta a{text-decoration:none}
+/* padding (audit M2) — "Maxfiylik siyosati"/"Foydalanish shartlari" 19px
+   balandlikda edi, endi tap-target kattaroq (margin bilan vizual joy saqlanadi) */
+.ft-meta a{text-decoration:none;display:inline-block;padding:10px 2px;margin:-10px -2px}
 .ft-meta a:hover{opacity:.85}
 /* footer wordmark — bosh sahifadagi .f-word bilan AYNAN bir xil: o'sha
    font-size/line-height/margin va translateY(14%) (pastki qismi footer
@@ -333,6 +398,13 @@ section.sec.alt::before{content:'';position:absolute;inset:0 calc(50% - 50vw);ba
 .cform input,.cform select,.cform textarea{width:100%;padding:.85rem 1rem;background:rgba(252,251,247,.04);
   border:1px solid var(--line);border-radius:10px;color:var(--w);font-family:var(--grot);font-size:.95rem}
 .cform textarea{min-height:120px;resize:vertical}
+/* custom <select> strelkasi (audit C9) — brauzer standart (Arial, kulrang
+   strelka) ko'rinishi qolgan inputlardan farq qilardi; endi appearance:none
+   + SVG strelka bilan boshqa inputlar uslubiga mos qilingan. */
+.cform select{appearance:none;-webkit-appearance:none;padding-right:2.6rem;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FCFBF7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 1rem center;background-size:16px}
+.contact-sec .cform select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230B0B0E' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")}
 .cform input:focus,.cform select:focus,.cform textarea:focus{outline:2px solid var(--acid);border-color:var(--acid)}
 .ok-msg{min-height:1.4em;font-size:.88rem;opacity:.85}
 
@@ -352,7 +424,11 @@ section.sec.alt::before{content:'';position:absolute;inset:0 calc(50% - 50vw);ba
 .con-a>svg{width:18px;height:18px;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .contact-sec .cform{background:var(--w);border:3px solid var(--blk);border-radius:20px;padding:2rem;box-shadow:10px 10px 0 var(--blk)}
 .contact-sec .cform label{color:var(--blk);opacity:.75}
-.contact-sec .cform input,.contact-sec .cform select,.contact-sec .cform textarea{background:var(--cream);border:2px solid var(--blk);color:var(--blk)}
+/* background-color (longhand, not `background` shorthand) — shorthand
+   resets background-image to its initial value, which silently erased the
+   custom <select> strelkasi (C9) qo'yilgan background-image'ni bu qatordan
+   keyin joylashgani uchun. */
+.contact-sec .cform input,.contact-sec .cform select,.contact-sec .cform textarea{background-color:var(--cream);border:2px solid var(--blk);color:var(--blk)}
 .contact-sec .cform input:focus,.contact-sec .cform select:focus,.contact-sec .cform textarea:focus{outline:0;box-shadow:0 0 0 4px rgba(43,43,255,.3);border-color:var(--blk)}
 .contact-sec .consent-note{color:var(--blk);opacity:.7}
 .contact-sec .ok-msg{color:var(--blue);font-weight:700}

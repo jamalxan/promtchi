@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0B0B0E">
 <title>promtchi® — web, CRM and AI development studio in Tashkent</title>
-<meta name="description" content="We bring your business to life in one system — design, development, automation and AI.">
+<meta name="description" content="Website development, mobile apps, CRM/ERP systems and Telegram bots in Tashkent — we bring your business to life with design, automation and AI in one system.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="promtchi® — web, CRM and AI development studio in Tashkent">
-<meta property="og:description" content="We bring your business to life in one system — design, development, automation and AI.">
+<meta property="og:description" content="Website development, mobile apps, CRM/ERP systems and Telegram bots in Tashkent — we bring your business to life with design, automation and AI in one system.">
 <meta property="og:url" content="https://promtchi.uz/en/">
 <meta property="og:image" content="https://promtchi.uz/static/og-cover.png">
 <meta property="og:image:width" content="1200">
@@ -16,7 +16,7 @@
 <meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="promtchi® — web, CRM and AI development studio in Tashkent">
-<meta name="twitter:description" content="We bring your business to life in one system — design, development, automation and AI.">
+<meta name="twitter:description" content="Website development, mobile apps, CRM/ERP systems and Telegram bots in Tashkent — we bring your business to life with design, automation and AI in one system.">
 <meta name="twitter:image" content="https://promtchi.uz/static/og-cover.png">
 <link rel="canonical" href="https://promtchi.uz/en/">
 <link rel="alternate" hreflang="uz-UZ" href="https://promtchi.uz/uz/">
@@ -128,6 +128,9 @@ html[lang="en"]{--lang-tilt:3deg;--lang-tilt-on:-4deg;--lang-tilt-menu:2deg}
   color:rgba(252,251,247,.5);text-decoration:none;transition:all .25s var(--ease)}
 .lang-mini a.on{background:var(--acid);color:var(--blk);transform:rotate(var(--lang-tilt-on)) scale(1.05)}
 .lang-mini a:not(.on):hover{color:var(--w);transform:rotate(-5deg) scale(1.1)}
+/* opacity .8 (audit C5) — .menu-lang ko'k #menu fonida ishlatiladi,
+   meros .5 opacity'dagi asl .lang-mini rangi u yerda 2.70:1 kontrast berardi */
+.menu-lang a:not(.on){color:rgba(252,251,247,.8)}
 @media(max-width:680px){.header-lang{display:none}}
 .menu-lang{transform:rotate(var(--lang-tilt-menu));gap:4px;padding:4px;margin-bottom:1.4rem}
 .menu-lang a{width:42px;height:34px;font-size:.76rem}
@@ -172,7 +175,8 @@ body.menu-open #menu{clip-path:inset(0 0 0% 0)}
   font-family:var(--anton);font-size:clamp(2.4rem,7.4vw,5.6rem);text-transform:uppercase;line-height:1.06;
   letter-spacing:.01em;padding:.15em 0;border-bottom:1px solid rgba(252,251,247,.2);
   transform:translateY(40px);opacity:0;transition:transform .6s var(--ease),opacity .6s,color .3s}
-#menu a.m-link small{font-family:var(--mono);font-size:.9rem;letter-spacing:.16em;color:rgba(252,251,247,.55)}
+/* opacity .8, min 12px (audit C7) — ilgari .55/10.5px past kontrast berardi */
+#menu a.m-link small{font-family:var(--mono);font-size:max(.9rem,12px);letter-spacing:.16em;color:rgba(252,251,247,.8)}
 #menu a.m-link:hover{color:var(--acid)}
 body.menu-open #menu a.m-link{transform:none;opacity:1}
 body.menu-open #menu a.m-link:nth-child(1){transition-delay:.14s}
@@ -181,8 +185,9 @@ body.menu-open #menu a.m-link:nth-child(3){transition-delay:.26s}
 body.menu-open #menu a.m-link:nth-child(4){transition-delay:.32s}
 body.menu-open #menu a.m-link:nth-child(5){transition-delay:.38s}
 body.menu-open #menu a.m-link:nth-child(6){transition-delay:.44s}
+/* opacity .85 (audit C6) — ilgari .6 edi, ko'k fonda 3.33:1 kontrast berardi */
 #menu .m-foot{margin-top:2.6rem;display:flex;gap:2rem;font-family:var(--mono);font-size:.74rem;
-  letter-spacing:.16em;text-transform:uppercase;color:rgba(252,251,247,.6);flex-wrap:wrap}
+  letter-spacing:.16em;text-transform:uppercase;color:rgba(252,251,247,.85);flex-wrap:wrap}
 
 /* ══════════ SECTION ASOSI ══════════ */
 section{position:relative}
@@ -205,7 +210,9 @@ section{position:relative}
   transition:transform .3s var(--ease)}
 .btn:hover svg{transform:translateX(4px)}
 .btn-acid{background:var(--acid);color:var(--blk)}
-.btn-coral{background:var(--coral);color:var(--w)}
+/* qora matn (audit C3) — ilgari krem (--w) matn coral fonda 3.22:1 berardi
+   (kerak >=4.5:1 16px'da); qora matn ~5.9:1 beradi */
+.btn-coral{background:var(--coral);color:var(--blk)}
 .btn-blk{background:var(--blk);color:var(--w)}
 .btn-w{background:var(--w);color:var(--blk)}
 
@@ -827,22 +834,37 @@ body.menu-open,body.modal-open{overflow:hidden}
   <div class="svc-list" id="svcList">
     <a class="svc-row" href="/en/xizmatlar/web-development/" data-pv="pv1">
       <span class="no">/01</span>
-      <div><h3>Web &amp; App</h3><span class="sub">Website · Web app · Mobile</span></div>
+      <div><h3>Web Development</h3><span class="sub">Landing page · Corporate website · Web app</span></div>
       <span class="arr"><svg viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></svg></span>
     </a>
-    <a class="svc-row" href="/en/xizmatlar/business-process-automation/" data-pv="pv2">
+    <a class="svc-row" href="/en/xizmatlar/mobile-app-development/" data-pv="pv1">
       <span class="no">/02</span>
-      <div><h3>Automation</h3><span class="sub">CRM · Lead flow · Payments</span></div>
+      <div><h3>Mobile App Development</h3><span class="sub">Android · iOS · Flutter</span></div>
+      <span class="arr"><svg viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></svg></span>
+    </a>
+    <a class="svc-row" href="/en/xizmatlar/crm/" data-pv="pv2">
+      <span class="no">/03</span>
+      <div><h3>CRM Development</h3><span class="sub">Sales pipeline · Kanban · Analytics</span></div>
+      <span class="arr"><svg viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></svg></span>
+    </a>
+    <a class="svc-row" href="/en/xizmatlar/erp/" data-pv="pv4">
+      <span class="no">/04</span>
+      <div><h3>ERP Development</h3><span class="sub">Finance · Inventory · KPI · Dashboard</span></div>
       <span class="arr"><svg viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></svg></span>
     </a>
     <a class="svc-row" href="/en/xizmatlar/ai/" data-pv="pv3">
-      <span class="no">/03</span>
+      <span class="no">/05</span>
       <div><h3>AI Solutions</h3><span class="sub">Chatbot · STT · Content</span></div>
       <span class="arr"><svg viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></svg></span>
     </a>
-    <a class="svc-row" href="/en/xizmatlar/crm/" data-pv="pv4">
-      <span class="no">/04</span>
-      <div><h3>CRM / ERP Systems</h3><span class="sub">Finance · Inventory · KPI · Dashboard</span></div>
+    <a class="svc-row" href="/en/xizmatlar/telegram-bot/" data-pv="pv3">
+      <span class="no">/06</span>
+      <div><h3>Telegram Bot</h3><span class="sub">Orders · CRM sync · Notifications</span></div>
+      <span class="arr"><svg viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></svg></span>
+    </a>
+    <a class="svc-row" href="/en/xizmatlar/business-process-automation/" data-pv="pv2">
+      <span class="no">/07</span>
+      <div><h3>Automation</h3><span class="sub">Lead flow · Payments · Reporting</span></div>
       <span class="arr"><svg viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></svg></span>
     </a>
   </div>
@@ -1113,36 +1135,33 @@ const STACK=["Python","FastAPI","Flutter","JavaScript","TypeScript","Go","C++"];
 const CATS=["All","Web & App","Automation","AI Solutions"];
 const API='';
 
-/* ══════════ NAVIGATSIYA — topnav/mobil menyu/footer/bo'lim raqamlari BITTA manbadan ══════════ */
+/* ══════════ NAVIGATSIYA — topnav/mobil menyu/footer/bo'lim raqamlari BITTA manbadan ══════════
+   UI audit K1 (2026-09-22): endi ichki sahifalar (base.html) bilan bir xil 7 ta
+   manzil — sahifaning o'zida bor bo'limlar (Services, Contact) anchor, qolganlari
+   haqiqiy sahifalarga (`href`) olib boradi. */
 const NAV_SECTIONS=[
   {id:'xizmat',label:'Services'},
-  {id:'muddat',label:'Timeline'},
-  {id:'jarayon',label:'Process'},
-  {id:'case',label:'Projects'},
+  {href:'/en/yechimlar/',label:'Solutions'},
+  {href:'/en/portfolio/',label:'Portfolio'},
+  {href:'/en/blog/',label:'Blog'},
+  {href:'/en/faq/',label:'FAQ'},
+  {href:'/en/biz-haqimizda/',label:'About Us'},
   {id:'aloqa',label:'Contact'}
 ];
 const pad2=n=>String(n).padStart(2,'0');
+const hrefOf=s=>s.href||('#'+s.id);
 function renderNav(){
   document.getElementById('topNav').innerHTML=NAV_SECTIONS.map((s,i)=>
-    `<a href="#${s.id}"><small>${pad2(i+1)}</small><span>${s.label}</span></a>`).join('');
+    `<a href="${hrefOf(s)}"><small>${pad2(i+1)}</small><span>${s.label}</span></a>`).join('');
 
-  const mLinks=[];
-  NAV_SECTIONS.forEach((s,i)=>{
-    mLinks.push(`<a class="m-link" href="#${s.id}"><small>${pad2(i+1)}</small>${s.label}</a>`);
-    if(s.id==='case')mLinks.push('<a class="m-link js-postlink" href="#postlar" style="display:none"><small>✦</small>Posts</a>');
-  });
-  mLinks.push('<a class="m-link" href="#faq"><small>✦</small>FAQ</a>');
-  document.getElementById('menuLinks').innerHTML=mLinks.join('');
+  document.getElementById('menuLinks').innerHTML=NAV_SECTIONS.map((s,i)=>
+    `<a class="m-link" href="${hrefOf(s)}"><small>${pad2(i+1)}</small>${s.label}</a>`).join('');
 
-  const fLinks=[];
-  NAV_SECTIONS.forEach(s=>{
-    fLinks.push(`<a href="#${s.id}">→ ${s.label}</a>`);
-    if(s.id==='case')fLinks.push('<a href="#postlar" class="js-postlink" style="display:none">→ Posts</a>');
-  });
-  fLinks.push('<a href="#faq">→ FAQ</a>');
-  document.getElementById('fNav').innerHTML=fLinks.join('');
+  document.getElementById('fNav').innerHTML=NAV_SECTIONS.map(s=>
+    `<a href="${hrefOf(s)}">→ ${s.label}</a>`).join('');
 
   NAV_SECTIONS.forEach((s,i)=>{
+    if(!s.id)return;
     const tl=document.querySelector(`#${s.id} .tag-line`);
     if(tl)tl.textContent=`${s.label} — ${pad2(i+1)}`;
   });
@@ -1448,7 +1467,9 @@ document.querySelectorAll('#menu a').forEach(a=>a.addEventListener('click',()=>{
 (function(){
   const items=[];
   document.querySelectorAll('.topnav a').forEach(a=>{
-    const s=document.querySelector(a.getAttribute('href'));
+    const href=a.getAttribute('href');
+    if(!href||href.charAt(0)!=='#')return;
+    const s=document.querySelector(href);
     if(s)items.push({a:a,s:s});
   });
   if(!items.length)return;
