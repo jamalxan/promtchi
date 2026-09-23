@@ -154,16 +154,18 @@
     });
   })();
 
-  /* ---------- hero imzo elementi (UI audit A6, 2026-09-22) ----------
+  /* ---------- hero imzo elementi (UI audit A6, 2026-09-22; P2 2026-09-23) ----------
      Ichki sahifa hero'siga bosh sahifadagi .ghost'ga o'xshash fon matnini
-     qo'shadi — shablonlarga tegmasdan, eyebrow'ning o'z matnidan (masalan
-     "Portfolio", "FAQ") olib. Dekorativ, JS ishlamasa shunchaki ko'rinmaydi
-     (matn/kontent'ga ta'sir qilmaydi). */
+     qo'shadi — H1'ning o'z matnidan olib (masalan "Xizmatlar", "FAQ").
+     Ilgari eyebrow'dan olinardi, lekin P2'da eyebrow endi H1'ni takrorlamaydigan
+     qisqa kontekst matniga aylandi (t_label) — fon so'zi sahifa nomini
+     ko'rsatishi uchun endi h1'dan olinadi. Dekorativ, JS ishlamasa shunchaki
+     ko'rinmaydi (matn/kontent'ga ta'sir qilmaydi). */
   (function () {
     var heroes = document.querySelectorAll('.hero-in');
     Array.prototype.forEach.call(heroes, function (hero) {
-      var eyebrow = hero.querySelector('.eyebrow');
-      var text = eyebrow && eyebrow.textContent.trim();
+      var h1 = hero.querySelector('h1');
+      var text = h1 && h1.textContent.trim();
       if (!text) return;
       var word = document.createElement('div');
       word.className = 'ghost-word';

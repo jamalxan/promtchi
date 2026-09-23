@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="hero-in wrap">
-  <span class="eyebrow" aria-hidden="true">{{ nav.solutions }}</span>
+<section class="hero-in wrap acc-blue">
+  <span class="eyebrow" aria-hidden="true">{{ t_label }}</span>
   <h1>{{ t_h1 }}</h1>
   <p class="lead">{{ t_intro }}</p>
 </section>
 <section class="sec wrap">
   <h2 class="sr-only">{{ common.solutions_list_h2 }}</h2>
-  <div class="card-grid">
+  <div class="card-grid card-grid-lg">
     {% for sol in solutions %}
-    <a class="card" href="/{{ lang }}/yechimlar/{{ sol.slug }}/">
+    <a class="card card-blue" href="/{{ lang }}/yechimlar/{{ sol.slug }}/">
       <span class="no">/{{ '%02d'|format(loop.index) }}</span>
       <h3>{{ sol.nav }}</h3>
       <p>{{ sol.intro }}</p>

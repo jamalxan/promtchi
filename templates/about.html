@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% block extra_schema %}<script type="application/ld+json">{{ faq_schema|safe }}</script>{% endblock %}
 {% block content %}
-<section class="hero-in wrap">
-  <span class="eyebrow" aria-hidden="true">{{ nav.about }}</span>
+<section class="hero-in wrap alt">
+  <span class="eyebrow" aria-hidden="true">{{ t_label }}</span>
   <h1>{{ a.h1 }}</h1>
   <p class="lead">{{ a.lead }}</p>
 </section>
@@ -17,8 +17,8 @@
   <div>
     <p>{{ a.mission }}</p>
     <p style="font-family:var(--mono);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;opacity:.55;margin-top:1.6rem">{{ a.facts_title }}</p>
-    <div class="tag-row">
-      {% for num, label in a.facts %}<span style="display:flex;flex-direction:column;align-items:flex-start;padding:.7rem 1rem"><b style="font-family:var(--anton);font-size:1.3rem;color:var(--acid)">{{ num }}</b><small style="font-family:var(--mono);opacity:.6">{{ label }}</small></span>{% endfor %}
+    <div class="facts-row">
+      {% for num, label in a.facts %}<div class="fact"><b>{{ num }}</b><small>{{ label }}</small></div>{% endfor %}
     </div>
   </div>
 </section>

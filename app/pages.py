@@ -235,7 +235,8 @@ async def services_index(request: Request, lang: str):
     ctx = await _base_ctx(request, lang, path_by_lang,
                      title=seo_title, desc=intro,
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"), (NAV[lang]["services"], None)])
-    ctx.update(services=_service_cards(lang, services), t_h1=NAV[lang]["services"], t_intro=intro)
+    t_label = {"uz": "7 yo'nalish", "ru": "7 направлений", "en": "7 directions"}[lang]
+    ctx.update(services=_service_cards(lang, services), t_h1=NAV[lang]["services"], t_intro=intro, t_label=t_label)
     return templates.TemplateResponse(request, "services_index.html", ctx)
 
 
@@ -294,7 +295,8 @@ async def solutions_index(request: Request, lang: str):
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"), (NAV[lang]["solutions"], None)])
     solutions = [{"slug": SOLUTION_SLUGS[k][lang], "nav": SOLUTIONS[k][lang]["nav"],
                   "intro": SOLUTIONS[k][lang]["intro"]} for k in SOLUTION_KEYS]
-    ctx.update(solutions=solutions, t_h1=NAV[lang]["solutions"], t_intro=intro)
+    t_label = {"uz": "3 soha", "ru": "3 отрасли", "en": "3 industries"}[lang]
+    ctx.update(solutions=solutions, t_h1=NAV[lang]["solutions"], t_intro=intro, t_label=t_label)
     return templates.TemplateResponse(request, "solutions_index.html", ctx)
 
 
@@ -342,7 +344,8 @@ async def portfolio_index(request: Request, lang: str):
     }[lang]
     ctx = await _base_ctx(request, lang, path_by_lang, title=seo_title, desc=intro,
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"), (NAV[lang]["portfolio"], None)])
-    ctx.update(cases=_case_cards(lang, cases), t_h1=NAV[lang]["portfolio"], t_intro=intro)
+    t_label = {"uz": "Real loyihalar", "ru": "Реальные проекты", "en": "Real projects"}[lang]
+    ctx.update(cases=_case_cards(lang, cases), t_h1=NAV[lang]["portfolio"], t_intro=intro, t_label=t_label)
     return templates.TemplateResponse(request, "portfolio_index.html", ctx)
 
 
@@ -385,7 +388,8 @@ async def faq_page(request: Request, lang: str):
     desc = {"uz": "promtchi haqida ko'p so'raladigan savollar: narx, muddat, to'lov, texnik yordam va xizmatlar.",
             "ru": "Часто задаваемые вопросы о promtchi: цена, сроки, оплата, техподдержка и услуги.",
             "en": "Frequently asked questions about promtchi: pricing, timelines, payment, support and services."}[lang]
-    title = {"uz": "Savol-javob (FAQ)", "ru": "Вопросы и ответы (FAQ)", "en": "FAQ"}[lang]
+    title = {"uz": "Savol-javob", "ru": "Вопросы и ответы", "en": "FAQ"}[lang]
+    t_label = {"uz": "Narx · muddat · jarayon", "ru": "Цена · сроки · процесс", "en": "Price · timeline · process"}[lang]
     seo_title = {
         "uz": "Savol-javob — narx, muddat va ish jarayoni | promtchi",
         "ru": "Вопросы и ответы — цены, сроки и процесс работы | promtchi",
@@ -393,7 +397,7 @@ async def faq_page(request: Request, lang: str):
     }[lang]
     ctx = await _base_ctx(request, lang, path_by_lang, title=seo_title, desc=desc,
                      breadcrumbs=[(NAV[lang]["home"], f"/{lang}/"), (NAV[lang]["faq"], None)])
-    ctx.update(items=items, t_h1=title, faq_schema=seo.json_ld(seo.faq_schema(items)))
+    ctx.update(items=items, t_h1=title, t_label=t_label, faq_schema=seo.json_ld(seo.faq_schema(items)))
     return templates.TemplateResponse(request, "faq.html", ctx)
 
 
@@ -411,7 +415,8 @@ async def about_page(request: Request, lang: str):
     # ismlar EMAS, faqat umumiy "Bizning ekspertiza" bloki (a.team_title/team_lead,
     # app/content/about.py) ko'rsatiladi. Rozilik kelgach shu yerga real profillar
     # (TeamIn: name/role/photo) qo'shiladi.
-    ctx.update(a=a, faq_schema=seo.json_ld(seo.faq_schema(a["entity_qa"])))
+    t_label = {"uz": "2023 yildan", "ru": "С 2023 года", "en": "Since 2023"}[lang]
+    ctx.update(a=a, t_label=t_label, faq_schema=seo.json_ld(seo.faq_schema(a["entity_qa"])))
     return templates.TemplateResponse(request, "about.html", ctx)
 
 
