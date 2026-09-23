@@ -98,6 +98,26 @@ class TelegramBot:
             self.last_error = str(e)[:200]
             return {"ok": False, "description": str(e)}
 
+    async def send_document(self, chat_id: str, file_bytes: bytes, filename: str, caption: str = "") -> bool:
+        """Faylni (masalan zaxira arxivi) hujjat sifatida yuboradi."""
+        if not self.token or self.client is None:
+            return False
+        try:
+            r = await self.client.post(
+                API.format(token=self.token, method="sendDocument"),
+                data={"chat_id": chat_id, "caption": caption},
+                files={"document": (filename, file_bytes, "application/gzip")},
+                timeout=60.0,
+            )
+            data = r.json()
+            if not data.get("ok"):
+                self.last_error = str(data.get("description", ""))[:200]
+                return False
+            return True
+        except Exception as e:
+            self.last_error = str(e)[:200]
+            return False
+
     # ── obunachilar ──────────────────────────────────────────────────────────
     async def _save_subscribers(self) -> None:
         async with SessionLocal() as s:

@@ -1098,6 +1098,103 @@ async def run_data_fixups(session: AsyncSession) -> None:
                 ))
         session.add(Setting(key="blog_i18n_ru_en_v1_done", value="1"))
 
+    # 15. SEO kalit so'zlar kengaytmasi (2026-09-22, mijoz taqdim etgan
+    #     uz/ru kalit so'zlar ro'yxati) — xizmat sahifalarining `for_whom`
+    #     va `price_note` matnlariga tabiiy ravishda tegishli qidiruv
+    #     iboralari qo'shildi (masalan "CRM tizim narxi", "ERP tizim
+    #     buyurtma qilish", "arzon mobil ilova yasash"). `en` tegilmadi —
+    #     mijoz faqat uz/ru ro'yxat berdi. Bir martalik, keyingi admin
+    #     tahriri saqlanadi (marker).
+    seo_kw_marker = await session.scalar(
+        select(Setting.value).where(Setting.key == "service_seo_keywords_v1_done")
+    )
+    if seo_kw_marker is None:
+        from .content.services import SERVICES as SEED_SERVICES, SERVICE_KEYS as SEED_SERVICE_KEYS
+
+        res = await session.execute(select(Service).where(Service.key.in_(SEED_SERVICE_KEYS)))
+        by_key = {s.key: s for s in res.scalars().all()}
+        for key in SEED_SERVICE_KEYS:
+            svc = by_key.get(key)
+            if svc is None:
+                continue
+            for lang in ("uz", "ru"):
+                seed = SEED_SERVICES[key][lang]
+                data = getattr(svc, f"data_{lang}")
+                data["for_whom"] = seed["for_whom"]
+                data["price_note"] = seed["price_note"]
+                flag_modified(svc, f"data_{lang}")
+        session.add(Setting(key="service_seo_keywords_v1_done", value="1"))
+
+    # 16. #15'ning davomi — endi `en` uchun ham xuddi shu keng ayt so'zlar
+    #     (mijoz so'ragan uz/ru ro'yxatining ingliz tiliga tabiiy moslashtirilgan
+    #     varianti) `for_whom`/`price_note`ga qo'shildi. #15 markeri allaqachon
+    #     ishlatib bo'lingani uchun alohida marker — keyingi admin tahriri
+    #     saqlanadi.
+    seo_kw_en_marker = await session.scalar(
+        select(Setting.value).where(Setting.key == "service_seo_keywords_en_v1_done")
+    )
+    if seo_kw_en_marker is None:
+        from .content.services import SERVICES as SEED_SERVICES, SERVICE_KEYS as SEED_SERVICE_KEYS
+
+        res = await session.execute(select(Service).where(Service.key.in_(SEED_SERVICE_KEYS)))
+        by_key = {s.key: s for s in res.scalars().all()}
+        for key in SEED_SERVICE_KEYS:
+            svc = by_key.get(key)
+            if svc is None:
+                continue
+            seed = SEED_SERVICES[key]["en"]
+            data = svc.data_en
+            data["for_whom"] = seed["for_whom"]
+            data["price_note"] = seed["price_note"]
+            flag_modified(svc, "data_en")
+        session.add(Setting(key="service_seo_keywords_en_v1_done", value="1"))
+
+    # 17. UI audit K6 (2026-09-23) — Content.data["contacts"]dagi email
+    #     eski "promtchi@gmail.com" bo'lib qolgan edi, holbuki kod bazasidagi
+    #     BARCHA boshqa manba (schemas.py DEFAULT_CONTENT, content/common.py
+    #     ORG, testlar) allaqachon "hello@promtchi.uz"ni yagona to'g'ri
+    #     manzil sifatida ishlatadi — bosh sahifa shu Content jadvalidan
+    #     o'qigani uchun u yerda eski qiymat ko'rinib qolgan edi (bitta
+    #     saytda 2 xil email — audit K6). Faqat ANIQ eski qiymatni
+    #     almashtiramiz — admin keyinroq boshqa manzil kiritgan bo'lsa
+    #     tegilmaydi. Bir martalik, Setting markeri bilan.
+    email_fix_marker = await session.scalar(
+        select(Setting.value).where(Setting.key == "contact_email_fix_v1_done")
+    )
+    if email_fix_marker is None:
+        content_row = await session.get(Content, 1)
+        if content_row is not None:
+            data = content_row.data
+            changed = False
+            for c in data.get("contacts", []):
+                if c.get("icon") == "email" and c.get("value") == "promtchi@gmail.com":
+                    c["value"], c["url"] = "hello@promtchi.uz", "mailto:hello@promtchi.uz"
+                    changed = True
+            if changed:
+                flag_modified(content_row, "data")
+        session.add(Setting(key="contact_email_fix_v1_done", value="1"))
+
+    # 18. #17'ning davomi — xuddi shu eski email `socials` massivida ham
+    #     (Email ikonkasi bilan) qolib ketgan ekan; #17 markeri allaqachon
+    #     ishlatib bo'lingani uchun alohida marker.
+    email_fix2_marker = await session.scalar(
+        select(Setting.value).where(Setting.key == "contact_email_fix_v2_done")
+    )
+    if email_fix2_marker is None:
+        content_row = await session.get(Content, 1)
+        if content_row is not None:
+            data = content_row.data
+            changed = False
+            for s in data.get("socials", []):
+                if s.get("icon") == "email" and s.get("url") == "mailto:promtchi@gmail.com":
+                    s["url"] = "mailto:hello@promtchi.uz"
+                    if s.get("value") == "promtchi@gmail.com":
+                        s["value"] = "hello@promtchi.uz"
+                    changed = True
+            if changed:
+                flag_modified(content_row, "data")
+        session.add(Setting(key="contact_email_fix_v2_done", value="1"))
+
     await session.commit()
 
 async def get_session() -> AsyncSession:

@@ -276,7 +276,15 @@ def _inject_live_contacts(data: bytes) -> bytes:
         tg = next((c for c in contacts if c.get("icon") == "telegram" and c.get("url")), None)
         if tg:
             org.setdefault("contactPoint", [{}])[0]["url"] = tg["url"]
-            org["sameAs"] = [tg["url"]]
+        # sameAs — profil havolalari (Telegram, Instagram va h.k.), kontakt
+        # usullari emas (SEO audit §24). Ilgari faqat Telegram bilan
+        # QATTIQ YOZILGAN edi ("org['sameAs'] = [tg['url']]") — socials
+        # jadvalidagi Instagram kabi haqiqiy profillar tashlab yuborilardi.
+        same_as = [s["url"] for s in socials if s.get("icon") in ("telegram", "instagram") and s.get("url")]
+        if tg and tg["url"] not in same_as:
+            same_as.insert(0, tg["url"])
+        if same_as:
+            org["sameAs"] = same_as
         phone = next((c for c in contacts if c.get("icon") == "phone" and c.get("url", "").startswith("tel:")), None)
         if phone:
             org.setdefault("contactPoint", [{}])[0]["telephone"] = phone["url"][len("tel:"):]

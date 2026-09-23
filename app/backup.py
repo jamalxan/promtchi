@@ -22,8 +22,13 @@ Avtomatik rejim: `BACKUP_ENABLED=true` bo'lsa ilova ishga tushganda fon
 vazifasi `BACKUP_INTERVAL_HOURS` da bir marta zaxira oladi va eng oxirgi
 `BACKUP_KEEP` donasini saqlab, qolganini o'chiradi.
 
-DIQQAT: zaxira fayli mijoz arizalari (Lead) ni o'z ichiga oladi — uni
-serverdan tashqariga nusxalashda shifrlangan/maxfiy kanaldan foydalaning.
+Serverdan tashqariga nusxalash: har bir muvaffaqiyatli zaxiradan so'ng fayl
+avtomatik ravishda mavjud, ulangan Telegram guruhga (`_send_offsite`,
+`app/telegram.py::TelegramBot.send_document`) hujjat sifatida yuboriladi —
+alohida bulut/S3 hisobi kerak emas. Telegram HTTPS orqali ishlaydi, bu
+zaxira fayli (mijoz arizalari — Lead — bilan) uchun maxfiy kanal talabini
+qondiradi. Bot sozlanmagan bo'lsa — jim o'tkazib yuboriladi, zaxiraning o'zi
+baribir diskda saqlanadi.
 """
 from __future__ import annotations
 
@@ -116,7 +121,28 @@ async def create_backup() -> Path | None:
         path.name, path.stat().st_size / 1048576,
         f", {len(removed)} ta eski o'chirildi" if removed else "",
     )
+    await _send_offsite(path)
     return path
+
+
+async def _send_offsite(path: Path) -> None:
+    """Zaxirani serverdan tashqariga (Telegram guruhga) nusxalaydi — TZ 20-bo'lim:
+    "zaxirani serverdan tashqariga nusxalash". Mavjud, allaqachon ulangan
+    Telegram guruh ishlatiladi (alohida bulut/S3 hisobi talab qilinmaydi).
+    Xato yuborishni to'xtatmasin — zaxiraning o'zi baribir diskda saqlanadi."""
+    try:
+        from .telegram import bot
+        if not bot.token or not bot.group_chat_id:
+            log.info("backup: Telegram sozlanmagan — tashqariga nusxalash o'tkazib yuborildi")
+            return
+        size_mb = path.stat().st_size / 1048576
+        caption = f"🗄 Kunlik zaxira ({size_mb:.1f} MB)"
+        data = await asyncio.to_thread(path.read_bytes)
+        ok = await bot.send_document(bot.group_chat_id, data, path.name, caption)
+        if not ok:
+            log.warning("backup: Telegram'ga yuborilmadi: %s", bot.last_error)
+    except Exception:
+        log.exception("backup: Telegram'ga yuborishda xato")
 
 
 async def scheduler_loop() -> None:
