@@ -823,11 +823,41 @@ berilsa Organization tuguni `ProfessionalService` sifatida ham e'lon qilinadi);
 §20 — zaxira va tiklash mexanizmi (`app/backup.py`: VACUUM INTO + gzip,
 rotatsiya, fon rejalashtiruvchisi, CLI restore, admin API).
 
-**Ochiq qolgan — faqat biznes ma'lumoti yoki server sozlamasi:** GA4 Measurement
-ID; Search Console tasdiqlash tokeni; serverda `ENV=production` (hozir `/docs`
-ochiq va HSTS header yo'q); LocalBusiness uchun manzil va ish vaqti; real
-statistika raqamlari; zaxirani serverdan tashqariga nusxalash (cron/snapshot);
-HTTP/2 va CDN. Bularning HAR BIRI uchun kod tayyor va kutib turibdi.
+**Bajarildi (2026-09-22):** GA4 Measurement ID (`G-TYTLPQ87B9`, production
+`.env`da allaqachon bor edi, tekshirilib tasdiqlandi — `googletagmanager.com/gtag/js?id=G-TYTLPQ87B9`
+jonli sahifada ko'rinadi); Search Console tasdiqlangan va sitemap yuborilgan;
+GA4 ↔ Search Console bog'langan; Cloudflare CDN faol (nameserverlar
+ishlamoqda); SSL/TLS Full (strict) rejimda; production serverda `ENV=production`
+tasdiqlandi → `/docs`/`/redoc`/`/openapi.json` yopiq (404), HSTS header
+mavjud (`max-age=31536000; includeSubDomains`); HTTP/2 ishlamoqda (Cloudflare
+orqali); kunlik SQLite zaxira ishlamoqda (`/home/ubuntu/promtchi/backups/`,
+har kuni yangi `.gz` fayl); mijoz taqdim etgan uz/ru SEO kalit so'zlar
+ro'yxati bosh sahifa meta description, `biz-haqimizda` (IT agentlik,
+startap uchun texnik hamkor, MVP 14 kunda) va 6 ta xizmat sahifasining
+`for_whom`/`price_note` maydonlariga tabiiy tarzda joylashtirildi (keyword
+stuffing qilinmadi, 2-4 tadan taqsimlangan) — `app/content/services.py` va
+`app/content/about.py`ga tuzatildi, allaqachon seed qilingan production DB
+qatorlariga bir martalik migratsiya (`service_seo_keywords_v1_done`,
+`app/db.py` §15) orqali qo'llandi va serverga joylashtirilib tasdiqlandi.
+Ro'yxatning 14-bandi (Tizimly.uz/Socialauto.uz brend so'zlari) ataylab
+o'tkazib yuborildi — boshqa domenlarga tegishli; Instagram bio/caption
+matnlari kod bazasidan tashqarida (alohida taklif sifatida berildi).
+
+**Ochiq qolgan — faqat biznes ma'lumoti yoki server sozlamasi:**
+1. **LocalBusiness manzil va ish vaqti** — `BUSINESS_STREET_ADDRESS` /
+   `BUSINESS_OPENING_HOURS` serverda hali sozlanmagan (jonli sahifada
+   `ProfessionalService`/`streetAddress`/`openingHours` topilmadi). Kod
+   tayyor, faqat qiymat kerak.
+2. **Real statistika raqamlari** — `Content.data.stats` (admin panel
+   "Statistika" bo'limi) uchun haqiqiy sonlar hali kiritilmagan yoki
+   tekshirib bo'lmadi (admin login kerak — soxta raqam qo'yilmaydi, TZ
+   printsipiga ko'ra).
+3. **Zaxirani serverdan tashqariga nusxalash** — zaxiralar hozir FAQAT shu
+   server ichida (`/home/ubuntu/promtchi/backups/`) saqlanmoqda, tashqi
+   joyga (S3, boshqa server, Google Drive va h.k.) avtomatik nusxalash
+   yo'q. Server diski/disk butunlay yo'qolsa — zaxira ham yo'qoladi. Bu
+   ochiq xavf, tavsiya: kunlik `.gz` faylni tashqi joyga jo'natadigan
+   cron/rclone sozlash.
 
 **Prinsip o'zgarmadi:** soxta statistika, soxta sharh, uydirma natija yoki
 taxminiy biznes ma'lumoti qo'shilmadi (TZ §22, §26, §28).
