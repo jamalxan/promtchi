@@ -424,6 +424,7 @@ section{position:relative}
 .ccard{background:var(--cream);color:var(--blk);border-radius:18px;overflow:hidden;border:3px solid var(--blk);
   transition:transform .4s var(--ease),box-shadow .4s;text-align:left;display:block;text-decoration:none;cursor:pointer}
 .ccard:hover{transform:translateY(-8px) rotate(-.7deg);box-shadow:0 30px 60px rgba(217,255,63,.14)}
+.ccard.featured:hover{transform:translateY(-6px) rotate(0)}
 .ccover{height:170px;position:relative;overflow:hidden;border-bottom:3px solid var(--blk);
   background-size:cover;background-position:center;display:grid;place-items:center;padding:18px;
   clip-path:inset(0 0 100% 0);transition:clip-path .95s var(--ease)}
@@ -454,6 +455,21 @@ section{position:relative}
 .cbody h3{font-family:var(--anton);font-size:1.6rem;text-transform:uppercase;margin:.8rem 0 .4rem;line-height:1.05}
 .cbody p{font-size:.92rem;opacity:.75}
 .cbody .cdur{font-family:var(--mono);font-size:.68rem;letter-spacing:.16em;margin-top:.8rem;opacity:.6}
+/* P2: birinchi keys — to'liq kenglik, katta vizual + natija raqami */
+.ccard.featured{grid-column:1/-1}
+.ccard.featured .ccover{height:clamp(220px,32vw,420px)}
+.ccard.featured .cbody{padding:2rem clamp(1.6rem,4vw,3rem) 2.4rem;display:grid;
+  grid-template-columns:1.6fr 1fr;gap:1.6rem clamp(1.5rem,4vw,3rem);align-items:end}
+.ccard.featured h3{font-size:clamp(2rem,5vw,3.4rem);margin:.8rem 0 .5rem}
+.ccard.featured p{font-size:1.05rem;max-width:56ch;opacity:.8}
+.cb-right{text-align:right}
+.cb-right b{display:block;font-family:var(--anton);font-size:clamp(2rem,5vw,3.4rem);color:var(--coral);line-height:1}
+.cb-right small{display:block;margin-top:.5rem;font-size:.78rem;opacity:.68;max-width:26ch;margin-left:auto}
+.cb-more{display:inline-flex;align-items:center;gap:.5rem;font-family:var(--mono);font-size:.8rem;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--blk)}
+.cb-more svg{width:16px;height:16px;stroke:currentColor;stroke-width:2.4;fill:none}
+@media(max-width:760px){.ccard.featured .cbody{grid-template-columns:1fr;text-align:left}
+  .cb-right{text-align:left}.cb-right small{margin-left:0}}
 
 /* ══════════ NARX — Klein blue ══════════ */
 .price-sec{background:var(--blue);color:var(--w)}
@@ -481,24 +497,30 @@ section{position:relative}
 .stt small{font-family:var(--mono);font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;opacity:.8}
 
 /* ══════════ FIKRLAR marquee ══════════ */
-.tm-sec{background:var(--blk);overflow:hidden}
-.tm-track{display:flex;gap:1.3rem;width:max-content;animation:mq 38s linear infinite;padding:0 .65rem}
-.tm-track:hover{animation-play-state:paused}
-.tcard{width:min(400px,84vw);background:var(--cream);color:var(--blk);border:3px solid var(--blk);
-  border-radius:18px;padding:1.8rem;flex:none}
-.tcard .qm{font-family:var(--serif);font-style:italic;font-size:2.6rem;line-height:.6;color:var(--coral)}
-.tcard p{margin-top:.9rem;font-size:.96rem}
-.tcard .twho{display:flex;gap:.8rem;align-items:center;margin-top:1.2rem}
-.tcard .tav{width:44px;height:44px;border-radius:11px;background:var(--blue);color:var(--w);display:grid;
-  place-items:center;font-family:var(--anton);font-size:1.1rem;border:2.5px solid var(--blk);background-size:cover;background-position:center}
-.tcard b{display:block;font-size:.92rem}.tcard small{opacity:.6;font-size:.8rem}
-.tcard .stars{color:var(--coral);font-size:.9rem;letter-spacing:.1em;margin-top:.5rem}
-/* fikr qoldirish */
-.rev-cta{display:flex;justify-content:center;margin-top:2.4rem;padding:0 clamp(18px,4vw,48px)}
-.rev-cta button{display:inline-flex;align-items:center;gap:.6rem;padding:.9rem 1.7rem;border-radius:999px;
-  background:transparent;color:var(--w);border:2px solid var(--line-w);font-weight:700;font-size:.92rem;
-  transition:.3s var(--ease)}
-.rev-cta button:hover{border-color:var(--acid);color:var(--acid);transform:translateY(-3px)}
+/* P2: Mijozlar ko'k fonga o'tkazildi (Case'dan keyin ritm uchun) — matn oq,
+   aksent coral o'rniga acid (kontrast: coral ko'k fonda WCAG kichik matn
+   uchun yetarli emas) */
+.tm-sec{background:var(--blue);color:var(--w);overflow:hidden}
+/* P2: marquee karta o'rniga bitta katta iqtibos — mijozlar orasida
+   strelka/nuqtalar bilan almashtiriladi (rev-cta bosh sahifadan footer'ga
+   ko'chirildi, P3) */
+.tm-wrap{max-width:900px}
+.tm-quote{min-height:clamp(200px,30vw,300px)}
+.tm-quote .qm{font-family:var(--serif);font-style:italic;font-size:clamp(3rem,7vw,5.5rem);line-height:.5;color:var(--acid)}
+.tm-quote p{font-family:var(--serif);font-style:italic;font-size:clamp(1.5rem,4vw,2.6rem);line-height:1.28;margin-top:.4rem;max-width:26ch}
+.tm-quote .stars{color:var(--acid);font-size:1rem;letter-spacing:.12em;margin-top:1rem}
+.tm-quote .twho{display:flex;gap:.9rem;align-items:center;margin-top:1.8rem}
+.tm-quote .tav{width:52px;height:52px;border-radius:14px;background:var(--acid);color:var(--blk);display:grid;
+  place-items:center;font-family:var(--anton);font-size:1.3rem;border:2.5px solid var(--w);background-size:cover;background-position:center}
+.tm-quote b{display:block;font-size:1rem}.tm-quote small{opacity:.72;font-size:.86rem}
+.tm-nav{display:flex;align-items:center;gap:1.1rem;margin-top:2.4rem}
+.tm-arrow{width:48px;height:48px;border-radius:50%;border:2px solid rgba(252,251,247,.35);background:none;
+  color:var(--w);display:grid;place-items:center;cursor:pointer;transition:.3s var(--ease);flex:none}
+.tm-arrow svg{width:18px;height:18px;stroke:currentColor;stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.tm-arrow:hover{border-color:var(--acid);color:var(--acid);transform:translateY(-2px)}
+.tm-dots{display:flex;gap:.5rem}
+.tm-dots span{width:8px;height:8px;border-radius:50%;background:rgba(252,251,247,.3);transition:.3s var(--ease);cursor:pointer}
+.tm-dots span.on{background:var(--acid);width:22px;border-radius:5px}
 #revForm .field{margin-bottom:1rem}
 #revForm label{display:block;margin-bottom:.4rem}
 #revForm .rate{display:flex;gap:.35rem;font-size:1.7rem;line-height:1;cursor:pointer;user-select:none}
@@ -538,53 +560,58 @@ section{position:relative}
 
 /* ══════════ POSTLAR ══════════ */
 .posts-sec{background:var(--blk)}
-.postgrid{display:grid;gap:1.4rem;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));margin-top:2.4rem}
-.pstcard{background:var(--cream);color:var(--blk);border:3px solid var(--blk);border-radius:18px;overflow:hidden;
-  text-align:left;text-decoration:none;display:flex;flex-direction:column;cursor:pointer;font-family:inherit;padding:0;
-  transition:transform .4s var(--ease),box-shadow .4s}
-.pstcard:hover{transform:translateY(-8px) rotate(-.5deg);box-shadow:0 30px 60px rgba(217,255,63,.14)}
-.pst-all{align-items:center;justify-content:center;padding:2rem 1.5rem;text-align:center;
-  font-family:var(--anton);font-size:1.15rem;text-transform:uppercase}
-.pst-img{height:170px;background-size:cover;background-position:center;border-bottom:3px solid var(--blk);
-  position:relative;display:grid;place-items:center}
-.pst-noimg{background:var(--blue)}
-.pst-play{width:52px;height:52px;border-radius:50%;background:rgba(11,11,14,.72);color:var(--acid);
-  display:grid;place-items:center;font-size:1.1rem;padding-left:3px;border:2px solid var(--acid);
-  transition:transform .3s var(--ease)}
-.pstcard:hover .pst-play{transform:scale(1.14)}
-.pst-body{padding:1.4rem 1.5rem 1.6rem}
-.pst-body small{font-family:var(--mono);font-size:.64rem;letter-spacing:.18em;opacity:.55;text-transform:uppercase}
-.pst-body h3{font-family:var(--anton);font-size:1.45rem;text-transform:uppercase;margin:.55rem 0 .45rem;line-height:1.08}
-.pst-body p{font-size:.92rem;opacity:.75}
-.pst-more{display:inline-block;margin-top:.9rem;font-family:var(--mono);font-size:.7rem;letter-spacing:.16em;
-  text-transform:uppercase;font-weight:700;color:var(--blue)}
+/* P2: Blog — Xizmatlar bo'limidagi kabi gorizontal satrlar, hover'da
+   kursorga ergashuvchi muqova preview (agar cover bo'lsa) */
+.postgrid{margin-top:2.4rem}
+.post-row{position:relative;display:grid;grid-template-columns:auto 1fr auto;align-items:center;
+  gap:clamp(1rem,3vw,2.6rem);padding:clamp(1.2rem,2.6vw,1.8rem) clamp(18px,4vw,32px);
+  border-top:1px solid var(--line-w);text-decoration:none;color:var(--w);transition:background .3s,color .3s}
+.post-row:last-of-type{border-bottom:1px solid var(--line-w)}
+.post-row:hover{background:var(--acid);color:var(--blk)}
+.post-row .p-date{font-family:var(--mono);font-size:.72rem;letter-spacing:.16em;opacity:.6;
+  text-transform:uppercase;min-width:7ch}
+.post-row h3{font-family:var(--anton);font-size:clamp(1.2rem,3vw,1.8rem);text-transform:uppercase;line-height:1.15}
+.post-row .arr{width:44px;height:44px;border:1.6px solid currentColor;border-radius:50%;display:grid;
+  place-items:center;transition:transform .3s var(--ease);flex:none}
+.post-row .arr svg{width:16px;height:16px;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.post-row:hover .arr{transform:rotate(-45deg)}
+.post-row.post-all-row{display:flex;justify-content:center;gap:.7rem;color:var(--acid);
+  font-family:var(--anton);text-transform:uppercase;font-size:1.05rem}
+.post-row.post-all-row:hover{background:none;color:var(--acid)}
+.post-row.post-all-row:hover .arr{background:var(--acid);color:var(--blk);border-color:var(--acid)}
+.post-prev{position:fixed;z-index:900;width:260px;aspect-ratio:4/3;border-radius:16px;pointer-events:none;
+  overflow:hidden;transform:translate(-50%,-50%) scale(0);transition:transform .3s var(--ease);
+  box-shadow:0 30px 70px rgba(0,0,0,.5);border:3px solid var(--blk);background:var(--cream) center/cover no-repeat}
+.post-prev.show{transform:translate(-50%,-50%) scale(1) rotate(3deg)}
+@media(hover:none){.post-prev{display:none}}
 
 /* ══════════ FAQ ══════════ */
-.faq-sec{background:var(--blk)}
-.faq{max-width:860px;margin:2.4rem auto 0}
-.fitem{border-top:1px solid var(--line-w)}
-.fitem:last-child{border-bottom:1px solid var(--line-w)}
+/* P2: FAQ krem fonga o'tkazildi (Blog qora'dan keyin ritm uchun) — shu sabab
+   matn/border ranglari qorong'i-fon variantidan yorug'-fon variantiga
+   o'zgartirildi (var(--line-w)→var(--line), var(--w)→var(--blk), acid→blue
+   kontrast uchun: acid krem fonda WCAG'ni buzardi) */
+.faq-sec{background:var(--cream);color:var(--blk)}
+/* P2: ikki ustun — chapda sticky sarlavha+tugma, o'ngda akkordeon */
+.faq-grid{display:grid;grid-template-columns:1fr 1.5fr;gap:clamp(2rem,5vw,4rem);align-items:start}
+.faq-side{position:sticky;top:110px}
+.faq-all-btn{display:inline-flex;align-items:center;gap:.6rem;margin-top:1.6rem;padding:.9rem 1.6rem;
+  border-radius:999px;background:var(--blue);color:var(--w);font-weight:700;font-size:.92rem;
+  text-decoration:none;transition:.3s var(--ease)}
+.faq-all-btn:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(43,43,255,.28)}
+.faq-all-btn svg{width:16px;height:16px;stroke:currentColor;stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+@media(max-width:860px){.faq-grid{grid-template-columns:1fr}.faq-side{position:static}}
+.faq{margin:0}
+.fitem{border-top:1px solid var(--line)}
+.fitem:last-child{border-bottom:1px solid var(--line)}
 .fq{width:100%;display:flex;justify-content:space-between;align-items:center;gap:1.2rem;padding:1.6rem .2rem;
-  background:none;border:0;color:var(--w);text-align:left;min-height:52px}
+  background:none;border:0;color:var(--blk);text-align:left;min-height:52px}
 .fq span:first-child{font-family:var(--anton);font-size:clamp(1.1rem,2.4vw,1.6rem);text-transform:uppercase;line-height:1.2}
-.fq .fx{width:40px;height:40px;border:2px solid var(--w);border-radius:50%;display:grid;place-items:center;flex:none;
+.fq .fx{width:40px;height:40px;border:2px solid var(--blk);border-radius:50%;display:grid;place-items:center;flex:none;
   transition:transform .4s var(--ease),background .3s,color .3s,border-color .3s}
 .fq .fx svg{width:15px;height:15px;stroke:currentColor;stroke-width:2.6;fill:none;stroke-linecap:round}
-.fitem.open .fq .fx{transform:rotate(45deg);background:var(--acid);color:var(--blk);border-color:var(--acid)}
+.fitem.open .fq .fx{transform:rotate(45deg);background:var(--blue);color:var(--w);border-color:var(--blue)}
 .fa{max-height:0;overflow:hidden;transition:max-height .5s var(--ease)}
-.fa p{padding:0 .2rem 1.6rem;color:rgba(252,251,247,.66);max-width:62ch}
-/* ro'yxat oxiridagi "barcha savollar" qatori — to'liq /{lang}/faq/ sahifasiga
-   o'tkazadi (bosh sahifada faqat show_on_home=True savollar ko'rinadi).
-   Blog bo'limidagi .pst-all bilan bir xil naqsh. */
-.faq-all{display:flex;justify-content:space-between;align-items:center;gap:1.2rem;padding:1.6rem .2rem;min-height:52px;
-  border-bottom:1px solid var(--line-w);text-decoration:none;color:var(--acid);
-  font-family:var(--anton);font-size:clamp(1.1rem,2.4vw,1.6rem);text-transform:uppercase;line-height:1.2;
-  transition:padding-left .3s var(--ease)}
-.faq-all .fx{width:40px;height:40px;border:2px solid currentColor;border-radius:50%;display:grid;place-items:center;flex:none;
-  transition:transform .4s var(--ease),background .3s,color .3s}
-.faq-all .fx svg{width:15px;height:15px;stroke:currentColor;stroke-width:2.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
-.faq-all:hover{padding-left:.9rem}
-.faq-all:hover .fx{background:var(--acid);color:var(--blk);transform:translateX(4px)}
+.fa p{padding:0 .2rem 1.6rem;color:rgba(11,11,14,.66);max-width:62ch}
 
 /* ══════════ ALOQA ══════════ */
 .contact-sec{background:var(--acid);color:var(--blk)}
@@ -965,13 +992,17 @@ body.menu-open,body.modal-open{overflow:hidden}
 
 <!-- FIKRLAR -->
 <section class="tm-sec" style="padding:clamp(70px,9vw,120px) 0">
-  <div class="wrap" style="padding:0 clamp(18px,4vw,48px)">
-    <div class="tag-line rv" style="color:var(--coral)">Mijozlar</div>
-    <h2 class="h-xl rv" style="margin-bottom:2.4rem">Ular biz bilan <em style="color:var(--coral)">ishladi</em></h2>
-  </div>
-  <div class="tm-track" id="tmTrack"></div>
-  <div class="rev-cta">
-    <button type="button" onclick="openReview()">✍️ Fikr qoldirish (mijozlar uchun)</button>
+  <div class="wrap tm-wrap" style="padding:0 clamp(18px,4vw,48px)">
+    <div class="tag-line rv" style="color:var(--acid)">Mijozlar</div>
+    <h2 class="h-xl rv" style="margin-bottom:2.4rem">Ular biz bilan <em style="color:var(--acid)">ishladi</em></h2>
+    <div class="tm-quote" id="tmQuote"></div>
+    <div class="tm-nav">
+      <button type="button" class="tm-arrow" id="tmPrev" aria-label="Oldingi fikr">
+        <svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <div class="tm-dots" id="tmDots"></div>
+      <button type="button" class="tm-arrow" id="tmNext" aria-label="Keyingi fikr">
+        <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+    </div>
   </div>
 </section>
 
@@ -1007,13 +1038,18 @@ body.menu-open,body.modal-open{overflow:hidden}
     <h2 class="h-xl rv in">So'nggi <em style="color:var(--acid)">postlar</em></h2>
     <div class="postgrid" id="postGrid"></div>
   </div>
+  <div class="post-prev" id="postPrev" aria-hidden="true"></div>
 </section>
 
 <!-- FAQ -->
 <section class="faq-sec pad" id="faq">
-  <div class="wrap">
-    <div class="tag-line rv" style="color:var(--acid)">FAQ</div>
-    <h2 class="h-xl rv">Savol — <em style="color:var(--acid)">javob</em></h2>
+  <div class="wrap faq-grid">
+    <div class="faq-side">
+      <div class="tag-line rv" style="color:var(--blue)">FAQ</div>
+      <h2 class="h-xl rv">Savol — <em style="color:var(--blue)">javob</em></h2>
+      <a class="faq-all-btn rv" href="/uz/faq/">Barcha savollar
+        <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
     <div class="faq" id="faqList"></div>
   </div>
 </section>
@@ -1056,6 +1092,7 @@ body.menu-open,body.modal-open{overflow:hidden}
     <span>© 2026 promtchi®</span><span id="fClock">Toshkent — 00:00</span><span>Barcha huquqlar himoyalangan</span>
     <a href="/uz/maxfiylik-siyosati/" style="color:inherit;text-decoration:none">Maxfiylik siyosati</a>
     <a href="/uz/foydalanish-shartlari/" style="color:inherit;text-decoration:none">Foydalanish shartlari</a>
+    <button type="button" onclick="openReview()" style="background:none;border:0;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer;padding:0">Fikr qoldirish (mijozlar uchun)</button>
   </div>
   <div class="f-word" aria-hidden="true"><span>P</span><span>R</span><span>O</span><span>M</span><span>T</span><span>C</span><span>H</span><span>I</span></div>
 </footer>
@@ -1303,24 +1340,36 @@ const pDate=iso=>{try{return new Date(iso).toLocaleDateString('uz-UZ',{day:'2-di
     document.querySelectorAll('.js-postlink').forEach(a=>a.style.display='');
   }catch(e){/* postlar bo'lmasa bo'lim ko'rinmaydi */}
 })();
+/* P3: barcha ko'rsatilgan postlar bitta kunda qo'shilgan bo'lsa, sana
+   yashiriladi (aks holda hammasida bir xil sana ko'rinib, ishonchsizlik
+   uyg'otadi) */
 function renderPosts(){
-  document.getElementById('postGrid').innerHTML=POSTS.map(p=>{
-    const ex=p.excerpt||(p.body.length>150?p.body.slice(0,150)+'…':p.body);
-    /* videoli postda YouTube preview yoki video belgisi ko'rsatiladi */
+  const shown=POSTS.slice(0,3);
+  const sameDate=shown.length>1&&shown.every(p=>pDate(p.created_at)===pDate(shown[0].created_at));
+  document.getElementById('postGrid').innerHTML=shown.map(p=>{
     const yt=p.video?ytId(p.video):null;
     const cover=p.image||(yt?`https://i.ytimg.com/vi/${yt}/hqdefault.jpg`:'');
-    const badge=p.video?'<span class="pst-play">▶</span>':'';
-    return `<a class="pstcard" href="/${PAGE_LANG}/blog/${esc(p.slug)}/">
-      ${cover?`<div class="pst-img" style="background-image:url('${esc(cover)}')">${badge}</div>`
-             :(p.video?`<div class="pst-img pst-noimg">${badge}</div>`:'')}
-      <div class="pst-body">
-        <small>${pDate(p.created_at)}</small>
-        <h3>${esc(p.title)}</h3>
-        <p>${esc(ex)}</p>
-        <span class="pst-more">O'qish →</span>
-      </div></a>`;
-  }).join('')+`<a class="pstcard pst-all" href="/${PAGE_LANG}/blog/">Barcha maqolalar →</a>`;
+    return `<a class="post-row" href="/${PAGE_LANG}/blog/${esc(p.slug)}/"${cover?` data-cover="${esc(cover)}"`:''}>
+      <span class="p-date">${sameDate?'':pDate(p.created_at)}</span>
+      <h3>${esc(p.title)}</h3>
+      <span class="arr"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </a>`;
+  }).join('')+`<a class="post-row post-all-row" href="/${PAGE_LANG}/blog/">Barcha maqolalar
+    <span class="arr"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>`;
   staggerIn([...document.getElementById('postGrid').children],'gi');
+}
+if(matchMedia('(hover:hover)').matches){
+  const postPrev=document.getElementById('postPrev');
+  let ppx=0,ppy=0,pcx=0,pcy=0;
+  addEventListener('mousemove',e=>{ppx=e.clientX;ppy=e.clientY;});
+  (function loop(){pcx+=(ppx-pcx)*.14;pcy+=(ppy-pcy)*.14;postPrev.style.left=pcx+'px';postPrev.style.top=pcy+'px';requestAnimationFrame(loop);})();
+  document.getElementById('postGrid').addEventListener('mouseover',e=>{
+    const row=e.target.closest('.post-row[data-cover]');
+    if(row){postPrev.style.backgroundImage=`url('${row.dataset.cover}')`;postPrev.classList.add('show');}
+  });
+  document.getElementById('postGrid').addEventListener('mouseout',e=>{
+    if(!e.relatedTarget||!e.relatedTarget.closest('.post-row[data-cover]'))postPrev.classList.remove('show');
+  });
 }
 /* ══════════ PRELOADER ══════════ */
 (function(){
@@ -1658,7 +1707,8 @@ function coverArt(cat){
 }
 function renderCases(filter){
   const box=document.getElementById('cases');box.innerHTML='';
-  DATA.cases.filter(c=>!filter||filter==="Hammasi"||c.cat===filter).forEach(c=>{
+  const list=DATA.cases.filter(c=>!filter||filter==="Hammasi"||c.cat===filter);
+  list.forEach((c,i)=>{
     const [cls,art]=coverArt(c.cat);
     /* video bo'lsa YouTube posteri muqova sifatida ishlatiladi */
     const yt=c.video?ytId(c.video):null;
@@ -1669,15 +1719,21 @@ function renderCases(filter){
     /* real /portfolio/{slug}/ sahifasiga havola — SEO uchun kontent
        faqat JS modalda emas, indekslanadigan sahifada ham bo'lishi kerak */
     const href=c.slug?`/uz/portfolio/${esc(c.slug)}/`:'/uz/portfolio/';
+    /* P2: birinchi keys to'liq kenglikda, natija matnidan raqam ajratiladi */
+    const featured=i===0;
+    const numMatch=featured&&(c.result||'').match(/~?\d[\d.,]*\s?%|\d+x/);
+    const bodyHtml=featured
+      ?`<div class="cb-left"><span class="ctag">${esc(c.cat)}</span><h3>${esc(c.title)}</h3>
+          <p>${esc(c.short)}</p><div class="cdur">[ ${esc(c.duration)} ]</div></div>
+        <div class="cb-right">${numMatch
+          ?`<b>${esc(numMatch[0].trim())}</b><small>${esc(c.result)}</small>`
+          :`<a class="cb-more">Batafsil<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>`}</div>`
+      :`<span class="ctag">${esc(c.cat)}</span><h3>${esc(c.title)}</h3>
+        <p>${esc(c.short)}</p><div class="cdur">[ ${esc(c.duration)} ]</div>`;
     box.insertAdjacentHTML('beforeend',
-     `<a class="ccard" href="${href}">
+     `<a class="ccard${featured?' featured':''}" href="${href}">
         <div class="ccover ${cov?'':cls}" ${cover}>${covIn}</div>
-        <div class="cbody">
-          <span class="ctag">${esc(c.cat)}</span>
-          <h3>${esc(c.title)}</h3>
-          <p>${esc(c.short)}</p>
-          <div class="cdur">[ ${esc(c.duration)} ]</div>
-        </div>
+        <div class="cbody">${bodyHtml}</div>
       </a>`);
   });
   /* cover reveal */
@@ -1732,23 +1788,40 @@ function renderTeam(){
   div.classList.toggle('show',leads.length>0&&members.length>0);
   staggerIn([...leadBox.children,...box.children],'gi');
 }
+/* P2: bitta karta — mijozlar orasida strelka/nuqta bilan almashtiriladi.
+   prefers-reduced-motion bo'lsa avtoplay ishlamaydi. */
+let _tmItems=[],_tmIdx=0,_tmTimer=null;
+function tmRenderSlide(){
+  const t=_tmItems[_tmIdx];if(!t)return;
+  const bg=t.photo?`style="background-image:url('${esc(t.photo)}')"`:'';
+  const stars=t.rating?`<div class="stars">${'★'.repeat(t.rating)}${'☆'.repeat(5-t.rating)}</div>`:'';
+  document.getElementById('tmQuote').innerHTML=
+    `<div class="qm">"</div><p>${esc(t.text)}</p>${stars}
+     <div class="twho"><span class="tav" ${bg}>${t.photo?'':initial(t.name)}</span>
+       <span><b>${esc(t.name)}</b><small>${esc(t.role)}</small></span></div>`;
+  document.getElementById('tmDots').innerHTML=_tmItems.map((_,i)=>
+    `<span class="${i===_tmIdx?'on':''}" data-i="${i}"></span>`).join('');
+}
+function tmGo(i){_tmIdx=(i+_tmItems.length)%_tmItems.length;tmRenderSlide();}
+function tmAutoplay(){
+  if(reduced||_tmItems.length<2)return;
+  clearInterval(_tmTimer);
+  _tmTimer=setInterval(()=>tmGo(_tmIdx+1),6000);
+}
 function renderTestimonials(){
-  const box=document.getElementById('tmTrack');
   /* Mijozlar yozgan fikrlar birinchi; ular yo'q bo'lsa kontentdagilar ko'rinadi */
-  const items=REVIEWS.length
+  _tmItems=REVIEWS.length
     ? REVIEWS.map(r=>({text:r.text,name:r.name,role:r.role,photo:'',rating:r.rating}))
     : DATA.testimonials.map(t=>({...t,rating:0}));
-  const cards=items.map(t=>{
-    const bg=t.photo?`style="background-image:url('${esc(t.photo)}')"`:'';
-    const stars=t.rating?`<div class="stars">${'★'.repeat(t.rating)}${'☆'.repeat(5-t.rating)}</div>`:'';
-    return `<div class="tcard"><div class="qm">"</div><p>${esc(t.text)}</p>${stars}
-      <div class="twho"><span class="tav" ${bg}>${t.photo?'':initial(t.name)}</span>
-        <span><b>${esc(t.name)}</b><small>${esc(t.role)}</small></span></div></div>`;
-  }).join('');
-  /* marquee uzluksiz bo'lishi uchun kamida 6 ta karta kerak */
-  const rep=items.length<3?4:3;
-  box.innerHTML=cards.repeat(rep);
+  _tmIdx=0;
+  tmRenderSlide();
+  tmAutoplay();
 }
+document.getElementById('tmPrev').addEventListener('click',()=>{tmGo(_tmIdx-1);tmAutoplay();});
+document.getElementById('tmNext').addEventListener('click',()=>{tmGo(_tmIdx+1);tmAutoplay();});
+document.getElementById('tmDots').addEventListener('click',e=>{
+  const d=e.target.closest('[data-i]');if(!d)return;tmGo(+d.dataset.i);tmAutoplay();
+});
 function renderStack(){
   document.getElementById('stackList').innerHTML=STACK.map(s=>`<span>${s}</span>`).join('');
 }
@@ -1784,13 +1857,13 @@ function renderSocials(){
       ${icon(s.icon)}<span>${esc(s.name)}</span></a>`;
   }).join('');
 }
+/* P2: "Barcha savollar" endi chap ustundagi statik tugma — bu yerda faqat
+   akkordeon (show_on_home savollar, qolgani to'liq FAQ sahifasida) */
 function renderFaq(){
   const list=(DATA.faq&&DATA.faq.length)?DATA.faq:DEFAULTS.faq;
   document.getElementById('faqList').innerHTML=list.map(f=>
     `<div class="fitem in"><button class="fq"><span>${esc(f.question)}</span><span class="fx"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></button>
-      <div class="fa"><p>${esc(f.answer)}</p></div></div>`).join('')
-    /* bu yerda faqat show_on_home savollar — qolgani to'liq FAQ sahifasida */
-    +`<a class="faq-all" href="/${PAGE_LANG}/faq/">Barcha savollar<span class="fx" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>`;
+      <div class="fa"><p>${esc(f.answer)}</p></div></div>`).join('');
 }
 /* Organization schema — statik HTML'dagi <script id="orgSchema"> faqat
    zaxira; jonli kontent kelgach kontakt/ijtimoiy tarmoqlar shu yerdan
