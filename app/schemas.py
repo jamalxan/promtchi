@@ -430,6 +430,7 @@ class ReviewIn(BaseModel):
     code: str = Field(min_length=3, max_length=32)
     name: str = Field(min_length=1, max_length=120)
     role: str = Field(default="", max_length=120)
+    company: str = Field(default="", max_length=120)
     text: str = Field(min_length=10, max_length=1200)
     rating: int = Field(default=5, ge=1, le=5)
 

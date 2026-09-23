@@ -1778,7 +1778,7 @@ function renderReviews() {
       <div style="font-size:.95rem;line-height:1.55;white-space:pre-wrap;background:var(--cream);
                   border:2px solid rgba(11,11,14,.12);border-radius:10px;padding:.9rem 1rem">${esc(r.text)}</div>
       <div style="margin-top:.7rem;font-size:.88rem">
-        <b>${esc(r.name)}</b>${r.role ? ` · <span style="opacity:.65">${esc(r.role)}</span>` : ''}
+        <b>${esc(r.name)}</b>${r.role ? ` · <span style="opacity:.65">${esc(r.role)}</span>` : ''}${r.company ? ` · <span style="opacity:.65">${esc(r.company)}</span>` : ''}
         <span style="opacity:.4;font-family:var(--mono);font-size:.75rem;margin-left:.5rem">kod: ${esc(r.code || '—')}</span>
       </div>
     </div>`;

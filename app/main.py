@@ -1652,6 +1652,7 @@ async def create_review(
     review = Review(
         name=payload.name.strip(),
         role=payload.role.strip(),
+        company=payload.company.strip(),
         text=payload.text.strip(),
         rating=payload.rating,
         approved=False,  # admin ko'rib chiqadi (matnni o'zgartira olmaydi)

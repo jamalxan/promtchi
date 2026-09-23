@@ -311,6 +311,7 @@ class Review(Base):
     text: Mapped[str] = mapped_column(Text, nullable=False)
     rating: Mapped[int] = mapped_column(Integer, default=5, nullable=False)
     approved: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    company: Mapped[str] = mapped_column(String(120), default="")
     code: Mapped[str] = mapped_column(String(32), default="")
     ip: Mapped[str] = mapped_column(String(64), default="")
     created_at: Mapped[datetime] = mapped_column(
@@ -324,6 +325,7 @@ class Review(Base):
             "id": self.id,
             "name": self.name,
             "role": self.role,
+            "company": self.company,
             "text": self.text,
             "rating": self.rating,
             "created_at": self.created_at.isoformat() if self.created_at else None,
@@ -677,6 +679,8 @@ _MIGRATIONS = [
     "ALTER TABLE faq_items ADD COLUMN category VARCHAR(80) DEFAULT ''",
     "ALTER TABLE faq_items ADD COLUMN service_key VARCHAR(60) DEFAULT ''",
     "ALTER TABLE faq_items ADD COLUMN show_on_home BOOLEAN NOT NULL DEFAULT 0",
+    # ── Testimonial ixtiyoriy kompaniya maydoni (UI audit P3.2, 2026-09-23) ──
+    "ALTER TABLE reviews ADD COLUMN company VARCHAR(120) DEFAULT ''",
 ]
 
 async def run_migrations(eng) -> None:
@@ -1194,6 +1198,28 @@ async def run_data_fixups(session: AsyncSession) -> None:
             if changed:
                 flag_modified(content_row, "data")
         session.add(Setting(key="contact_email_fix_v2_done", value="1"))
+
+    # 19. UI audit P3.4 (2026-09-23) — #9'dagi telefon tuzatish faqat ESKI
+    #     placeholder raqam ("tel:+998900000000") bo'lsa ishlagan. Production'da
+    #     raqamning o'zi to'g'ri edi, lekin `value` bo'shliqsiz qolgan ekan
+    #     ("+998931606706"), shu sabab #9 shartiga to'g'ri kelmay o'tkazib
+    #     yuborilgan. Bu yerda ANIQ shu holatni (to'g'ri raqam, formatsiz value)
+    #     tuzatamiz — keyingi admin tahriri saqlanadi (marker).
+    phone_format_marker = await session.scalar(
+        select(Setting.value).where(Setting.key == "contact_phone_format_v1_done")
+    )
+    if phone_format_marker is None:
+        content_row = await session.get(Content, 1)
+        if content_row is not None:
+            data = content_row.data
+            changed = False
+            for c in data.get("contacts", []):
+                if c.get("icon") == "phone" and c.get("value") == "+998931606706":
+                    c["value"] = "+998 93 160 67 06"
+                    changed = True
+            if changed:
+                flag_modified(content_row, "data")
+        session.add(Setting(key="contact_phone_format_v1_done", value="1"))
 
     await session.commit()
 

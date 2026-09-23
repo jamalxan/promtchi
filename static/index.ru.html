@@ -1007,8 +1007,10 @@ body.menu-open,body.modal-open{overflow:hidden}
       <input id="rvCode" type="text" placeholder="PR-XXXXXX" maxlength="32" required autocomplete="off"></div>
     <div class="field"><label for="rvName">Ваше имя</label>
       <input id="rvName" type="text" placeholder="Имя Фамилия" maxlength="120" required></div>
-    <div class="field"><label for="rvRole">Должность / компания (необязательно)</label>
-      <input id="rvRole" type="text" placeholder="Директор, ООО «ABC»" maxlength="120"></div>
+    <div class="field"><label for="rvRole">Должность (необязательно)</label>
+      <input id="rvRole" type="text" placeholder="Директор" maxlength="120"></div>
+    <div class="field"><label for="rvCompany">Компания (необязательно)</label>
+      <input id="rvCompany" type="text" placeholder="ООО «ABC»" maxlength="120"></div>
     <div class="field"><label>Оценка</label>
       <div class="rate" id="rvRate" role="radiogroup" aria-label="Оценка">
         <span data-v="1">⭐</span><span data-v="2">⭐</span><span data-v="3">⭐</span><span data-v="4">⭐</span><span data-v="5">⭐</span>
@@ -1281,6 +1283,7 @@ document.getElementById('revForm').addEventListener('submit',async e=>{
     code:document.getElementById('rvCode').value.trim(),
     name:document.getElementById('rvName').value.trim(),
     role:document.getElementById('rvRole').value.trim(),
+    company:document.getElementById('rvCompany').value.trim(),
     text:document.getElementById('rvText').value.trim(),
     rating:rvRating
   };
@@ -1769,10 +1772,11 @@ function tmRenderSlide(){
   const t=_tmItems[_tmIdx];if(!t)return;
   const bg=t.photo?`style="background-image:url('${esc(t.photo)}')"`:'';
   const stars=t.rating?`<div class="stars">${'★'.repeat(t.rating)}${'☆'.repeat(5-t.rating)}</div>`:'';
+  const roleLine=[t.role,t.company].filter(Boolean).join(' · ');
   document.getElementById('tmQuote').innerHTML=
     `<div class="qm">"</div><p>${esc(t.text)}</p>${stars}
      <div class="twho"><span class="tav" ${bg}>${t.photo?'':initial(t.name)}</span>
-       <span><b>${esc(t.name)}</b><small>${esc(t.role)}</small></span></div>`;
+       <span><b>${esc(t.name)}</b><small>${esc(roleLine)}</small></span></div>`;
   document.getElementById('tmDots').innerHTML=_tmItems.map((_,i)=>
     `<span class="${i===_tmIdx?'on':''}" data-i="${i}"></span>`).join('');
 }
@@ -1785,7 +1789,7 @@ function tmAutoplay(){
 function renderTestimonials(){
   /* Mijozlar yozgan fikrlar birinchi; ular yo'q bo'lsa kontentdagilar ko'rinadi */
   _tmItems=REVIEWS.length
-    ? REVIEWS.map(r=>({text:r.text,name:r.name,role:r.role,photo:'',rating:r.rating}))
+    ? REVIEWS.map(r=>({text:r.text,name:r.name,role:r.role,company:r.company||'',photo:'',rating:r.rating}))
     : DATA.testimonials.map(t=>({...t,rating:0}));
   _tmIdx=0;
   tmRenderSlide();
