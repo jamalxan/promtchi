@@ -29,6 +29,13 @@ jobs:
 
       - name: Kodni serverga yuklash (rsync)
         run: |
+          # DIQQAT (2026-09-23 hodisasi): `--delete` git'da tracked bo'lmagan
+          # (.gitignore'dagi) HAR QANDAY runtime-generated papkani ham
+          # o'chiradi, agar u shu yerda alohida --exclude qilinmagan bo'lsa —
+          # checkout'da ular umuman yo'q, demak source'da yo'q, target'da esa
+          # bor deb hisoblanadi. Shu sababli backups/ butunlay o'chib ketgan
+          # edi. .gitignore'ga runtime papka qo'shsangiz, BU YERGA HAM
+          # --exclude qo'shishni unutmang.
           rsync -az --delete \
             -e "ssh -i key.pem -o StrictHostKeyChecking=no" \
             --exclude '.git' \
@@ -38,6 +45,9 @@ jobs:
             --exclude '*.db' --exclude '*.db-wal' --exclude '*.db-shm' \
             --exclude '.venv' \
             --exclude '__pycache__' \
+            --exclude 'backups/' \
+            --exclude '*.before-restore' \
+            --exclude 'static/uploads/' \
             ./ ubuntu@32.199.91.62:/home/ubuntu/promtchi/
 
       - name: Kutubxonalarni yangilash va xizmatni qayta ishga tushirish
