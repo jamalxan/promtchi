@@ -393,6 +393,8 @@ section{position:relative}
 /* ══════════ JARAYON — sticky stack ══════════ */
 .proc{background:var(--cream);color:var(--blk)}
 .stackzone{max-width:980px;margin:3rem auto 0}
+.stackzone::after{content:"";display:block;height:20vh}
+.proc.pad{padding-bottom:clamp(24px,3vw,56px)}
 .scard{position:sticky;top:110px;border-radius:22px;padding:clamp(1.8rem,4vw,3rem);
   min-height:min(56vh,430px);display:flex;flex-direction:column;justify-content:space-between;
   border:3px solid var(--blk);margin-bottom:2rem;transform-origin:top center;
@@ -828,7 +830,7 @@ body.menu-open,body.modal-open{overflow:hidden}
 <!-- XIZMATLAR -->
 <section class="svc" id="xizmat" style="padding:clamp(80px,10vw,150px) 0">
   <div class="wrap" style="padding:0 clamp(18px,4vw,48px)">
-    <div class="tag-line rv" style="color:var(--acid)">Services — 02</div>
+    <div class="tag-line rv" style="color:var(--acid)">Services</div>
     <h2 class="h-xl rv" style="margin-bottom:2.4rem">What we <em style="color:var(--acid)">build?</em></h2>
   </div>
   <div class="svc-list" id="svcList">
@@ -914,7 +916,7 @@ body.menu-open,body.modal-open{overflow:hidden}
 <!-- JARAYON — sticky stack -->
 <section class="proc pad" id="jarayon">
   <div class="wrap">
-    <div class="tag-line rv" style="color:var(--blue)">Process — 03</div>
+    <div class="tag-line rv" style="color:var(--blue)">Process</div>
     <h2 class="h-xl rv">How we <em style="color:var(--blue)">work</em></h2>
     <div class="stackzone" id="stackzone">
       <div class="scard sc1"><div class="s-top"><span class="s-no">[ STAGE 01 ]</span><span class="s-meta">1–2 days</span></div>
@@ -939,7 +941,7 @@ body.menu-open,body.modal-open{overflow:hidden}
 <!-- CASE -->
 <section class="case-sec pad" id="case">
   <div class="wrap">
-    <div class="tag-line rv" style="color:var(--acid)">Projects — 04</div>
+    <div class="tag-line rv" style="color:var(--acid)">Projects</div>
     <h2 class="h-xl rv">Work <em style="color:var(--acid)">in action</em></h2>
     <div class="filters rv" id="filters"></div>
     <div class="cgrid" id="cases"></div>
@@ -962,7 +964,7 @@ body.menu-open,body.modal-open{overflow:hidden}
 <!-- FIKRLAR -->
 <section class="tm-sec" style="padding:clamp(70px,9vw,120px) 0">
   <div class="wrap" style="padding:0 clamp(18px,4vw,48px)">
-    <div class="tag-line rv" style="color:var(--coral)">Clients — 06</div>
+    <div class="tag-line rv" style="color:var(--coral)">Clients</div>
     <h2 class="h-xl rv" style="margin-bottom:2.4rem">They worked <em style="color:var(--coral)">with us</em></h2>
   </div>
   <div class="tm-track" id="tmTrack"></div>
@@ -1018,7 +1020,7 @@ body.menu-open,body.modal-open{overflow:hidden}
 <section class="contact-sec pad" id="aloqa">
   <div class="wrap con-grid">
     <div class="rv">
-      <div class="tag-line">Contact — 09</div>
+      <div class="tag-line">Contact</div>
       <h2 class="h-xl">Let's start <em style="color:var(--blue)">the project</em></h2>
       <p class="body-l" style="margin-top:.8rem;opacity:.8">Write down your idea — we'll get back to you <b>within 24 hours</b>.</p>
       <div class="con-links" id="conLinks"></div>
@@ -1045,16 +1047,7 @@ body.menu-open,body.modal-open{overflow:hidden}
       <a href="#aloqa" class="btn btn-acid mag" style="margin-top:1.6rem">Get in touch
         <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
     </div>
-    <nav class="f-nav rv" id="fNav" aria-label="Footer"></nav>
-    <nav class="f-nav rv" aria-label="Pages">
-      <a href="/en/xizmatlar/">Services</a>
-      <a href="/en/yechimlar/">Solutions</a>
-      <a href="/en/portfolio/">Portfolio</a>
-      <a href="/en/blog/">Blog</a>
-      <a href="/en/faq/">FAQ</a>
-      <a href="/en/biz-haqimizda/">About</a>
-      <a href="/en/aloqa/">Contact</a>
-    </nav>
+    <nav class="f-nav rv" id="fNav" aria-label="Pages"></nav>
   </div>
   <div class="f-social" id="fSocial"></div>
   <div class="f-meta">
@@ -1141,10 +1134,10 @@ const API='';
    haqiqiy sahifalarga (`href`) olib boradi. */
 const NAV_SECTIONS=[
   {id:'xizmat',label:'Services'},
-  {href:'/en/yechimlar/',label:'Solutions'},
-  {href:'/en/portfolio/',label:'Portfolio'},
-  {href:'/en/blog/',label:'Blog'},
-  {href:'/en/faq/',label:'FAQ'},
+  {href:'/en/yechimlar/',label:'Solutions',spyId:'jarayon'},
+  {href:'/en/portfolio/',label:'Portfolio',spyId:'case'},
+  {href:'/en/blog/',label:'Blog',spyId:'postlar'},
+  {href:'/en/faq/',label:'FAQ',spyId:'faq'},
   {href:'/en/biz-haqimizda/',label:'About Us'},
   {id:'aloqa',label:'Contact'}
 ];
@@ -1160,10 +1153,10 @@ function renderNav(){
   document.getElementById('fNav').innerHTML=NAV_SECTIONS.map(s=>
     `<a href="${hrefOf(s)}">→ ${s.label}</a>`).join('');
 
-  NAV_SECTIONS.forEach((s,i)=>{
+  NAV_SECTIONS.forEach(s=>{
     if(!s.id)return;
     const tl=document.querySelector(`#${s.id} .tag-line`);
-    if(tl)tl.textContent=`${s.label} — ${pad2(i+1)}`;
+    if(tl)tl.textContent=s.label;
   });
 }
 renderNav();
@@ -1463,25 +1456,33 @@ document.querySelectorAll('#menu a').forEach(a=>a.addEventListener('click',()=>{
   document.querySelector('#menuBtn span:first-child').textContent='Menu';
 }));
 
-/* ══════════ TOPNAV SCROLL-SPY ══════════ */
+/* ══════════ TOPNAV SCROLL-SPY ══════════
+   Har bir nav bandi (real sahifa havolasi bo'lsa ham) bosh sahifadagi mos
+   section'ga IntersectionObserver bilan bog'lanadi. Ekranning 40–45%
+   balandligidagi ingichka chiziqni kesib o'tgan section — faol. Bir vaqtda
+   nolta yoki bitta band faol bo'ladi (hero'da hech biri faol emas). */
 (function(){
   const items=[];
-  document.querySelectorAll('.topnav a').forEach(a=>{
-    const href=a.getAttribute('href');
-    if(!href||href.charAt(0)!=='#')return;
-    const s=document.querySelector(href);
-    if(s)items.push({a:a,s:s});
+  document.querySelectorAll('.topnav a').forEach((a,i)=>{
+    const cfg=NAV_SECTIONS[i];
+    const targetId=cfg&&(cfg.id||cfg.spyId);
+    const s=targetId&&document.getElementById(targetId);
+    if(s)items.push({a:a,s:s,active:false});
   });
   if(!items.length)return;
-  function spy(){
-    const line=innerHeight*.45;
+  function apply(){
     let cur=-1;
-    items.forEach((it,i)=>{if(it.s.getBoundingClientRect().top<=line)cur=i;});
+    items.forEach((it,i)=>{if(it.active)cur=i;});
     items.forEach((it,i)=>it.a.classList.toggle('on',i===cur));
   }
-  addEventListener('scroll',spy,{passive:true});
-  addEventListener('resize',spy,{passive:true});
-  spy();
+  const io=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      const it=items.find(x=>x.s===e.target);
+      if(it)it.active=e.isIntersecting;
+    });
+    apply();
+  },{rootMargin:'-40% 0px -55% 0px',threshold:0});
+  items.forEach(it=>io.observe(it.s));
 })();
 
 /* ══════════ URL HASH SYNC — scroll paytida ko'rinayotgan sectionga mos hash
@@ -1618,17 +1619,22 @@ if(matchMedia('(hover:hover)').matches){
 /* ══════════ STICKY STACK scale ══════════ */
 (function(){
   const cards=[...document.querySelectorAll('.scard')];if(!cards.length||reduced)return;
-  addEventListener('scroll',()=>{
+  const STICKY_TOP=parseFloat(getComputedStyle(cards[0]).top)||110; /* CSS'dagi .scard top bilan bir xil */
+  let ticking=false;
+  function update(){
+    ticking=false;
     cards.forEach((c,i)=>{
       const r=c.getBoundingClientRect();
       const next=cards[i+1];
-      if(!next)return;
+      if(!next){c.style.transform='';c.style.filter='';return;}
       const nr=next.getBoundingClientRect();
-      const overlap=Math.min(Math.max((130+r.height-nr.top)/(r.height),0),1);
-      c.style.transform=`scale(${1-overlap*.06}) translateY(${-overlap*10}px)`;
+      const overlap=Math.min(Math.max((STICKY_TOP+r.height-nr.top)/(r.height),0),1);
+      c.style.transform=`scale(${1-overlap*.06})`;
       c.style.filter=`brightness(${1-overlap*.18})`;
     });
-  },{passive:true});
+  }
+  addEventListener('scroll',()=>{if(!ticking){ticking=true;requestAnimationFrame(update);}},{passive:true});
+  update();
 })();
 
 /* ══════════ RENDER ══════════ */
@@ -1745,10 +1751,22 @@ function renderContacts(){
 }
 /* footer ijtimoiy tarmoqlari — soniga qarab moslashadi */
 function renderSocials(){
-  const list=(DATA.socials&&DATA.socials.length)?DATA.socials:(DEFAULTS.socials||[]);
-  document.getElementById('fSocial').innerHTML=list.map(s=>
-    `<a href="${esc(s.url)}" target="_blank" rel="noopener" aria-label="${esc(s.name)}" title="${esc(s.name)}">
-      ${icon(s.icon)}<span>${esc(s.name)}</span></a>`).join('');
+  const contacts=(DATA.contacts&&DATA.contacts.length)?DATA.contacts:DEFAULTS.contacts;
+  const socials=(DATA.socials&&DATA.socials.length)?DATA.socials:(DEFAULTS.socials||[]);
+  const tg=contacts.find(c=>c.icon==='telegram');
+  const email=contacts.find(c=>c.icon==='email');
+  const phone=contacts.find(c=>c.icon==='phone');
+  const extra=socials.filter(s=>s.icon!=='telegram');
+  const list=[
+    tg&&{name:`Telegram — ${tg.value}`,url:tg.url,icon:'telegram'},
+    email&&{name:email.value,url:email.url,icon:'email'},
+    phone&&{name:phone.value,url:phone.url,icon:'phone'}
+  ].filter(Boolean).concat(extra);
+  document.getElementById('fSocial').innerHTML=list.map(s=>{
+    const ext=/^https?:/i.test(s.url)?' target="_blank" rel="noopener"':'';
+    return `<a href="${esc(s.url)}"${ext} aria-label="${esc(s.name)}" title="${esc(s.name)}">
+      ${icon(s.icon)}<span>${esc(s.name)}</span></a>`;
+  }).join('');
 }
 /* Organization schema — statik HTML'dagi <script id="orgSchema"> faqat
    zaxira; jonli kontent kelgach kontakt/ijtimoiy tarmoqlar shu yerdan

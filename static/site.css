@@ -113,8 +113,8 @@ p{margin:0 0 1em}
 .site-nav a small{font-family:var(--mono);font-size:.66rem;color:var(--acid);letter-spacing:.04em}
 .site-nav a::after{content:'';position:absolute;left:0;right:0;bottom:-2px;height:2px;background:var(--acid);
   transform:scaleX(0);transform-origin:left center;transition:transform .3s ease}
-.site-nav a:hover{opacity:1;color:var(--acid)}
-.site-nav a:hover::after{transform:scaleX(1)}
+.site-nav a:hover,.site-nav a[aria-current="page"]{opacity:1;color:var(--acid)}
+.site-nav a:hover::after,.site-nav a[aria-current="page"]::after{transform:scaleX(1)}
 .site-hd-right{display:flex;align-items:center;gap:1rem}
 /* til kaliti — og'ish tanlangan tilga bog'liq: UZ = asl holat (chapga
    og'gan), RU = tekis, EN = teskari tomonga. Burchak o'zgaruvchida,
@@ -155,7 +155,7 @@ html[lang="en"]{--lang-tilt:3deg;--lang-tilt-on:-4deg}
     font-family:var(--anton);font-size:clamp(1.7rem,8vw,2.6rem);text-transform:uppercase;line-height:1.15;
     padding:.45em 0;border-bottom:1px solid rgba(252,251,247,.2);transition:color .2s}
   .mob-nav-panel a small{font-family:var(--mono);font-size:.8rem;letter-spacing:.1em;color:rgba(252,251,247,.6)}
-  .mob-nav-panel a:hover,.mob-nav-panel a:active{color:var(--acid)}
+  .mob-nav-panel a:hover,.mob-nav-panel a:active,.mob-nav-panel a[aria-current="page"]{color:var(--acid)}
 }
 @supports selector(:has(*)){body:has(.nav-toggle:checked){overflow:hidden}}
 

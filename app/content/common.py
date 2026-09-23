@@ -74,6 +74,8 @@ FOOTER = {
         "contact_title": "Aloqa",
         "privacy": "Maxfiylik siyosati",
         "terms": "Foydalanish shartlari",
+        "tagline_alt": "Hali o'ylayapsizmi?",
+        "cta_alt": "Ishlarimizni ko'ring",
     },
     "ru": {
         "tagline": "Следующий проект будет вашим.",
@@ -83,6 +85,8 @@ FOOTER = {
         "contact_title": "Контакты",
         "privacy": "Политика конфиденциальности",
         "terms": "Условия использования",
+        "tagline_alt": "Ещё думаете?",
+        "cta_alt": "Смотреть наши работы",
     },
     "en": {
         "tagline": "The next project will be yours.",
@@ -92,6 +96,8 @@ FOOTER = {
         "contact_title": "Contact",
         "privacy": "Privacy Policy",
         "terms": "Terms of Use",
+        "tagline_alt": "Still thinking?",
+        "cta_alt": "See our work",
     },
 }
 

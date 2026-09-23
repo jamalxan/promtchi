@@ -395,6 +395,8 @@ section{position:relative}
 /* ══════════ JARAYON — sticky stack ══════════ */
 .proc{background:var(--cream);color:var(--blk)}
 .stackzone{max-width:980px;margin:3rem auto 0}
+.stackzone::after{content:"";display:block;height:20vh}
+.proc.pad{padding-bottom:clamp(24px,3vw,56px)}
 .scard{position:sticky;top:110px;border-radius:22px;padding:clamp(1.8rem,4vw,3rem);
   min-height:min(56vh,430px);display:flex;flex-direction:column;justify-content:space-between;
   border:3px solid var(--blk);margin-bottom:2rem;transform-origin:top center;
@@ -830,7 +832,7 @@ body.menu-open,body.modal-open{overflow:hidden}
 <!-- XIZMATLAR -->
 <section class="svc" id="xizmat" style="padding:clamp(80px,10vw,150px) 0">
   <div class="wrap" style="padding:0 clamp(18px,4vw,48px)">
-    <div class="tag-line rv" style="color:var(--acid)">Xizmatlar — 02</div>
+    <div class="tag-line rv" style="color:var(--acid)">Xizmatlar</div>
     <h2 class="h-xl rv" style="margin-bottom:2.4rem">Nima <em style="color:var(--acid)">qilamiz?</em></h2>
   </div>
   <div class="svc-list" id="svcList">
@@ -916,7 +918,7 @@ body.menu-open,body.modal-open{overflow:hidden}
 <!-- JARAYON — sticky stack -->
 <section class="proc pad" id="jarayon">
   <div class="wrap">
-    <div class="tag-line rv" style="color:var(--blue)">Jarayon — 03</div>
+    <div class="tag-line rv" style="color:var(--blue)">Jarayon</div>
     <h2 class="h-xl rv">Qanday <em style="color:var(--blue)">ishlaymiz</em></h2>
     <div class="stackzone" id="stackzone">
       <div class="scard sc1"><div class="s-top"><span class="s-no">[ BOSQICH 01 ]</span><span class="s-meta">1–2 kun</span></div>
@@ -941,7 +943,7 @@ body.menu-open,body.modal-open{overflow:hidden}
 <!-- CASE -->
 <section class="case-sec pad" id="case">
   <div class="wrap">
-    <div class="tag-line rv" style="color:var(--acid)">Loyihalar — 04</div>
+    <div class="tag-line rv" style="color:var(--acid)">Loyihalar</div>
     <h2 class="h-xl rv">Ishlar <em style="color:var(--acid)">amalda</em></h2>
     <div class="filters rv" id="filters"></div>
     <div class="cgrid" id="cases"></div>
@@ -964,7 +966,7 @@ body.menu-open,body.modal-open{overflow:hidden}
 <!-- FIKRLAR -->
 <section class="tm-sec" style="padding:clamp(70px,9vw,120px) 0">
   <div class="wrap" style="padding:0 clamp(18px,4vw,48px)">
-    <div class="tag-line rv" style="color:var(--coral)">Mijozlar — 06</div>
+    <div class="tag-line rv" style="color:var(--coral)">Mijozlar</div>
     <h2 class="h-xl rv" style="margin-bottom:2.4rem">Ular biz bilan <em style="color:var(--coral)">ishladi</em></h2>
   </div>
   <div class="tm-track" id="tmTrack"></div>
@@ -1020,7 +1022,7 @@ body.menu-open,body.modal-open{overflow:hidden}
 <section class="contact-sec pad" id="aloqa">
   <div class="wrap con-grid">
     <div class="rv">
-      <div class="tag-line">Aloqa — 09</div>
+      <div class="tag-line">Aloqa</div>
       <h2 class="h-xl">Loyihani <em style="color:var(--blue)">boshlaymiz</em></h2>
       <p class="body-l" style="margin-top:.8rem;opacity:.8">G'oyangizni yozing — <b>24 soat ichida</b> bog'lanamiz.</p>
       <div class="con-links" id="conLinks"></div>
@@ -1047,16 +1049,7 @@ body.menu-open,body.modal-open{overflow:hidden}
       <a href="#aloqa" class="btn btn-acid mag" style="margin-top:1.6rem">Bog'lanish
         <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
     </div>
-    <nav class="f-nav rv" id="fNav" aria-label="Footer"></nav>
-    <nav class="f-nav rv" aria-label="Sahifalar">
-      <a href="/uz/xizmatlar/">Xizmatlar</a>
-      <a href="/uz/yechimlar/">Yechimlar</a>
-      <a href="/uz/portfolio/">Portfolio</a>
-      <a href="/uz/blog/">Blog</a>
-      <a href="/uz/faq/">FAQ</a>
-      <a href="/uz/biz-haqimizda/">Biz haqimizda</a>
-      <a href="/uz/aloqa/">Aloqa</a>
-    </nav>
+    <nav class="f-nav rv" id="fNav" aria-label="Sahifalar"></nav>
   </div>
   <div class="f-social" id="fSocial"></div>
   <div class="f-meta">
@@ -1144,10 +1137,10 @@ const API='';
    bo'lim sifatida qoladi, faqat header/menyu/footer ro'yxatida ko'rinmaydi. */
 const NAV_SECTIONS=[
   {id:'xizmat',label:'Xizmatlar'},
-  {href:'/uz/yechimlar/',label:'Yechimlar'},
-  {href:'/uz/portfolio/',label:'Portfolio'},
-  {href:'/uz/blog/',label:'Blog'},
-  {href:'/uz/faq/',label:'FAQ'},
+  {href:'/uz/yechimlar/',label:'Yechimlar',spyId:'jarayon'},
+  {href:'/uz/portfolio/',label:'Portfolio',spyId:'case'},
+  {href:'/uz/blog/',label:'Blog',spyId:'postlar'},
+  {href:'/uz/faq/',label:'FAQ',spyId:'faq'},
   {href:'/uz/biz-haqimizda/',label:'Biz haqimizda'},
   {id:'aloqa',label:'Aloqa'}
 ];
@@ -1163,10 +1156,12 @@ function renderNav(){
   document.getElementById('fNav').innerHTML=NAV_SECTIONS.map(s=>
     `<a href="${hrefOf(s)}">→ ${s.label}</a>`).join('');
 
-  NAV_SECTIONS.forEach((s,i)=>{
+  /* P1: bo'lim tag-line'lari raqamsiz — menyu raqamlari (01..07) menyuning
+     o'z tartibi, sahifadagi bo'lim tartibi bilan aralashtirilmaydi */
+  NAV_SECTIONS.forEach(s=>{
     if(!s.id)return;
     const tl=document.querySelector(`#${s.id} .tag-line`);
-    if(tl)tl.textContent=`${s.label} — ${pad2(i+1)}`;
+    if(tl)tl.textContent=s.label;
   });
 }
 renderNav();
@@ -1474,29 +1469,33 @@ document.querySelectorAll('#menu a').forEach(a=>a.addEventListener('click',()=>{
   document.querySelector('#menuBtn span:first-child').textContent='Menyu';
 }));
 
-/* ══════════ TOPNAV SCROLL-SPY ══════════ */
+/* ══════════ TOPNAV SCROLL-SPY ══════════
+   Har bir nav bandi (real sahifa havolasi bo'lsa ham) bosh sahifadagi mos
+   section'ga IntersectionObserver bilan bog'lanadi. Ekranning 40–45%
+   balandligidagi ingichka chiziqni kesib o'tgan section — faol. Bir vaqtda
+   nolta yoki bitta band faol bo'ladi (hero'da hech biri faol emas). */
 (function(){
   const items=[];
-  document.querySelectorAll('.topnav a').forEach(a=>{
-    const href=a.getAttribute('href');
-    /* K1 (2026-09-22): topnav'da endi haqiqiy sahifa manzillari ham bor
-       (masalan /uz/blog/) — bular CSS selector sifatida yaroqsiz va
-       querySelector'ni xato bilan yiqitadi, shuning uchun faqat '#'
-       bilan boshlangan anchor'lar tekshiriladi. */
-    if(!href||href.charAt(0)!=='#')return;
-    const s=document.querySelector(href);
-    if(s)items.push({a:a,s:s});
+  document.querySelectorAll('.topnav a').forEach((a,i)=>{
+    const cfg=NAV_SECTIONS[i];
+    const targetId=cfg&&(cfg.id||cfg.spyId);
+    const s=targetId&&document.getElementById(targetId);
+    if(s)items.push({a:a,s:s,active:false});
   });
   if(!items.length)return;
-  function spy(){
-    const line=innerHeight*.45;
+  function apply(){
     let cur=-1;
-    items.forEach((it,i)=>{if(it.s.getBoundingClientRect().top<=line)cur=i;});
+    items.forEach((it,i)=>{if(it.active)cur=i;});
     items.forEach((it,i)=>it.a.classList.toggle('on',i===cur));
   }
-  addEventListener('scroll',spy,{passive:true});
-  addEventListener('resize',spy,{passive:true});
-  spy();
+  const io=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      const it=items.find(x=>x.s===e.target);
+      if(it)it.active=e.isIntersecting;
+    });
+    apply();
+  },{rootMargin:'-40% 0px -55% 0px',threshold:0});
+  items.forEach(it=>io.observe(it.s));
 })();
 
 /* ══════════ URL HASH SYNC — scroll paytida ko'rinayotgan sectionga mos hash
@@ -1633,17 +1632,22 @@ if(matchMedia('(hover:hover)').matches){
 /* ══════════ STICKY STACK scale ══════════ */
 (function(){
   const cards=[...document.querySelectorAll('.scard')];if(!cards.length||reduced)return;
-  addEventListener('scroll',()=>{
+  const STICKY_TOP=parseFloat(getComputedStyle(cards[0]).top)||110; /* CSS'dagi .scard top bilan bir xil */
+  let ticking=false;
+  function update(){
+    ticking=false;
     cards.forEach((c,i)=>{
       const r=c.getBoundingClientRect();
       const next=cards[i+1];
-      if(!next)return;
+      if(!next){c.style.transform='';c.style.filter='';return;}
       const nr=next.getBoundingClientRect();
-      const overlap=Math.min(Math.max((130+r.height-nr.top)/(r.height),0),1);
-      c.style.transform=`scale(${1-overlap*.06}) translateY(${-overlap*10}px)`;
+      const overlap=Math.min(Math.max((STICKY_TOP+r.height-nr.top)/(r.height),0),1);
+      c.style.transform=`scale(${1-overlap*.06})`;
       c.style.filter=`brightness(${1-overlap*.18})`;
     });
-  },{passive:true});
+  }
+  addEventListener('scroll',()=>{if(!ticking){ticking=true;requestAnimationFrame(update);}},{passive:true});
+  update();
 })();
 
 /* ══════════ RENDER ══════════ */
@@ -1759,12 +1763,26 @@ function renderContacts(){
       <svg viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></svg></a>`;
   }).join('');
 }
-/* footer ijtimoiy tarmoqlari — soniga qarab moslashadi */
+/* footer ijtimoiy tarmoqlari — ichki sahifalar footer'i bilan bir xil:
+   Telegram / email / telefon / Instagram (kontaktlar + ijtimoiy tarmoqlar
+   birlashtirilgan, takrorlanmasdan) */
 function renderSocials(){
-  const list=(DATA.socials&&DATA.socials.length)?DATA.socials:(DEFAULTS.socials||[]);
-  document.getElementById('fSocial').innerHTML=list.map(s=>
-    `<a href="${esc(s.url)}" target="_blank" rel="noopener" aria-label="${esc(s.name)}" title="${esc(s.name)}">
-      ${icon(s.icon)}<span>${esc(s.name)}</span></a>`).join('');
+  const contacts=(DATA.contacts&&DATA.contacts.length)?DATA.contacts:DEFAULTS.contacts;
+  const socials=(DATA.socials&&DATA.socials.length)?DATA.socials:(DEFAULTS.socials||[]);
+  const tg=contacts.find(c=>c.icon==='telegram');
+  const email=contacts.find(c=>c.icon==='email');
+  const phone=contacts.find(c=>c.icon==='phone');
+  const extra=socials.filter(s=>s.icon!=='telegram');
+  const list=[
+    tg&&{name:`Telegram — ${tg.value}`,url:tg.url,icon:'telegram'},
+    email&&{name:email.value,url:email.url,icon:'email'},
+    phone&&{name:phone.value,url:phone.url,icon:'phone'}
+  ].filter(Boolean).concat(extra);
+  document.getElementById('fSocial').innerHTML=list.map(s=>{
+    const ext=/^https?:/i.test(s.url)?' target="_blank" rel="noopener"':'';
+    return `<a href="${esc(s.url)}"${ext} aria-label="${esc(s.name)}" title="${esc(s.name)}">
+      ${icon(s.icon)}<span>${esc(s.name)}</span></a>`;
+  }).join('');
 }
 function renderFaq(){
   const list=(DATA.faq&&DATA.faq.length)?DATA.faq:DEFAULTS.faq;
