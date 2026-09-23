@@ -146,12 +146,32 @@ async def _send_offsite(path: Path) -> None:
 
 
 async def scheduler_loop() -> None:
-    """Fon vazifasi: har `BACKUP_INTERVAL_HOURS` da bir marta zaxira."""
+    """Fon vazifasi: har `BACKUP_INTERVAL_HOURS` da bir marta zaxira.
+
+    2026-09-23 bug: navbatdagi zaxira vaqti ILGARI process ishga tushgan
+    vaqtidan (5 daqiqa kutib) hisoblanardi — deploy har push'da xizmatni
+    qayta ishga tushirgani uchun bir kunda o'nlab marta zaxira olinib,
+    har biri Telegram guruhga yuborilardi ("1 kunda 1 marta" o'rniga).
+    Endi navbatdagi vaqt diskdagi ENG OXIRGI zaxira faylining nomidagi
+    vaqt tamg'asidan hisoblanadi — restartlar soniga bog'liq emas: xizmat
+    necha marta qayta ishga tushmasin, haqiqiy interval o'tmaguncha yangi
+    zaxira olinmaydi va Telegram'ga yuborilmaydi.
+    """
     interval = max(1, settings.BACKUP_INTERVAL_HOURS) * 3600
-    # Ishga tushgandan keyin darhol emas — deploy paytidagi qayta ishga
-    # tushishlar ketma-ket zaxira yaratib fayl tizimini to'ldirmasin.
-    await asyncio.sleep(min(300, interval))
     while True:
+        existing = list_backups()
+        elapsed = interval
+        if existing:
+            try:
+                stamp = existing[0].name[len(_PREFIX):-len(_SUFFIX)]
+                last_dt = datetime.strptime(stamp, "%Y%m%d-%H%M%S").replace(tzinfo=timezone.utc)
+                elapsed = (datetime.now(timezone.utc) - last_dt).total_seconds()
+            except Exception:
+                pass  # fayl nomi kutilgan formatda emas — darhol zaxira olamiz
+        wait = interval - elapsed
+        if wait > 0:
+            await asyncio.sleep(wait)
+            continue
         try:
             await create_backup()
         except asyncio.CancelledError:
