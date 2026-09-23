@@ -1756,7 +1756,7 @@ function renderSocials(){
   const tg=contacts.find(c=>c.icon==='telegram');
   const email=contacts.find(c=>c.icon==='email');
   const phone=contacts.find(c=>c.icon==='phone');
-  const extra=socials.filter(s=>s.icon!=='telegram');
+  const extra=socials.filter(s=>!['telegram','email','phone'].includes(s.icon));
   const list=[
     tg&&{name:`Telegram — ${tg.value}`,url:tg.url,icon:'telegram'},
     email&&{name:email.value,url:email.url,icon:'email'},

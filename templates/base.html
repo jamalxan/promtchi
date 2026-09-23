@@ -46,31 +46,32 @@
 <header class="site-hd">
   <a class="brand" href="/{{ lang }}/"><picture><source srcset="/static/logo.webp" type="image/webp"><img src="/static/logo.png" alt="promtchi" width="30" height="30"></picture><b>promtchi</b><sup>&reg;</sup></a>
   {% set nav_path = request.url.path %}
+  {% macro cur(seg) %}{% if nav_path.startswith('/'~lang~'/'~seg~'/') %}aria-current="page"{% endif %}{% endmacro %}
   <nav class="site-nav" aria-label="{{ common.main_nav_label }}">
-    <a href="/{{ lang }}/xizmatlar/" {{ 'aria-current="page"' if nav_path.startswith('/'~lang~'/xizmatlar/') else '' }}><small>01</small>{{ nav.services }}</a>
-    <a href="/{{ lang }}/yechimlar/" {{ 'aria-current="page"' if nav_path.startswith('/'~lang~'/yechimlar/') else '' }}><small>02</small>{{ nav.solutions }}</a>
-    <a href="/{{ lang }}/portfolio/" {{ 'aria-current="page"' if nav_path.startswith('/'~lang~'/portfolio/') else '' }}><small>03</small>{{ nav.portfolio }}</a>
-    <a href="/{{ lang }}/blog/" {{ 'aria-current="page"' if nav_path.startswith('/'~lang~'/blog/') else '' }}><small>04</small>{{ nav.blog }}</a>
-    <a href="/{{ lang }}/faq/" {{ 'aria-current="page"' if nav_path.startswith('/'~lang~'/faq/') else '' }}><small>05</small>{{ nav.faq }}</a>
-    <a href="/{{ lang }}/biz-haqimizda/" {{ 'aria-current="page"' if nav_path.startswith('/'~lang~'/biz-haqimizda/') else '' }}><small>06</small>{{ nav.about }}</a>
-    <a href="/{{ lang }}/aloqa/" {{ 'aria-current="page"' if nav_path.startswith('/'~lang~'/aloqa/') else '' }}><small>07</small>{{ nav.contact }}</a>
+    <a href="/{{ lang }}/xizmatlar/" {{ cur('xizmatlar') }}><small>01</small>{{ nav.services }}</a>
+    <a href="/{{ lang }}/yechimlar/" {{ cur('yechimlar') }}><small>02</small>{{ nav.solutions }}</a>
+    <a href="/{{ lang }}/portfolio/" {{ cur('portfolio') }}><small>03</small>{{ nav.portfolio }}</a>
+    <a href="/{{ lang }}/blog/" {{ cur('blog') }}><small>04</small>{{ nav.blog }}</a>
+    <a href="/{{ lang }}/faq/" {{ cur('faq') }}><small>05</small>{{ nav.faq }}</a>
+    <a href="/{{ lang }}/biz-haqimizda/" {{ cur('biz-haqimizda') }}><small>06</small>{{ nav.about }}</a>
+    <a href="/{{ lang }}/aloqa/" {{ cur('aloqa') }}><small>07</small>{{ nav.contact }}</a>
   </nav>
   <div class="site-hd-right">
     <div class="lang-switch">
-      {% for l in langs %}<a href="{{ lang_urls[l] }}" class="{{ 'on' if l==lang else '' }}" {{ 'aria-current="true"' if l==lang else '' }}>{{ lang_short[l] }}</a>{% endfor %}
+      {% for l in langs %}<a href="{{ lang_urls[l] }}" class="{{ 'on' if l==lang else '' }}" {% if l==lang %}aria-current="true"{% endif %}>{{ lang_short[l] }}</a>{% endfor %}
     </div>
     <label for="navToggle" class="menu-btn" aria-label="{{ common.main_nav_label }}"><span class="mi"><i></i><i></i></span></label>
   </div>
 </header>
 
 <nav class="mob-nav-panel" aria-label="{{ common.main_nav_label }}">
-  <a href="/{{ lang }}/xizmatlar/" {{ 'aria-current="page"' if nav_path.startswith('/'~lang~'/xizmatlar/') else '' }}><small>01</small>{{ nav.services }}</a>
-  <a href="/{{ lang }}/yechimlar/" {{ 'aria-current="page"' if nav_path.startswith('/'~lang~'/yechimlar/') else '' }}><small>02</small>{{ nav.solutions }}</a>
-  <a href="/{{ lang }}/portfolio/" {{ 'aria-current="page"' if nav_path.startswith('/'~lang~'/portfolio/') else '' }}><small>03</small>{{ nav.portfolio }}</a>
-  <a href="/{{ lang }}/blog/" {{ 'aria-current="page"' if nav_path.startswith('/'~lang~'/blog/') else '' }}><small>04</small>{{ nav.blog }}</a>
-  <a href="/{{ lang }}/faq/" {{ 'aria-current="page"' if nav_path.startswith('/'~lang~'/faq/') else '' }}><small>05</small>{{ nav.faq }}</a>
-  <a href="/{{ lang }}/biz-haqimizda/" {{ 'aria-current="page"' if nav_path.startswith('/'~lang~'/biz-haqimizda/') else '' }}><small>06</small>{{ nav.about }}</a>
-  <a href="/{{ lang }}/aloqa/" {{ 'aria-current="page"' if nav_path.startswith('/'~lang~'/aloqa/') else '' }}><small>07</small>{{ nav.contact }}</a>
+  <a href="/{{ lang }}/xizmatlar/" {{ cur('xizmatlar') }}><small>01</small>{{ nav.services }}</a>
+  <a href="/{{ lang }}/yechimlar/" {{ cur('yechimlar') }}><small>02</small>{{ nav.solutions }}</a>
+  <a href="/{{ lang }}/portfolio/" {{ cur('portfolio') }}><small>03</small>{{ nav.portfolio }}</a>
+  <a href="/{{ lang }}/blog/" {{ cur('blog') }}><small>04</small>{{ nav.blog }}</a>
+  <a href="/{{ lang }}/faq/" {{ cur('faq') }}><small>05</small>{{ nav.faq }}</a>
+  <a href="/{{ lang }}/biz-haqimizda/" {{ cur('biz-haqimizda') }}><small>06</small>{{ nav.about }}</a>
+  <a href="/{{ lang }}/aloqa/" {{ cur('aloqa') }}><small>07</small>{{ nav.contact }}</a>
 </nav>
 
 {% if breadcrumbs %}
