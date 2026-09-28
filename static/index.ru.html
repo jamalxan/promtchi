@@ -77,7 +77,8 @@ body.cur-on, body.cur-on *{cursor:none!important}
 #loader .l-top{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.72rem;
   letter-spacing:.2em;text-transform:uppercase;color:rgba(252,251,247,.5)}
 #loader .l-word{font-family:var(--anton);font-size:clamp(2.6rem,9vw,7rem);text-transform:uppercase;
-  letter-spacing:.01em;line-height:1;color:var(--w)}
+  letter-spacing:.01em;line-height:1;color:var(--w);transition:opacity .16s ease}
+#loader .l-word.fade{opacity:0}
 #loader .l-word em{font-family:var(--serif);font-style:italic;text-transform:none;color:var(--acid);letter-spacing:0}
 #loader .l-bottom{display:flex;justify-content:space-between;align-items:flex-end}
 #loader .l-count{font-family:var(--anton);font-size:clamp(4rem,14vw,11rem);line-height:.85;color:var(--acid)}
@@ -1356,19 +1357,28 @@ if(matchMedia('(hover:hover)').matches){
 /* ══════════ PRELOADER ══════════ */
 (function(){
   const L=document.getElementById('loader');
-  if(reduced){L.classList.add('done');startHero();return;}
+  let seen=false;
+  try{seen=sessionStorage.getItem('pc_intro_seen')==='1';sessionStorage.setItem('pc_intro_seen','1');}catch(e){}
+  /* qayta tashrifda (shu sessiyada) yoki reduced-motion'da og'ir intro ko'rsatilmaydi */
+  if(reduced||seen){L.classList.add('done');startHero();return;}
   const words=['ДИЗАЙН','КОД','АВТОМАТ','AI','PROMTCHI'];
   const wEl=document.getElementById('lWord'),cEl=document.getElementById('lCount'),bar=document.getElementById('lBar');
-  let n=0,wi=0;
-  const wt=setInterval(()=>{wi=(wi+1)%words.length;wEl.innerHTML=words[wi]+'<em>.</em>';},340);
+  let n=0,wi=0,wfade;
+  /* so'z almashinuvi endi qattiq kesilmasdan, yumshoq crossfade bilan —
+     ilgari har 340ms'da matn birdan almashib, "miltillab" ko'rinardi */
+  const wt=setInterval(()=>{
+    wEl.classList.add('fade');
+    wfade=setTimeout(()=>{wi=(wi+1)%words.length;wEl.innerHTML=words[wi]+'<em>.</em>';wEl.classList.remove('fade');},110);
+  },340);
+  const stopWord=()=>{clearInterval(wt);clearTimeout(wfade);};
   const t=setInterval(()=>{
-    n+=Math.random()*13+4;if(n>=100)n=100;
+    n+=Math.random()*16+9;if(n>=100)n=100;
     cEl.textContent=Math.floor(n);bar.style.width=n+'%';
-    if(n>=100){clearInterval(t);clearInterval(wt);
-      setTimeout(()=>{L.classList.add('done');startHero();},260);}
-  },90);
-  /* fallback — nima bo'lsa ham 4.5s da ochilsin */
-  setTimeout(()=>{if(!L.classList.contains('done')){clearInterval(t);clearInterval(wt);L.classList.add('done');startHero();}},4500);
+    if(n>=100){clearInterval(t);stopWord();
+      setTimeout(()=>{L.classList.add('done');startHero();},180);}
+  },85);
+  /* fallback — nima bo'lsa ham 1s da ochilsin (ilgari 4.5s edi) */
+  setTimeout(()=>{if(!L.classList.contains('done')){clearInterval(t);stopWord();L.classList.add('done');startHero();}},1000);
 })();
 
 /* ══════════ SPLIT-TEXT ══════════ */
