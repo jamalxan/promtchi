@@ -27,9 +27,13 @@
 <link rel="icon" href="/favicon.ico" sizes="any">
 <script type="application/ld+json" id="orgSchema">{"@context":"https://schema.org","@type":"Organization","@id":"https://promtchi.uz/#organization","name":"promtchi","url":"https://promtchi.uz/","logo":{"@type":"ImageObject","url":"https://promtchi.uz/static/logo.png"},"foundingDate":"2023","address":{"@type":"PostalAddress","addressLocality":"Tashkent","addressCountry":"UZ"},"contactPoint":[{"@type":"ContactPoint","contactType":"customer service","url":"https://t.me/promtchiadmin","areaServed":"UZ","availableLanguage":["uz","ru","en"]}],"sameAs":["https://t.me/promtchiadmin"]}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","@id":"https://promtchi.uz/en/#website","name":"promtchi","url":"https://promtchi.uz/en/","publisher":{"@id":"https://promtchi.uz/#organization"},"inLanguage":"en"}</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- shriftlar o'z serverimizda: Google Fonts kech yuklanib, ochilishda sarlavha
+     fallback shriftdan Anton'ga "sakrardi" (FOUT + layout shift) -->
+<link rel="preload" href="/static/fonts/anton-normal-latin-a6f395.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/static/fonts/space-grotesk-normal-latin-ecea81.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/static/fonts/instrument-serif-italic-latin-52a6c2.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/static/fonts/jetbrains-mono-normal-latin-480c06.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/static/fonts.css?v=1">
 <style>
 /* ══════════ TOKENLAR ══════════ */
 :root{
@@ -48,7 +52,10 @@
   --ease:cubic-bezier(.16,1,.3,1);
 }
 *{margin:0;padding:0;box-sizing:border-box}
-html{scroll-behavior:smooth}
+html{scroll-behavior:smooth;background:var(--blk);
+  /* Anton va Instrument Serif'da faqat 400 og'irlik bor — h1/h2/h3/b ichida
+     brauzer ularni sun'iy qalinlashtirib, harflar ichini to'ldirib yuborardi */
+  font-synthesis:style}
 body{background:var(--blk);color:var(--w);font-family:var(--grot);line-height:1.6;overflow-x:hidden;
   -webkit-font-smoothing:antialiased}
 ::selection{background:var(--acid);color:var(--blk)}
@@ -85,13 +92,24 @@ body.cur-on, body.cur-on *{cursor:none!important}
 #loader .l-bar{position:absolute;left:0;bottom:0;height:5px;background:var(--acid);width:0%}
 #loader .cols{position:absolute;inset:0;display:flex;pointer-events:none}
 #loader .cols i{flex:1;background:var(--blk);transform:translateY(0);transition:transform 1s var(--ease)}
+/* matn qatlamlari pardadan (.cols — absolute, fon qora) USTIDA turishi shart:
+   ilgari ular oddiy oqimda bo'lib, absolute pardaning orqasida qolardi — so'z
+   faqat opacity o'tishi paytida (alohida qatlamga chiqqanda) ko'rinib
+   "miltillardi", hisoblagich va yuqori yozuvlar esa umuman ko'rinmasdi */
+#loader .l-top,#loader .l-word,#loader .l-bottom{position:relative;z-index:1}
 #loader .cols i:nth-child(2){transition-delay:.06s}
 #loader .cols i:nth-child(3){transition-delay:.12s}
 #loader .cols i:nth-child(4){transition-delay:.18s}
 #loader .cols i:nth-child(5){transition-delay:.24s}
-#loader.done .l-top,#loader.done .l-word,#loader.done .l-bottom,#loader.done .l-bar{opacity:0;transition:opacity .3s}
+#loader.done .l-top,#loader.done .l-word,#loader.done .l-bottom,#loader.done .l-bar{opacity:0;transition:opacity .18s}
 #loader.done .cols i{transform:translateY(-101%)}
-#loader.done{visibility:hidden}
+/* done: loader'ning o'z qora foni darhol olib tashlanadi — aks holda ustunlar
+   (.cols) yuqoriga ko'tarilganda ortidan yana qora fon chiqib, parda animatsiyasi
+   ko'rinmasdi: ~1.2s qop-qora ekran, so'ng sahifa birdan "sakrab" paydo bo'lardi */
+#loader.done{visibility:hidden;background:transparent;pointer-events:none}
+/* qayta tashrifda intro matni (so'z/hisoblagich) umuman ko'rsatilmaydi — faqat
+   parda ochiladi; ilgari har qaytishda "DIZAYN. 0" bir lahza ko'rinib o'tardi */
+#loader.quick .l-top,#loader.quick .l-word,#loader.quick .l-bottom,#loader.quick .l-bar{display:none}
 
 /* ══════════ KURSOR ══════════ */
 .cur{position:fixed;top:0;left:0;z-index:1500;pointer-events:none;transform:translate(-50%,-50%);
@@ -223,7 +241,10 @@ section{position:relative}
 /* char-split */
 .split .ch{display:inline-block;transform:translateY(115%) rotate(6deg);transition:transform .8s var(--ease)}
 .split.go .ch{transform:none}
-.split .wln{display:inline-block;overflow:hidden;vertical-align:top;padding-bottom:.06em;margin-bottom:-.06em}
+/* padding-top — Й/Ё kabi harflarning ustki belgisi (line-height .95'da) overflow
+   bilan kesilib, harfdan uzilgan nuqta bo'lib qolardi; manfiy margin qator
+   balandligini o'zgartirmaydi */
+.split .wln{display:inline-block;overflow:hidden;vertical-align:top;padding:.16em 0 .06em;margin:-.16em 0 -.06em}
 
 /* ══════════ HERO ══════════ */
 .hero{min-height:100svh;display:flex;flex-direction:column;justify-content:flex-end;
@@ -289,6 +310,9 @@ section{position:relative}
 .s-hint i{width:1.5px;height:34px;background:linear-gradient(180deg,var(--acid),transparent);
   display:block;animation:hint 1.6s ease-in-out infinite}
 @keyframes hint{50%{transform:scaleY(.4);opacity:.4}}
+/* mobil/planshetda hero-foot tugmalari ekran pastigacha tushadi va "PASTGA"
+   belgisi ikkinchi tugma ustiga chiqib qolardi */
+@media(max-width:900px){.s-hint{display:none}}
 
 /* ══════════ MARQUEE BAND ══════════ */
 .mq-band{background:var(--acid);color:var(--blk);padding:1.2rem 0;overflow:hidden;
@@ -419,7 +443,21 @@ section{position:relative}
   border:1.6px solid var(--line-w);background:transparent;color:rgba(252,251,247,.7);transition:.3s;min-height:46px}
 .filters button:hover{color:var(--w);border-color:var(--w)}
 .filters button.on{background:var(--acid);color:var(--blk);border-color:var(--acid);font-weight:700}
-.cgrid{display:grid;gap:1.4rem;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.cgrid{display:grid;gap:1.4rem;grid-template-columns:1fr}
+/* keyslar to'ri — featured to'liq kenglikda, qolganlari qatorni oxirigacha
+   to'ldiradi (ilgari auto-fit + featured span tufayli 2 ta karta 4 ustunli
+   to'rning chap yarmida qolib, o'ngda katta bo'sh joy qolardi). w3/w6/t-full
+   sinflari renderCases()'da karta soniga qarab qo'yiladi */
+@media(min-width:761px) and (max-width:1023px){
+  .cgrid{grid-template-columns:repeat(2,1fr)}
+  .ccard.t-full{grid-column:1/-1}
+}
+@media(min-width:1024px){
+  .cgrid{grid-template-columns:repeat(6,1fr)}
+  .ccard{grid-column:span 2}
+  .ccard.w3{grid-column:span 3}
+  .ccard.w6{grid-column:1/-1}
+}
 .ccard{background:var(--cream);color:var(--blk);border-radius:18px;overflow:hidden;border:3px solid var(--blk);
   transition:transform .4s var(--ease),box-shadow .4s;text-align:left;display:block;text-decoration:none;cursor:pointer}
 .ccard:hover{transform:translateY(-8px) rotate(-.7deg);box-shadow:0 30px 60px rgba(217,255,63,.14)}
@@ -740,6 +778,7 @@ body.menu-open,body.modal-open{overflow:hidden}
 
 <!-- PRELOADER -->
 <div id="loader" aria-hidden="true">
+  <script>try{if(sessionStorage.getItem('pc_intro_seen')==='1')document.getElementById('loader').classList.add('quick')}catch(e){}</script>
   <div class="cols"><i></i><i></i><i></i><i></i><i></i></div>
   <div class="l-top"><span>promtchi® studio</span><span>Tashkent, UZ</span></div>
   <div class="l-word" id="lWord">DESIGN<em>.</em></div>
@@ -1328,11 +1367,11 @@ const pDate=iso=>{try{return new Date(iso).toLocaleDateString('en-US',{day:'2-di
 function renderPosts(){
   const shown=POSTS.slice(0,3);
   const sameDate=shown.length>1&&shown.every(p=>pDate(p.created_at)===pDate(shown[0].created_at));
-  document.getElementById('postGrid').innerHTML=shown.map(p=>{
+  document.getElementById('postGrid').innerHTML=shown.map((p,i)=>{
     const yt=p.video?ytId(p.video):null;
     const cover=p.image||(yt?`https://i.ytimg.com/vi/${yt}/hqdefault.jpg`:'');
     return `<a class="post-row" href="/${PAGE_LANG}/blog/${esc(p.slug)}/"${cover?` data-cover="${esc(cover)}"`:''}>
-      <span class="p-date">${sameDate?'':pDate(p.created_at)}</span>
+      <span class="p-date">${sameDate?'/'+String(i+1).padStart(2,'0'):pDate(p.created_at)}</span>
       <h3>${esc(p.title)}</h3>
       <span class="arr"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
     </a>`;
@@ -1355,12 +1394,28 @@ if(matchMedia('(hover:hover)').matches){
 }
 
 /* ══════════ PRELOADER ══════════ */
+/* hero'da ishlatiladigan shriftlar (kirill uchun ham — matn bo'yicha) yuklanishini
+   kutadi, lekin `ms` dan ortiq emas */
+function fontsReady(ms){
+  const h=document.querySelector('.hero h1'),txt=(h?h.textContent:'')+'0123456789';
+  const p=document.fonts&&document.fonts.load
+    ?Promise.all(['1em Anton','italic 1em "Instrument Serif"','1em "Space Grotesk"','1em "JetBrains Mono"']
+        .map(q=>document.fonts.load(q,txt).catch(()=>{})))
+    :Promise.resolve();
+  return Promise.race([p,new Promise(r=>setTimeout(r,ms))]);
+}
 (function(){
   const L=document.getElementById('loader');
   let seen=false;
   try{seen=sessionStorage.getItem('pc_intro_seen')==='1';sessionStorage.setItem('pc_intro_seen','1');}catch(e){}
   /* qayta tashrifda (shu sessiyada) yoki reduced-motion'da og'ir intro ko'rsatilmaydi */
-  if(reduced||seen){L.classList.add('done');startHero();return;}
+  /* sahifa faqat hero shriftlari tayyor bo'lganda ochiladi — aks holda sarlavha
+     avval tizim shriftida chiqib, ~1s dan keyin Anton'ga "sakrardi" */
+  let opened=false;
+  const open=()=>{if(opened)return;opened=true;L.classList.add('done');
+    /* intro matni so'nib ulgurgach sarlavha ko'tarila boshlaydi — ikkalasi ustma-ust tushmasin */
+    setTimeout(startHero,seen?0:160);};
+  if(reduced||seen){fontsReady(900).then(open);return;}
   const words=['DESIGN','CODE','AUTOMATE','AI','PROMTCHI'];
   const wEl=document.getElementById('lWord'),cEl=document.getElementById('lCount'),bar=document.getElementById('lBar');
   let n=0,wi=0,wfade;
@@ -1375,10 +1430,10 @@ if(matchMedia('(hover:hover)').matches){
     n+=Math.random()*16+9;if(n>=100)n=100;
     cEl.textContent=Math.floor(n);bar.style.width=n+'%';
     if(n>=100){clearInterval(t);stopWord();
-      setTimeout(()=>{L.classList.add('done');startHero();},180);}
+      fontsReady(900).then(()=>setTimeout(open,180));}
   },85);
-  /* fallback — nima bo'lsa ham 1s da ochilsin (ilgari 4.5s edi) */
-  setTimeout(()=>{if(!L.classList.contains('done')){clearInterval(t);stopWord();L.classList.add('done');startHero();}},1000);
+  /* fallback — shrift/tarmoq sekin bo'lsa ham 1.8s da albatta ochilsin */
+  setTimeout(()=>{clearInterval(t);stopWord();open();},1800);
 })();
 
 /* ══════════ SPLIT-TEXT ══════════ */
@@ -1728,6 +1783,12 @@ function renderCases(filter){
   const co=new IntersectionObserver(es=>es.forEach(e=>{
     if(e.isIntersecting){e.target.classList.add('in');co.unobserve(e.target);}}),{threshold:.25});
   box.querySelectorAll('.ccard').forEach(c=>{if(reduced)c.classList.add('in');else co.observe(c);});
+  /* oxirgi qator to'liq bo'lsin: desktop 3 ustun (6 track), planshet 2 ustun */
+  const rest=[...box.querySelectorAll('.ccard:not(.featured)')],rn=rest.length;
+  if(rn===1)rest[0].classList.add('w6');
+  else if(rn%3===2)rest.slice(-2).forEach(c=>c.classList.add('w3'));
+  else if(rn%3===1)rest.slice(-4).forEach(c=>c.classList.add('w3'));
+  if(rn%2===1)rest[rn-1].classList.add('t-full');
 }
 function renderFilters(){
   const box=document.getElementById('filters');box.innerHTML='';

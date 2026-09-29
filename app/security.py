@@ -96,7 +96,11 @@ class SecurityHeadersMiddleware:
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
         path = scope["path"]
-        versioned = b"v=" in scope.get("query_string", b"")
+        # /static/fonts/ fayl nomlarida mazmun hash'i bor (o'zgarsa nomi ham
+        # o'zgaradi) — ?v= bo'lmasa ham immutable keshlanadi
+        versioned = b"v=" in scope.get("query_string", b"") or path.startswith(
+            "/static/fonts/"
+        )
 
         async def send_wrapper(message):
             if message["type"] == "http.response.start":

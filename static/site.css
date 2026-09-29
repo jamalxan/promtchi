@@ -12,7 +12,9 @@
 /* overflow-x:clip — to'liq kenglikdagi bo'lim fonlari (100vw) scrollbar
    kengligi tufayli bir necha piksel toshadi; `clip` uni kesadi va `hidden`dan
    farqli o'laroq sticky header'ni buzmaydi */
-html{scroll-behavior:smooth;overflow-x:clip}
+/* font-synthesis:style — Anton/Instrument Serif'da faqat 400 og'irlik bor;
+   h1-h3'dan tashqari (.brand b, .fact b, ...) ham sun'iy qalinlashmasin */
+html{scroll-behavior:smooth;overflow-x:clip;background:var(--blk);font-synthesis:style}
 body{margin:0;background:var(--blk);color:var(--w);font-family:var(--grot);line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:clip}
 img{max-width:100%;display:block}
 a{color:inherit}
@@ -240,7 +242,11 @@ section.hero-in.alt::before{content:'';position:absolute;inset:0 calc(50% - 50vw
 
 /* legal (privacy/terms) */
 .legal-updated{margin-top:.6rem;font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;opacity:.55;text-transform:uppercase}
-.legal-body{max-width:74ch;display:grid;gap:.5rem}
+/* o'qish kengligi bolalarga beriladi — konteynerning o'ziga max-width
+   berilganda .wrap margin:auto uni markazga surib, matn sarlavha (hero)
+   chap chizig'idan ~100px o'ngda boshlanib qolardi */
+.legal-body{display:grid;gap:.5rem}
+.legal-body>*{max-width:74ch}
 .legal-body h2{margin-top:1.4rem;font-size:clamp(1.1rem,2vw,1.35rem)}
 .legal-body p{opacity:.85;line-height:1.6}
 
@@ -297,7 +303,11 @@ section.sec.alt::before{content:'';position:absolute;inset:0 calc(50% - 50vw);ba
    bo'linganda ikkala qator har xil eniga chiqardi (masalan 282px vs 340px) va
    keng ekranda oxirgi qator chetga tegib qolardi. Grid'da barcha qatorlar BIR
    XIL ustun kengligini bo'lishadi — nechta karta bo'lishidan qat'i nazar. */
-.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.5rem;margin-top:1.6rem}
+/* auto-fit (auto-fill emas) — 2 ta karta (masalan "Portfolio'dan misollar",
+   "Barcha loyihalar") 3 ustunli to'rning chap qismida qolib, o'ngda bo'sh
+   ustun qolmasin; yagona karta esa haddan tashqari cho'zilmasin */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.5rem;margin-top:1.6rem}
+.card-grid>:only-child{max-width:520px}
 .card{display:block;position:relative;text-decoration:none;color:var(--blk);
   padding:1.4rem 1.4rem 4.4rem;border:3px solid var(--blk);border-radius:18px;background:var(--cream);
   transition:transform .3s var(--ease),box-shadow .3s var(--ease)}

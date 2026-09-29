@@ -27,9 +27,14 @@
 {% for hreflang, href in alt_links %}<link rel="alternate" hreflang="{{ hreflang }}" href="{{ href }}">
 {% endfor %}<link rel="icon" href="/static/favicon.png" type="image/png">
 <link rel="icon" href="/favicon.ico" sizes="any">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- shriftlar o'z serverimizda: Google Fonts kech yuklanib, ochilishda sarlavha
+     fallback shriftdan Anton'ga "sakrardi" (FOUT + layout shift) -->
+<link rel="preload" href="/static/fonts/anton-normal-latin-a6f395.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/static/fonts/space-grotesk-normal-latin-ecea81.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/static/fonts/jetbrains-mono-normal-latin-480c06.woff2" as="font" type="font/woff2" crossorigin>
+{% if lang == 'ru' %}<link rel="preload" href="/static/fonts/oswald-700-cyrillic-ae7f9f.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/static/fonts/jetbrains-mono-normal-cyrillic-b1b041.woff2" as="font" type="font/woff2" crossorigin>
+{% endif %}<link rel="stylesheet" href="/static/fonts.css?v=1">
 <link rel="stylesheet" href="/static/site.css?v={{ asset_v }}">
 <script type="application/ld+json">{{ org_schema|safe }}</script>
 <script type="application/ld+json">{{ website_schema|safe }}</script>
