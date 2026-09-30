@@ -47,14 +47,17 @@
   <a class="brand" href="/{{ lang }}/"><picture><source srcset="/static/logo.webp" type="image/webp"><img src="/static/logo.png" alt="promtchi" width="30" height="30"></picture><b>promtchi</b><sup>&reg;</sup></a>
   {% set nav_path = request.url.path %}
   {% macro cur(seg) %}{% if nav_path.startswith('/'~lang~'/'~seg~'/') %}aria-current="page"{% endif %}{% endmacro %}
+  {# Menyu bosh sahifa bo'limlariga olib boradi (/uz/#section) — bosh
+     sahifadagi NAV massivi bilan bir xil tartib. SEO sahifalari footer'da va
+     har bo'lim oxiridagi "Barcha …" tugmalarida. #}
   <nav class="site-nav" aria-label="{{ common.main_nav_label }}">
-    <a href="/{{ lang }}/xizmatlar/" {{ cur('xizmatlar') }}><small>01</small>{{ nav.services }}</a>
-    <a href="/{{ lang }}/yechimlar/" {{ cur('yechimlar') }}><small>02</small>{{ nav.solutions }}</a>
-    <a href="/{{ lang }}/portfolio/" {{ cur('portfolio') }}><small>03</small>{{ nav.portfolio }}</a>
-    <a href="/{{ lang }}/blog/" {{ cur('blog') }}><small>04</small>{{ nav.blog }}</a>
-    <a href="/{{ lang }}/faq/" {{ cur('faq') }}><small>05</small>{{ nav.faq }}</a>
-    <a href="/{{ lang }}/biz-haqimizda/" {{ cur('biz-haqimizda') }}><small>06</small>{{ nav.about }}</a>
-    <a href="/{{ lang }}/aloqa/" {{ cur('aloqa') }}><small>07</small>{{ nav.contact }}</a>
+    <a href="/{{ lang }}/#xizmatlar" {{ cur('xizmatlar') }}><small>01</small>{{ nav.services }}</a>
+    <a href="/{{ lang }}/#yechimlar" {{ cur('yechimlar') }}><small>02</small>{{ nav.solutions }}</a>
+    <a href="/{{ lang }}/#jarayon"><small>03</small>{{ nav.process }}</a>
+    <a href="/{{ lang }}/#portfolio" {{ cur('portfolio') }}><small>04</small>{{ nav.portfolio }}</a>
+    <a href="/{{ lang }}/#blog" {{ cur('blog') }}><small>05</small>{{ nav.blog }}</a>
+    <a href="/{{ lang }}/#faq" {{ cur('faq') }}><small>06</small>{{ nav.faq }}</a>
+    <a href="/{{ lang }}/#aloqa" {{ cur('aloqa') }}><small>07</small>{{ nav.contact }}</a>
   </nav>
   <div class="site-hd-right">
     <div class="lang-switch">
@@ -65,13 +68,14 @@
 </header>
 
 <nav class="mob-nav-panel" aria-label="{{ common.main_nav_label }}">
-  <a href="/{{ lang }}/xizmatlar/" {{ cur('xizmatlar') }}><small>01</small>{{ nav.services }}</a>
-  <a href="/{{ lang }}/yechimlar/" {{ cur('yechimlar') }}><small>02</small>{{ nav.solutions }}</a>
-  <a href="/{{ lang }}/portfolio/" {{ cur('portfolio') }}><small>03</small>{{ nav.portfolio }}</a>
-  <a href="/{{ lang }}/blog/" {{ cur('blog') }}><small>04</small>{{ nav.blog }}</a>
-  <a href="/{{ lang }}/faq/" {{ cur('faq') }}><small>05</small>{{ nav.faq }}</a>
-  <a href="/{{ lang }}/biz-haqimizda/" {{ cur('biz-haqimizda') }}><small>06</small>{{ nav.about }}</a>
-  <a href="/{{ lang }}/aloqa/" {{ cur('aloqa') }}><small>07</small>{{ nav.contact }}</a>
+  <a href="/{{ lang }}/#xizmatlar" {{ cur('xizmatlar') }}><small>01</small>{{ nav.services }}</a>
+  <a href="/{{ lang }}/#yechimlar" {{ cur('yechimlar') }}><small>02</small>{{ nav.solutions }}</a>
+  <a href="/{{ lang }}/#jarayon"><small>03</small>{{ nav.process }}</a>
+  <a href="/{{ lang }}/#portfolio" {{ cur('portfolio') }}><small>04</small>{{ nav.portfolio }}</a>
+  <a href="/{{ lang }}/#blog" {{ cur('blog') }}><small>05</small>{{ nav.blog }}</a>
+  <a href="/{{ lang }}/#faq" {{ cur('faq') }}><small>06</small>{{ nav.faq }}</a>
+  <a href="/{{ lang }}/#aloqa" {{ cur('aloqa') }}><small>07</small>{{ nav.contact }}</a>
+  <a href="/{{ lang }}/biz-haqimizda/" {{ cur('biz-haqimizda') }}><small>08</small>{{ nav.about }}</a>
 </nav>
 
 {% if breadcrumbs %}

@@ -3,6 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+/* Birinchi chizishdan OLDIN: shu sessiyada intro ko'rilgan bo'lsa qisqa
+   intro (html.intro-short). Scroll pozitsiyasini brauzer emas, bizning
+   nav kontrollerimiz tiklaydi (hash bo'yicha, loader'dan keyin). */
+(function(){var d=document.documentElement;
+  try{if(sessionStorage.getItem('pc_intro_seen')==='1')d.classList.add('intro-short');}catch(e){}
+  try{history.scrollRestoration='manual';}catch(e){}
+})();
+</script>
 <meta name="theme-color" content="#0B0B0E">
 <title>promtchi® — разработка сайтов, CRM и AI в Ташкенте</title>
 <meta name="description" content="Разработка сайтов, мобильных приложений, CRM/ERP систем и Telegram-ботов в Ташкенте — оживляем ваш бизнес: дизайн, автоматизация и AI в единой системе.">
@@ -72,26 +81,34 @@ body.cur-on, body.cur-on *{cursor:none!important}
 .mq,.tm-track,.hero-bg .ghost,.badge{will-change:transform}
 
 /* ══════════ PRELOADER ══════════ */
-#loader{position:fixed;inset:0;z-index:2000;display:flex;flex-direction:column;justify-content:space-between;
-  padding:clamp(20px,4vw,44px);background:var(--blk);transition:visibility 0s 1.4s;overflow:hidden}
-#loader .l-top{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.72rem;
-  letter-spacing:.2em;text-transform:uppercase;color:rgba(252,251,247,.5)}
-#loader .l-word{font-family:var(--anton);font-size:clamp(2.6rem,9vw,7rem);text-transform:uppercase;
-  letter-spacing:.01em;line-height:1;color:var(--w);transition:opacity .16s ease}
-#loader .l-word.fade{opacity:0}
-#loader .l-word em{font-family:var(--serif);font-style:italic;text-transform:none;color:var(--acid);letter-spacing:0}
-#loader .l-bottom{display:flex;justify-content:space-between;align-items:flex-end}
-#loader .l-count{font-family:var(--anton);font-size:clamp(4rem,14vw,11rem);line-height:.85;color:var(--acid)}
-#loader .l-bar{position:absolute;left:0;bottom:0;height:5px;background:var(--acid);width:0%}
-#loader .cols{position:absolute;inset:0;display:flex;pointer-events:none}
-#loader .cols i{flex:1;background:var(--blk);transform:translateY(0);transition:transform 1s var(--ease)}
-#loader .cols i:nth-child(2){transition-delay:.06s}
-#loader .cols i:nth-child(3){transition-delay:.12s}
-#loader .cols i:nth-child(4){transition-delay:.18s}
-#loader .cols i:nth-child(5){transition-delay:.24s}
-#loader.done .l-top,#loader.done .l-word,#loader.done .l-bottom,#loader.done .l-bar{opacity:0;transition:opacity .3s}
-#loader.done .cols i{transform:translateY(-101%)}
-#loader.done{visibility:hidden}
+/* Intro: PROMTCHI. harflari niqob ostidan ketma-ket ko'tariladi, ostida
+   ingichka progress chizig'i va hisoblagich. Yopilish: harflar yuqoriga chiqib
+   ketadi, qora panel pastdan yuqoriga yig'iladi (clip-path) — ostidan hero.
+   Qayta tashrif (html.intro-short): faqat tezroq logo, chiziqsiz. */
+#loader{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;overflow:hidden;
+  background:var(--blk);-webkit-clip-path:inset(0 0 0 0);clip-path:inset(0 0 0 0);
+  transition:-webkit-clip-path .9s cubic-bezier(.76,0,.24,1) .45s,clip-path .9s cubic-bezier(.76,0,.24,1) .45s,visibility 0s 1.4s}
+#loader .l-in{display:flex;flex-direction:column;align-items:center;gap:clamp(18px,2.6vw,30px)}
+#loader .l-mark{display:flex;font-family:var(--anton);font-size:clamp(3rem,12vw,9.5rem);line-height:1;
+  text-transform:uppercase;letter-spacing:.01em;color:var(--w)}
+/* har harf o'z niqobida: span — overflow:hidden oyna, b — harakatlanuvchi harf */
+#loader .l-mark span{display:block;overflow:hidden;padding:.06em 0}
+#loader .l-mark b{display:block;font-weight:inherit;transform:translateY(115%);
+  animation:lUp .9s var(--ease) calc(.1s + var(--i)*55ms) both}
+#loader .l-mark .dot{font-family:var(--serif);font-style:italic;text-transform:none;color:var(--acid);padding-right:.08em}
+#loader .l-meta{display:flex;align-items:center;gap:14px;font-family:var(--mono);font-size:.7rem;
+  letter-spacing:.2em;color:rgba(252,251,247,.55);animation:lFade .6s ease .55s both}
+#loader .l-line{position:relative;width:clamp(140px,22vw,260px);height:2px;background:rgba(252,251,247,.14);overflow:hidden}
+#loader .l-line i{position:absolute;inset:0;background:var(--acid);transform-origin:left center;transform:scaleX(0)}
+@keyframes lUp{from{transform:translateY(115%)}to{transform:translateY(0)}}
+@keyframes lOut{from{transform:translateY(0)}to{transform:translateY(-115%)}}
+@keyframes lFade{from{opacity:0}to{opacity:1}}
+.intro-short #loader .l-mark b{animation-duration:.6s;animation-delay:calc(var(--i)*28ms)}
+.intro-short #loader .l-meta{display:none}
+/* chiqish (kaskadda intro-short'dan keyin turishi shart) */
+#loader.done .l-mark b{animation:lOut .6s cubic-bezier(.76,0,.24,1) calc(var(--i)*28ms) both}
+#loader.done .l-meta{opacity:0;transition:opacity .3s}
+#loader.done{-webkit-clip-path:inset(0 0 100% 0);clip-path:inset(0 0 100% 0);visibility:hidden;pointer-events:none}
 
 /* ══════════ KURSOR ══════════ */
 .cur{position:fixed;top:0;left:0;z-index:1500;pointer-events:none;transform:translate(-50%,-50%);
@@ -107,10 +124,15 @@ body.cur-on, body.cur-on *{cursor:none!important}
 #prog{position:fixed;top:0;left:0;height:4px;background:var(--coral);width:0%;z-index:1400}
 
 /* ══════════ NAV ══════════ */
+/* --header-h JS'da (ResizeObserver) header'ning haqiqiy balandligidan yangilanadi */
+:root{--header-h:86px}
+section[id]{scroll-margin-top:calc(var(--header-h) + 16px)}
 header{position:fixed;top:0;left:0;right:0;z-index:1000;padding:clamp(14px,2.4vw,24px) clamp(18px,3.4vw,40px);
-  display:flex;justify-content:space-between;align-items:center;mix-blend-mode:difference}
-.brand{display:flex;align-items:center;gap:.6rem;text-decoration:none;color:#fff}
-.brand img{width:34px;height:34px;border-radius:9px}
+  display:flex;justify-content:space-between;align-items:center;gap:clamp(24px,3vw,48px);mix-blend-mode:difference}
+.brand{display:flex;align-items:center;gap:.6rem;text-decoration:none;color:#fff;flex:none}
+/* <picture> flex-element sifatida siqilib, 34px logo 16px'ga tushib qolardi */
+.brand picture{display:block;flex:none}
+.brand img{width:34px;height:34px;border-radius:9px;flex:none}
 .brand b{font-family:var(--anton);font-size:1.3rem;letter-spacing:.03em;text-transform:uppercase}
 .brand sup{font-family:var(--mono);font-size:.6rem}
 .h-right{display:flex;align-items:center;gap:1.2rem}
@@ -162,10 +184,14 @@ body.menu-open .menu-btn .mi i:last-child{transform:rotate(-45deg)}
   header{mix-blend-mode:normal;background:rgba(11,11,14,.82);
     -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
     border-bottom:1px solid rgba(243,239,230,.12)}
-  .topnav{display:flex;align-items:center;gap:clamp(.9rem,1.9vw,2rem)}
+}
+/* to'liq menyu faqat keng ekranda — undan torroqda logo va bandlar bir-biriga
+   yopishib qolardi (1080px'da oraliq 0 edi), u yerda faqat "Menyu" tugmasi */
+@media(min-width:1200px){
+  .topnav{display:flex;align-items:center;gap:clamp(.9rem,1.6vw,2rem)}
   #menuBtn{display:none}
 }
-@media(max-width:1023px){.topnav{display:none}}
+@media(max-width:1199px){.topnav{display:none}}
 
 /* fullscreen menyu */
 #menu{position:fixed;inset:0;z-index:950;background:var(--blue);color:var(--w);
@@ -186,6 +212,11 @@ body.menu-open #menu a.m-link:nth-child(3){transition-delay:.26s}
 body.menu-open #menu a.m-link:nth-child(4){transition-delay:.32s}
 body.menu-open #menu a.m-link:nth-child(5){transition-delay:.38s}
 body.menu-open #menu a.m-link:nth-child(6){transition-delay:.44s}
+body.menu-open #menu a.m-link:nth-child(7){transition-delay:.5s}
+body.menu-open #menu a.m-link:nth-child(8){transition-delay:.56s}
+#menu a.m-link.on{color:var(--acid)}
+/* 8 ta band pastki ekranlarda ham sig'sin */
+#menu a.m-link{font-size:clamp(2rem,min(7.4vw,7.2vh),5.6rem)}
 /* opacity .85 (audit C6) — ilgari .6 edi, ko'k fonda 3.33:1 kontrast berardi */
 #menu .m-foot{margin-top:2.6rem;display:flex;gap:2rem;font-family:var(--mono);font-size:.74rem;
   letter-spacing:.16em;text-transform:uppercase;color:rgba(252,251,247,.85);flex-wrap:wrap}
@@ -391,6 +422,29 @@ section{position:relative}
 .pv4 .brs i:nth-child(2){background:var(--coral)}.pv4 .brs i:nth-child(4){background:var(--acid)}
 @media(hover:none){.svc-prev{display:none}}
 
+/* ══════════ YECHIMLAR — soha bo'yicha 3 karta ══════════ */
+.sol-sec{background:var(--blue);color:var(--w)}
+.sol-grid{display:grid;gap:1.4rem;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));margin-top:2.6rem}
+.sol-card{position:relative;display:flex;flex-direction:column;gap:.9rem;min-height:260px;padding:1.8rem;
+  background:var(--cream);color:var(--blk);border:3px solid var(--blk);border-radius:18px;text-decoration:none;
+  transition:transform .4s var(--ease),box-shadow .4s var(--ease)}
+.sol-card:hover{transform:translateY(-8px) rotate(-.6deg);box-shadow:10px 10px 0 var(--blk)}
+.sol-card:active{transform:scale(.98)}
+.sol-card .no{font-family:var(--mono);font-size:.74rem;letter-spacing:.2em;opacity:.6}
+.sol-card h3{font-family:var(--anton);font-size:clamp(1.8rem,3.4vw,2.6rem);text-transform:uppercase;line-height:1}
+.sol-card p{font-size:.95rem;opacity:.78;max-width:40ch}
+.sol-card .arr{margin-top:auto;width:46px;height:46px;border:1.6px solid currentColor;border-radius:50%;
+  display:grid;place-items:center;transition:transform .4s var(--ease),background .3s,color .3s}
+.sol-card .arr svg{width:17px;height:17px;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.sol-card:hover .arr{transform:rotate(-45deg);background:var(--blk);color:var(--acid)}
+/* bo'lim oxiridagi "Batafsil →" — SEO sahifasiga olib boradi */
+.sec-more{display:inline-flex;align-items:center;gap:.6rem;margin-top:2.2rem;padding:.9rem 1.6rem;border-radius:999px;
+  border:2px solid currentColor;color:inherit;font-weight:700;font-size:.92rem;text-decoration:none;
+  transition:transform .3s var(--ease),background .3s,color .3s,border-color .3s}
+.sec-more svg{width:16px;height:16px;stroke:currentColor;stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.sec-more:hover{transform:translateY(-3px);background:var(--acid);color:var(--blk);border-color:var(--acid)}
+.sec-more-wrap{padding:0 clamp(18px,4vw,48px);max-width:1360px;margin:0 auto}
+
 /* ══════════ JARAYON — sticky stack ══════════ */
 .proc{background:var(--cream);color:var(--blk)}
 .stackzone{max-width:980px;margin:3rem auto 0}
@@ -399,7 +453,11 @@ section{position:relative}
 .scard{position:sticky;top:110px;border-radius:22px;padding:clamp(1.8rem,4vw,3rem);
   min-height:min(56vh,430px);display:flex;flex-direction:column;justify-content:space-between;
   border:3px solid var(--blk);margin-bottom:2rem;transform-origin:top center;
-  box-shadow:0 -14px 40px rgba(11,11,14,.12)}
+  box-shadow:0 -14px 40px rgba(11,11,14,.12);will-change:transform}
+/* xiralashish filter:brightness() o'rniga — faqat opacity o'zgaradi (kompozitor) */
+.scard .s-dim{position:absolute;inset:-3px;border-radius:inherit;background:#000;opacity:0;
+  pointer-events:none;will-change:opacity}
+@media(max-width:640px){.scard{top:calc(var(--header-h) + 16px)}}
 .scard .s-top{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem}
 .scard .s-no{font-family:var(--mono);font-size:.78rem;letter-spacing:.2em;font-weight:700}
 .scard h3{font-family:var(--anton);font-size:clamp(2rem,5.4vw,4rem);text-transform:uppercase;line-height:.98;margin:1rem 0 .8rem}
@@ -496,24 +554,33 @@ section{position:relative}
 .stt small{font-family:var(--mono);font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;opacity:.8}
 
 /* ══════════ FIKRLAR marquee ══════════ */
-.tm-sec{background:var(--blue);color:var(--w);overflow:hidden}
-.tm-wrap{max-width:900px}
-.tm-quote{min-height:clamp(200px,30vw,300px)}
-.tm-quote .qm{font-family:var(--serif);font-style:italic;font-size:clamp(3rem,7vw,5.5rem);line-height:.5;color:var(--acid)}
-.tm-quote p{font-family:var(--serif);font-style:italic;font-size:clamp(1.5rem,4vw,2.6rem);line-height:1.28;margin-top:.4rem;max-width:26ch}
-.tm-quote .stars{color:var(--acid);font-size:1rem;letter-spacing:.12em;margin-top:1rem}
-.tm-quote .twho{display:flex;gap:.9rem;align-items:center;margin-top:1.8rem}
-.tm-quote .tav{width:52px;height:52px;border-radius:14px;background:var(--acid);color:var(--blk);display:grid;
-  place-items:center;font-family:var(--anton);font-size:1.3rem;border:2.5px solid var(--w);background-size:cover;background-position:center}
-.tm-quote b{display:block;font-size:1rem}.tm-quote small{opacity:.72;font-size:.86rem}
-.tm-nav{display:flex;align-items:center;gap:1.1rem;margin-top:2.4rem}
-.tm-arrow{width:48px;height:48px;border-radius:50%;border:2px solid rgba(252,251,247,.35);background:none;
-  color:var(--w);display:grid;place-items:center;cursor:pointer;transition:.3s var(--ease);flex:none}
-.tm-arrow svg{width:18px;height:18px;stroke:currentColor;stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
-.tm-arrow:hover{border-color:var(--acid);color:var(--acid);transform:translateY(-2px)}
-.tm-dots{display:flex;gap:.5rem}
-.tm-dots span{width:8px;height:8px;border-radius:50%;background:rgba(252,251,247,.3);transition:.3s var(--ease);cursor:pointer}
-.tm-dots span.on{background:var(--acid);width:22px;border-radius:5px}
+/* Harakatlanuvchi sharh kartalari lentasi (486ffd4 dan oldingi dizayn tiklandi).
+   Lenta ikki teng yarmdan iborat: padding .65rem*2 = gap 1.3rem, shuning uchun
+   translateX(-50%) aynan bitta yarmga teng — uzilishsiz aylanadi. */
+.tm-sec{background:var(--blk);overflow:hidden}
+.tm-track{display:flex;gap:1.3rem;width:max-content;animation:mq 38s linear infinite;padding:0 .65rem}
+.tm-track:hover{animation-play-state:paused}
+.tcard{width:min(400px,84vw);background:var(--cream);color:var(--blk);border:3px solid var(--blk);
+  border-radius:18px;padding:1.8rem;flex:none}
+.tcard .qm{font-family:var(--serif);font-style:italic;font-size:2.6rem;line-height:.6;color:var(--coral)}
+.tcard p{margin-top:.9rem;font-size:.96rem}
+.tcard .twho{display:flex;gap:.8rem;align-items:center;margin-top:1.2rem}
+.tcard .tav{width:44px;height:44px;border-radius:11px;background:var(--blue);color:var(--w);display:grid;
+  place-items:center;font-family:var(--anton);font-size:1.1rem;border:2.5px solid var(--blk);background-size:cover;background-position:center}
+.tcard b{display:block;font-size:.92rem}.tcard small{opacity:.6;font-size:.8rem}
+.tcard .stars{color:var(--coral);font-size:.9rem;letter-spacing:.1em;margin-top:.5rem}
+/* fikr qoldirish */
+.rev-cta{display:flex;justify-content:center;margin-top:2.4rem;padding:0 clamp(18px,4vw,48px)}
+.rev-cta button{display:inline-flex;align-items:center;gap:.6rem;padding:.9rem 1.7rem;border-radius:999px;
+  background:transparent;color:var(--w);border:2px solid var(--line-w);font-weight:700;font-size:.92rem;
+  transition:.3s var(--ease)}
+.rev-cta button:hover{border-color:var(--acid);color:var(--acid);transform:translateY(-3px)}
+/* haqiqiy sharh yo'q — soxta sharh o'rniga taklif (lenta yashirinadi) */
+.tm-sec.is-empty .tm-track,.tm-sec.is-empty .t-full,
+.tm-sec:not(.is-empty) .t-empty,.tm-sec:not(.is-empty) .tm-empty-note{display:none}
+.tm-sec.is-empty .rev-cta{justify-content:flex-start;max-width:1360px;margin:0 auto}
+.tm-sec.is-empty .rev-cta button{background:var(--acid);color:var(--blk);border-color:var(--acid)}
+.tm-empty-note{color:rgba(252,251,247,.66);max-width:52ch;margin-top:-1rem}
 #revForm .field{margin-bottom:1rem}
 #revForm label{display:block;margin-bottom:.4rem}
 #revForm .rate{display:flex;gap:.35rem;font-size:1.7rem;line-height:1;cursor:pointer;user-select:none}
@@ -579,7 +646,10 @@ section{position:relative}
 @media(hover:none){.post-prev{display:none}}
 
 /* ══════════ FAQ ══════════ */
-/* P2: FAQ krem fonga o'tkazildi (Blog qora'dan keyin ritm uchun) */
+/* P2: FAQ krem fonga o'tkazildi (Blog qora'dan keyin ritm uchun) — shu sabab
+   matn/border ranglari qorong'i-fon variantidan yorug'-fon variantiga
+   o'zgartirildi (var(--line-w)→var(--line), var(--w)→var(--blk), acid→blue
+   kontrast uchun: acid krem fonda WCAG'ni buzardi) */
 .faq-sec{background:var(--cream);color:var(--blk)}
 /* P2: ikki ustun — chapda sticky sarlavha+tugma, o'ngda akkordeon */
 .faq-grid{display:grid;grid-template-columns:1fr 1.5fr;gap:clamp(2rem,5vw,4rem);align-items:start}
@@ -732,6 +802,8 @@ body.menu-open,body.modal-open{overflow:hidden}
   *,*::before,*::after{animation:none!important;transition:none!important}
   .rv,.split .ch,.svc-row,.gi{opacity:1;transform:none}
   #loader{display:none}
+  /* lenta harakatsiz — kartalar o'ralib, hammasi ko'rinadi */
+  .tm-track{width:auto;flex-wrap:wrap;justify-content:center;padding:0 clamp(18px,4vw,48px)}
 }
 </style>
 <noscript><style>#loader{display:none}.rv,.svc-row,.gi{opacity:1;transform:none}.split .ch{transform:none}</style></noscript>
@@ -740,14 +812,10 @@ body.menu-open,body.modal-open{overflow:hidden}
 
 <!-- PRELOADER -->
 <div id="loader" aria-hidden="true">
-  <div class="cols"><i></i><i></i><i></i><i></i><i></i></div>
-  <div class="l-top"><span>promtchi® студия</span><span>Ташкент, УЗ</span></div>
-  <div class="l-word" id="lWord">ДИЗАЙН<em>.</em></div>
-  <div class="l-bottom">
-    <span style="font-family:var(--mono);font-size:.7rem;letter-spacing:.2em;color:rgba(252,251,247,.5)">ЗАГРУЗКА</span>
-    <span class="l-count" id="lCount">0</span>
+  <div class="l-in">
+    <div class="l-mark"><span><b style="--i:0">P</b></span><span><b style="--i:1">R</b></span><span><b style="--i:2">O</b></span><span><b style="--i:3">M</b></span><span><b style="--i:4">T</b></span><span><b style="--i:5">C</b></span><span><b style="--i:6">H</b></span><span><b style="--i:7">I</b></span><span><b class="dot" style="--i:8">.</b></span></div>
+    <div class="l-meta"><span class="l-line"><i id="lBar"></i></span><span id="lCount">000</span></div>
   </div>
-  <i class="l-bar" id="lBar"></i>
 </div>
 
 <div class="grain" aria-hidden="true"></div>
@@ -803,7 +871,7 @@ body.menu-open,body.modal-open{overflow:hidden}
     <div>
       <p class="hero-sub rv">От MVP до готового продукта — <b>дизайн, разработку и автоматизацию</b> делаем быстро и качественно.</p>
       <div class="hero-cta rv">
-        <a href="#case" class="btn btn-acid mag">Смотреть проекты
+        <a href="#portfolio" class="btn btn-acid mag">Смотреть проекты
           <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
         <a href="#aloqa" class="btn btn-coral mag">Бесплатная консультация</a>
       </div>
@@ -847,7 +915,7 @@ body.menu-open,body.modal-open{overflow:hidden}
 </section>
 
 <!-- XIZMATLAR -->
-<section class="svc" id="xizmat" style="padding:clamp(80px,10vw,150px) 0">
+<section class="svc" id="xizmatlar" style="padding:clamp(80px,10vw,150px) 0">
   <div class="wrap" style="padding:0 clamp(18px,4vw,48px)">
     <div class="tag-line rv" style="color:var(--acid)">Услуги</div>
     <h2 class="h-xl rv" style="margin-bottom:2.4rem">Что мы <em style="color:var(--acid)">делаем?</em></h2>
@@ -889,6 +957,8 @@ body.menu-open,body.modal-open{overflow:hidden}
       <span class="arr"><svg viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></svg></span>
     </a>
   </div>
+  <div class="sec-more-wrap"><a class="sec-more rv" href="/ru/xizmatlar/">Все услуги
+    <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
   <div class="svc-prev" id="svcPrev" aria-hidden="true">
     <div class="pv1"><div class="brw">
       <div class="bar"><i></i><i></i><i></i><b></b></div>
@@ -909,6 +979,30 @@ body.menu-open,body.modal-open{overflow:hidden}
       <div class="kpi"><b>84%<small>KPI</small></b><b>1.2M<small>ДОХОД</small></b><b>312<small>КЛИЕНТ</small></b></div>
       <div class="brs"><i style="height:42%"></i><i style="height:66%"></i><i style="height:52%"></i><i style="height:88%"></i><i style="height:70%"></i></div>
     </div>
+  </div>
+</section>
+
+<!-- YECHIMLAR — soha bo'yicha -->
+<section class="sol-sec pad" id="yechimlar">
+  <div class="wrap">
+    <div class="tag-line rv" style="color:var(--acid)">Решения</div>
+    <h2 class="h-xl rv">Под вашу <em style="color:var(--acid)">отрасль</em></h2>
+    <div class="sol-grid">
+      <a class="sol-card rv" href="/ru/yechimlar/prodazhi/">
+        <span class="no">/01</span><h3>Продажи</h3>
+        <p>От лида до оплаты — продажи, склад, база клиентов и отчётность в одной системе.</p>
+        <span class="arr"><svg viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></svg></span></a>
+      <a class="sol-card rv" href="/ru/yechimlar/logistika/">
+        <span class="no">/02</span><h3>Логистика</h3>
+        <p>Остатки, заказы и статус доставки — под контролем в реальном времени.</p>
+        <span class="arr"><svg viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></svg></span></a>
+      <a class="sol-card rv" href="/ru/yechimlar/proizvodstvo/">
+        <span class="no">/03</span><h3>Производство</h3>
+        <p>Учёт сырья, эффективность персонала, финансы и отчётность — в одном центре.</p>
+        <span class="arr"><svg viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></svg></span></a>
+    </div>
+    <a class="sec-more rv" href="/ru/yechimlar/">Все решения
+      <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
   </div>
 </section>
 
@@ -958,12 +1052,14 @@ body.menu-open,body.modal-open{overflow:hidden}
 </section>
 
 <!-- CASE -->
-<section class="case-sec pad" id="case">
+<section class="case-sec pad" id="portfolio">
   <div class="wrap">
     <div class="tag-line rv" style="color:var(--acid)">Проекты</div>
     <h2 class="h-xl rv">Работы <em style="color:var(--acid)">в деле</em></h2>
     <div class="filters rv" id="filters"></div>
     <div class="cgrid" id="cases"></div>
+    <a class="sec-more rv" href="/ru/portfolio/">Все проекты
+      <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
   </div>
 </section>
 
@@ -981,18 +1077,15 @@ body.menu-open,body.modal-open{overflow:hidden}
 </div>
 
 <!-- FIKRLAR -->
-<section class="tm-sec" style="padding:clamp(70px,9vw,120px) 0">
-  <div class="wrap tm-wrap" style="padding:0 clamp(18px,4vw,48px)">
-    <div class="tag-line rv" style="color:var(--acid)">Клиенты</div>
-    <h2 class="h-xl rv" style="margin-bottom:2.4rem">Они работали <em style="color:var(--acid)">с нами</em></h2>
-    <div class="tm-quote" id="tmQuote"></div>
-    <div class="tm-nav">
-      <button type="button" class="tm-arrow" id="tmPrev" aria-label="Предыдущий отзыв">
-        <svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
-      <div class="tm-dots" id="tmDots"></div>
-      <button type="button" class="tm-arrow" id="tmNext" aria-label="Следующий отзыв">
-        <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
-    </div>
+<section class="tm-sec is-empty" id="sharhlar" style="padding:clamp(70px,9vw,120px) 0">
+  <div class="wrap" style="padding:0 clamp(18px,4vw,48px)">
+    <div class="tag-line rv" style="color:var(--coral)">Клиенты</div>
+    <h2 class="h-xl rv" style="margin-bottom:2.4rem"><span class="t-full">Они работали <em style="color:var(--coral)">с нами</em></span><span class="t-empty">Оставьте <em style="color:var(--coral)">первый отзыв</em></span></h2>
+    <p class="tm-empty-note">Если ваш проект с нами завершён — расскажите о своём опыте. Каждый отзыв подтверждается кодом клиента.</p>
+  </div>
+  <div class="tm-track" id="tmTrack"></div>
+  <div class="rev-cta">
+    <button type="button" onclick="openReview()">✍️ Оставить отзыв (для клиентов)</button>
   </div>
 </section>
 
@@ -1024,7 +1117,7 @@ body.menu-open,body.modal-open{overflow:hidden}
 </div></div>
 
 <!-- POSTLAR (postlar bo'lsa ko'rinadi) -->
-<section class="posts-sec pad" id="postlar" hidden>
+<section class="posts-sec pad" id="blog" hidden>
   <div class="wrap">
     <div class="tag-line rv in" style="color:var(--acid)">Новости</div>
     <h2 class="h-xl rv in">Последние <em style="color:var(--acid)">посты</em></h2>
@@ -1123,11 +1216,8 @@ const DEFAULTS={
     {name:"Abbos Setdarov",role:"IT-специалист",photo:""},
     {name:"Samandar Orifjonov",role:"IT-специалист",photo:""}
   ],
-  testimonials:[
-    {text:"Команда быстро уловила идею и в срок сдала MVP. На связи были всегда.",name:"Rustam A.",role:"Основатель стартапа",photo:""},
-    {text:"Благодаря автоматизации объём ручной работы значительно сократился. Мы очень довольны результатом.",name:"Malika S.",role:"Руководитель отдела маркетинга",photo:""},
-    {text:"Профессиональный подход и чистый код. Поддерживали нас и после завершения проекта.",name:"Sardor K.",role:"Владелец бизнеса",photo:""}
-  ],
+  /* soxta (shablon) sharh ko'rsatilmaydi — faqat haqiqiy mijozlarniki */
+  testimonials:[],
   cases:[
     {title:"Chindan Group",cat:"Автоматизация",client:"Chindan Group",duration:"20 дней",slug:"chindan-group",
      short:"Полностью автоматизированная воронка продаж — от лида до оплаты.",
@@ -1155,38 +1245,47 @@ const DEFAULTS={
     {question:"Есть ли поддержка после завершения проекта?",answer:"Да — в зависимости от выбранного пакета предоставляется 14, 30 или 90 дней бесплатной технической поддержки. После этого срока поддержку можно продолжить по отдельной договорённости."}
   ]
 };
-const STACK=["Python","FastAPI","Flutter","JavaScript","TypeScript","Go","C++"];
+/* app/schemas.py dagi seed (namuna) sharhlar — admin ularni o'zgartirmagan
+   bo'lsa, /api/content ularni qaytaradi. Ular haqiqiy mijozlardan emas, shuning
+   uchun "Ular biz bilan ishladi" ostida HECH QACHON ko'rsatilmaydi. */
+const PLACEHOLDER_TM=new Set(["Rustam A.","Malika S.","Sardor K."]);
 const CATS=["Все","Веб и приложение","Автоматизация","AI-решения"];
 const API='';
 
-/* ══════════ NAVIGATSIYA — topnav/mobil menyu/footer/bo'lim raqamlari BITTA manbadan ══════════
-   UI audit K1 (2026-09-22): endi ichki sahifalar (base.html) bilan bir xil 7 ta
-   manzil — sahifaning o'zida bor bo'limlar (Услуги, Контакты) anchor, qolganlari
-   haqiqiy sahifalarga (`href`) olib boradi. */
-const NAV_SECTIONS=[
-  {id:'xizmat',label:'Услуги'},
-  {href:'/ru/yechimlar/',label:'Решения',spyId:'jarayon'},
-  {href:'/ru/portfolio/',label:'Портфолио',spyId:'case'},
-  {href:'/ru/blog/',label:'Блог',spyId:'postlar'},
-  {href:'/ru/faq/',label:'FAQ',spyId:'faq'},
-  {href:'/ru/biz-haqimizda/',label:'О нас'},
-  {id:'aloqa',label:'Контакты'}
+/* ══════════ NAVIGATSIYA — header/overlay-menyu/footer BITTA manbadan ══════════
+   Har bir band bosh sahifadagi o'z bo'limiga (#section) olib boradi; tartib
+   sahifadagi bo'limlar tartibi bilan bir xil. SEO sahifalari (`page`) har bo'lim
+   oxiridagi "Barcha …" tugmasi va footer orqali ochiladi. `aliases` — eski
+   tarqalgan havolalar (#xizmat, #case, #postlar) yangi bo'limga yo'naltiriladi.
+   Ichki sahifalardagi (templates/base.html) menyu shu ro'yxatga /uz/#section
+   ko'rinishida mos. ru/en fayllarda faqat label va page tarjima qilinadi. */
+const NAV=[
+  {key:'xizmatlar',label:'Услуги',section:'xizmatlar',page:'/ru/xizmatlar/',aliases:['xizmat']},
+  {key:'yechimlar',label:'Решения',section:'yechimlar',page:'/ru/yechimlar/'},
+  {key:'jarayon',label:'Процесс',section:'jarayon'},
+  {key:'portfolio',label:'Портфолио',section:'portfolio',page:'/ru/portfolio/',aliases:['case']},
+  {key:'blog',label:'Блог',section:'blog',page:'/ru/blog/',aliases:['postlar']},
+  {key:'faq',label:'FAQ',section:'faq',page:'/ru/faq/'},
+  {key:'aloqa',label:'Контакты',section:'aloqa',page:'/ru/aloqa/'}
 ];
+/* faqat overlay-menyu va footer'da — alohida sahifa havolasi */
+const NAV_PAGES=[{label:'О нас',page:'/ru/biz-haqimizda/'}];
 const pad2=n=>String(n).padStart(2,'0');
-const hrefOf=s=>s.href||('#'+s.id);
 function renderNav(){
-  document.getElementById('topNav').innerHTML=NAV_SECTIONS.map((s,i)=>
-    `<a href="${hrefOf(s)}"><small>${pad2(i+1)}</small><span>${s.label}</span></a>`).join('');
+  document.getElementById('topNav').innerHTML=NAV.map((s,i)=>
+    `<a href="#${s.section}" data-nav="${s.key}"><small>${pad2(i+1)}</small><span>${s.label}</span></a>`).join('');
 
-  document.getElementById('menuLinks').innerHTML=NAV_SECTIONS.map((s,i)=>
-    `<a class="m-link" href="${hrefOf(s)}"><small>${pad2(i+1)}</small>${s.label}</a>`).join('');
+  document.getElementById('menuLinks').innerHTML=NAV.map((s,i)=>
+    `<a class="m-link" href="#${s.section}" data-nav="${s.key}"><small>${pad2(i+1)}</small>${s.label}</a>`).join('')
+    +NAV_PAGES.map((p,i)=>`<a class="m-link" href="${p.page}"><small>${pad2(NAV.length+i+1)}</small>${p.label}</a>`).join('');
 
-  document.getElementById('fNav').innerHTML=NAV_SECTIONS.map(s=>
-    `<a href="${hrefOf(s)}">→ ${s.label}</a>`).join('');
+  document.getElementById('fNav').innerHTML=NAV.map(s=>
+    `<a href="#${s.section}" data-nav="${s.key}">→ ${s.label}</a>`).join('')
+    +NAV_PAGES.map(p=>`<a href="${p.page}">→ ${p.label}</a>`).join('');
 
-  NAV_SECTIONS.forEach(s=>{
-    if(!s.id)return;
-    const tl=document.querySelector(`#${s.id} .tag-line`);
+  /* bo'lim tag-line'i menyudagi nom bilan bir xil bo'lsin */
+  NAV.forEach(s=>{
+    const tl=document.querySelector(`#${s.section} .tag-line`);
     if(tl)tl.textContent=s.label;
   });
 }
@@ -1195,7 +1294,7 @@ let DATA=JSON.parse(JSON.stringify(DEFAULTS));
 /* serverdan kontentni olib, qayta chizamiz — /api/content?lang=ru endi RU
    tarjimasini qaytaradi (admin panelda kiritilgan), DEFAULTS faqat tarmoq/
    server ishlamay qolgan holatlar uchun zaxira. */
-(async()=>{
+const CONTENT_P=(async()=>{
   try{
     const r=await fetch(API+'/api/content?lang=ru');
     if(r.ok){DATA=await r.json();renderAll();}
@@ -1254,6 +1353,7 @@ function mediaHtml(video,image,poster){
 
 /* ══════════ MIJOZLAR FIKRI ══════════ */
 let REVIEWS=[]; /* mijoz fikrlari hozircha faqat o'zbekcha — shu sahifada tarjima qilingan DEFAULTS.testimonials ko'rsatiladi */
+const REVIEWS_P=Promise.resolve();
 
 function openReview(){
   document.getElementById('revModal').classList.add('show');
@@ -1312,7 +1412,7 @@ document.getElementById('revModal').addEventListener('click',e=>{
 const PAGE_LANG='ru';
 let POSTS=[];
 const pDate=iso=>{try{return new Date(iso).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'})}catch(e){return''}};
-(async()=>{
+const POSTS_P=(async()=>{
   try{
     const r=await fetch(API+'/api/posts');
     if(!r.ok)return;
@@ -1320,7 +1420,7 @@ const pDate=iso=>{try{return new Date(iso).toLocaleDateString('ru-RU',{day:'2-di
     POSTS=(await r.json()).filter(p=>(p.lang||'uz')===PAGE_LANG).slice(0,6);
     if(!POSTS.length)return;
     renderPosts();
-    document.getElementById('postlar').hidden=false;
+    document.getElementById('blog').hidden=false;
     document.querySelectorAll('.js-postlink').forEach(a=>a.style.display='');
   }catch(e){/* postlar bo'lmasa bo'lim ko'rinmaydi */}
 })();
@@ -1355,30 +1455,59 @@ if(matchMedia('(hover:hover)').matches){
 }
 
 /* ══════════ PRELOADER ══════════ */
+/* Birinchi tashrif: 1.6–3.5s. Hisoblagich = max(vaqt ulushi, real ulush) —
+   real ulush: shriftlar, window.load va kontent fetch'lari. Har doim 100 ga
+   yetadi, keyin yopiladi. Qayta tashrif (html.intro-short, <head>'da
+   aniqlanadi): faqat logo ~0.85s + parda. reduced-motion: loader yo'q.
+   Yopilish: harflar ko'tarilib chiqadi → panel yuqoriga yig'iladi → hero.
+   REVEAL parda ko'tarilishidan OLDIN hal bo'ladi — deep-link shu payt
+   bo'limga sakraydi, parda ostidan to'g'ridan-to'g'ri o'sha bo'lim chiqadi. */
+let _reveal;const REVEAL=new Promise(r=>_reveal=r);
 (function(){
   const L=document.getElementById('loader');
-  let seen=false;
-  try{seen=sessionStorage.getItem('pc_intro_seen')==='1';sessionStorage.setItem('pc_intro_seen','1');}catch(e){}
-  /* qayta tashrifda (shu sessiyada) yoki reduced-motion'da og'ir intro ko'rsatilmaydi */
-  if(reduced||seen){L.classList.add('done');startHero();return;}
-  const words=['ДИЗАЙН','КОД','АВТОМАТ','AI','PROMTCHI'];
-  const wEl=document.getElementById('lWord'),cEl=document.getElementById('lCount'),bar=document.getElementById('lBar');
-  let n=0,wi=0,wfade;
-  /* so'z almashinuvi endi qattiq kesilmasdan, yumshoq crossfade bilan —
-     ilgari har 340ms'da matn birdan almashib, "miltillab" ko'rinardi */
-  const wt=setInterval(()=>{
-    wEl.classList.add('fade');
-    wfade=setTimeout(()=>{wi=(wi+1)%words.length;wEl.innerHTML=words[wi]+'<em>.</em>';wEl.classList.remove('fade');},110);
-  },340);
-  const stopWord=()=>{clearInterval(wt);clearTimeout(wfade);};
-  const t=setInterval(()=>{
-    n+=Math.random()*16+9;if(n>=100)n=100;
-    cEl.textContent=Math.floor(n);bar.style.width=n+'%';
-    if(n>=100){clearInterval(t);stopWord();
-      setTimeout(()=>{L.classList.add('done');startHero();},180);}
-  },85);
-  /* fallback — nima bo'lsa ham 1s da ochilsin (ilgari 4.5s edi) */
-  setTimeout(()=>{if(!L.classList.contains('done')){clearInterval(t);stopWord();L.classList.add('done');startHero();}},1000);
+  const short=document.documentElement.classList.contains('intro-short');
+  try{sessionStorage.setItem('pc_intro_seen','1');}catch(e){}
+  let closed=false;
+  function close(){
+    if(closed)return;closed=true;
+    _reveal();
+    L.classList.add('done');
+    if(reduced){startHero();return;}
+    setTimeout(startHero,650);
+  }
+  if(reduced){close();return;}
+  if(short){setTimeout(close,850);return;}
+
+  /* MIN — harflarning kirish animatsiyasi (~1.45s) to'liq tugashi uchun */
+  const MIN=1600,MAX=3500,t0=performance.now();
+  const loadP=document.readyState==='complete'?Promise.resolve():new Promise(r=>addEventListener('load',r,{once:true}));
+  const tasks=[document.fonts?document.fonts.ready:Promise.resolve(),loadP,CONTENT_P,REVIEWS_P,POSTS_P];
+  let settled=0;
+  tasks.forEach(p=>Promise.resolve(p).then(()=>settled++,()=>settled++));
+
+  const cEl=document.getElementById('lCount'),bar=document.getElementById('lBar');
+  const easeOut=x=>1-Math.pow(1-x,3);
+  let shown=0;
+  function paint(v){
+    cEl.textContent=String(Math.floor(v*100)).padStart(3,'0');
+    bar.style.transform='scaleX('+v+')';
+  }
+  function frame(now){
+    const el=now-t0,allDone=settled===tasks.length;
+    const timeF=easeOut(Math.min(el/MIN,1));
+    /* hamma narsa tayyor bo'lmaguncha 90 dan oshmaydi; MAX'ga yaqin — majburan 100 */
+    let target=allDone?timeF:Math.min(.9,Math.max(timeF*.9,settled/tasks.length*.9));
+    if(el>=MAX-350)target=1;
+    shown+=(target-shown)*.14;
+    if(target===1&&1-shown<.004)shown=1;
+    paint(shown);
+    if(shown<1){requestAnimationFrame(frame);return;}
+    /* 100 ko'rinishi uchun qisqa pauza */
+    setTimeout(close,200);
+  }
+  requestAnimationFrame(frame);
+  /* xavfsizlik: rAF fon tabda to'xtaydi — baribir MAX'da ochilsin */
+  setTimeout(()=>{if(!closed){paint(1);close();}},MAX+400);
 })();
 
 /* ══════════ SPLIT-TEXT ══════════ */
@@ -1448,6 +1577,17 @@ if(reduced)document.querySelectorAll('[data-split]').forEach(el=>el.classList.ad
     if(cc){tag.textContent="Смотреть";tag.classList.add('show');}
   });
   document.addEventListener('mouseout',e=>{if(e.target.closest('.ccard'))tag.classList.remove('show');});
+  /* scroll paytida element ko'rsatkich ostidan o'tib ketsa mouseover/out
+     kelmaydi — teg boshqa bo'limda "yopishib" qolardi. Qayta tekshiramiz. */
+  let sPend=false;
+  addEventListener('scroll',()=>{
+    if(!on||sPend)return;sPend=true;
+    requestAnimationFrame(()=>{
+      sPend=false;
+      const el=document.elementFromPoint(mx,my);
+      tag.classList.toggle('show',!!(el&&el.closest('.ccard')));
+    });
+  },{passive:true});
 })();
 
 /* ══════════ SCROLL PROGRESS + VELOCITY SKEW ══════════ */
@@ -1497,85 +1637,153 @@ if(!reduced)(function skewLoop(){
 })();
 
 /* ══════════ MENYU ══════════ */
-document.getElementById('menuBtn').addEventListener('click',()=>{
-  document.body.classList.toggle('menu-open');
-  const btn=document.querySelector('#menuBtn span:first-child');
-  btn.textContent=document.body.classList.contains('menu-open')?'Закрыть':'Меню';
-});
-document.querySelectorAll('#menu a').forEach(a=>a.addEventListener('click',()=>{
-  document.body.classList.remove('menu-open');
-  document.querySelector('#menuBtn span:first-child').textContent='Меню';
-}));
+const menuLabel=document.querySelector('#menuBtn span:first-child');
+function setMenu(open){
+  document.body.classList.toggle('menu-open',open);
+  menuLabel.textContent=open?'Закрыть':'Меню';
+  document.getElementById('menu').setAttribute('aria-hidden',open?'false':'true');
+}
+document.getElementById('menuBtn').addEventListener('click',()=>setMenu(!document.body.classList.contains('menu-open')));
 
-/* ══════════ TOPNAV SCROLL-SPY ══════════
-   Har bir nav bandi (real sahifa havolasi bo'lsa ham) bosh sahifadagi mos
-   section'ga IntersectionObserver bilan bog'lanadi. Ekranning 40–45%
-   balandligidagi ingichka chiziqni kesib o'tgan section — faol. Bir vaqtda
-   nolta yoki bitta band faol bo'ladi (hero'da hech biri faol emas). */
+/* ══════════ NAVIGATSIYA KONTROLLERI — scroll-spy + URL hash + klik + deep-link ══════════
+   Yagona manba: faol bo'lim = header ostidan ~30% balandlikdagi chiziqni kesib
+   o'tgan section. Shu bitta natija menyu yonishini ham, URL hash'ni ham
+   boshqaradi — ular hech qachon ajralmaydi. Scroll paytida replaceState (tarix
+   to'lmaydi), klikda pushState (Back ishlaydi). Menyuda yo'q bo'limlar
+   (manifest, muddat, sharhlar) ichida oldingi band saqlanadi; hero'da hech biri
+   yonmaydi va URL tozalanadi. replaceState o'zi hech qachon scroll qilmaydi —
+   id'ni vaqtincha o'chirish kabi hack kerak emas. */
 (function(){
-  const items=[];
-  document.querySelectorAll('.topnav a').forEach((a,i)=>{
-    const cfg=NAV_SECTIONS[i];
-    const targetId=cfg&&(cfg.id||cfg.spyId);
-    const s=targetId&&document.getElementById(targetId);
-    if(s)items.push({a:a,s:s,active:false});
-  });
-  if(!items.length)return;
-  function apply(){
-    let cur=-1;
-    items.forEach((it,i)=>{if(it.active)cur=i;});
-    items.forEach((it,i)=>it.a.classList.toggle('on',i===cur));
+  const header=document.querySelector('header'),root=document.documentElement;
+  const secs=[...document.querySelectorAll('section[id]')];
+  const links=[...document.querySelectorAll('[data-nav]')];
+  const behavior=reduced?'instant':'smooth';
+  const keyOf=id=>{const n=NAV.find(n=>n.section===id);return n?n.key:null;};
+  /* eski nomlar kanonik id'ga: #xizmat → xizmatlar, #case → portfolio ... */
+  function resolve(h){
+    if(!h||h==='top')return 'top';
+    try{h=decodeURIComponent(h);}catch(e){}
+    if(document.getElementById(h))return h;
+    const n=NAV.find(n=>(n.aliases||[]).includes(h));
+    return n?n.section:null;
   }
-  const io=new IntersectionObserver(entries=>{
-    entries.forEach(e=>{
-      const it=items.find(x=>x.s===e.target);
-      if(it)it.active=e.isIntersecting;
-    });
-    apply();
-  },{rootMargin:'-40% 0px -55% 0px',threshold:0});
-  items.forEach(it=>io.observe(it.s));
-})();
+  let hH=header.getBoundingClientRect().height,io=null;
+  let curHash=location.hash,locked=!!location.hash;
 
-/* ══════════ URL HASH SYNC — scroll paytida ko'rinayotgan sectionga mos hash
-   (faqat history.replaceState — tarixga yangi entry qo'shilmaydi, pushState ishlatilmaydi) ══════════ */
-(function(){
-  const header=document.querySelector('header');
-  const sections=NAV_SECTIONS.map(s=>document.getElementById(s.id)).filter(Boolean);
-  if(!sections.length)return;
-  let lastHash=location.hash;
-  /* sahifa hash bilan ochilgan bo'lsa, brauzerning o'z scroll-to-hash harakati
-     tugaguncha observer hash'ni ustidan yozib yubormasin */
-  let ready=!lastHash;
-  let io;
-  function headerH(){return header?Math.ceil(header.getBoundingClientRect().height):0;}
-  function setHash(id){
-    const h='#'+id;
-    if(!ready||h===lastHash)return;
-    lastHash=h;
-    /* replaceState'ga id bilan mos hash berilsa, brauzer "scroll to the
-       fragment" qadamini qayta ishga tushirib, sahifani sakratib yuboradi
-       (scroll loop). Shu sabab id vaqtincha olib tashlanadi. */
-    const el=document.getElementById(id);
-    if(el){
-      el.removeAttribute('id');
-      history.replaceState(null,'',h);
-      el.id=id;
-    }else{
-      history.replaceState(null,'',h);
+  function paint(key){
+    links.forEach(a=>{
+      const on=a.dataset.nav===key;
+      a.classList.toggle('on',on);
+      if(on)a.setAttribute('aria-current','true');else a.removeAttribute('aria-current');
+    });
+  }
+  function writeHash(h,push){
+    if(h===curHash)return;
+    curHash=h;
+    const url=h||(location.pathname+location.search);
+    if(push)history.pushState(null,'',url);else history.replaceState(null,'',url);
+  }
+  const lineY=()=>hH+(innerHeight-hH)*.3;
+  function evaluate(){
+    if(locked)return;
+    const y=lineY();let cur=null;
+    for(const s of secs){
+      if(s.hidden)continue;
+      const r=s.getBoundingClientRect();
+      if(r.top<=y&&r.bottom>y){cur=s;break;}
     }
+    if(!cur)return;                 /* bo'limlar orasidagi marquee/footer — holat saqlanadi */
+    if(cur.id==='top'){paint(null);writeHash('',false);return;}
+    const k=keyOf(cur.id);
+    if(!k)return;                   /* menyuda yo'q bo'lim — oldingi band va hash saqlanadi */
+    paint(k);writeHash('#'+cur.id,false);
   }
   function build(){
     if(io)io.disconnect();
-    const hH=headerH();
-    const band=Math.min(innerHeight*.4,300);
-    io=new IntersectionObserver(entries=>{
-      entries.forEach(e=>{if(e.isIntersecting)setHash(e.target.id);});
-    },{rootMargin:`-${hH+1}px 0px -${Math.max(innerHeight-hH-band,0)}px 0px`,threshold:0});
-    sections.forEach(s=>io.observe(s));
+    const y=Math.round(lineY());
+    io=new IntersectionObserver(evaluate,
+      {rootMargin:`-${y}px 0px -${Math.max(innerHeight-y-1,0)}px 0px`,threshold:0});
+    secs.forEach(s=>io.observe(s));
   }
-  build();
+  /* --header-h (scroll-margin-top va mobil sticky kartalar uchun) header'ning
+     haqiqiy balandligidan — mobil header balandligi boshqacha */
+  new ResizeObserver(()=>{
+    hH=header.getBoundingClientRect().height;
+    root.style.setProperty('--header-h',Math.round(hH)+'px');
+    build();
+  }).observe(header);
   addEventListener('resize',build,{passive:true});
-  if(!ready)setTimeout(()=>{ready=true;},900);
+
+  /* dasturiy scroll davomida spy hash'ni yozmaydi — scrollend gacha qulf */
+  let unlockT=null;
+  function lockUntilScrollEnd(){
+    locked=true;clearTimeout(unlockT);
+    const done=()=>{clearTimeout(unlockT);removeEventListener('scrollend',done);locked=false;evaluate();};
+    addEventListener('scrollend',done,{once:true});
+    unlockT=setTimeout(done,1400);  /* scrollend yo'q brauzerlar yoki masofa 0 bo'lsa */
+  }
+  function goTo(id,how,push){
+    lockUntilScrollEnd();
+    if(id==='top')scrollTo({top:0,behavior:how});
+    else document.getElementById(id).scrollIntoView({behavior:how,block:'start'});
+    const k=id==='top'?null:keyOf(id);
+    if(id==='top'||k)paint(k);
+    if(push!==undefined)writeHash(id==='top'?'':'#'+id,push);
+  }
+
+  document.addEventListener('click',e=>{
+    if(e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;
+    const a=e.target.closest('a[href^="#"]');if(!a)return;
+    const id=resolve(a.getAttribute('href').slice(1));
+    const t=id&&id!=='top'?document.getElementById(id):null;
+    if(id!=='top'&&(!t||t.hidden)){
+      /* bo'lim hozir bosh sahifada yo'q (masalan, blog postsiz) — o'z sahifasiga */
+      const n=NAV.find(n=>n.section===id);
+      if(n&&n.page){e.preventDefault();location.href=n.page;}
+      return;
+    }
+    e.preventDefault();
+    const go=()=>goTo(id,behavior,true);
+    /* overlay-menyu avval yopiladi (body overflow qaytadi), keyin scroll — sakrashsiz */
+    if(document.body.classList.contains('menu-open')){setMenu(false);setTimeout(go,reduced?0:420);}
+    else go();
+  });
+  addEventListener('popstate',()=>{
+    curHash=location.hash;
+    const id=resolve(location.hash.slice(1))||'top';
+    const t=id==='top'?null:document.getElementById(id);
+    goTo(t&&!t.hidden?id:'top',behavior);
+  });
+
+  if(!curHash){evaluate();return;}
+  /* ── Deep-link: sahifa #hash bilan ochilgan. Parda ko'tarilishidan oldin
+     bo'limga sakraymiz; kech kelgan kontent (sharhlar/postlar/shriftlar)
+     layout'ni sursa va foydalanuvchi hali scroll qilmagan bo'lsa — bir marta
+     qayta tekislanadi. URL kanonik nomga (#xizmat → #xizmatlar) o'tadi. */
+  let userMoved=false;
+  const mark=()=>{userMoved=true;};
+  ['wheel','touchstart','keydown','mousedown'].forEach(t=>addEventListener(t,mark,{passive:true,once:true}));
+  const target=()=>{
+    const id=resolve(location.hash.slice(1)),t=id&&id!=='top'?document.getElementById(id):null;
+    return t&&!t.hidden?id:null;
+  };
+  function land(){
+    const id=target();
+    if(id)document.getElementById(id).scrollIntoView({behavior:'instant',block:'start'});
+    return id;
+  }
+  REVEAL.then(()=>{
+    let id=land();
+    if(id){writeHash('#'+id,false);paint(keyOf(id));}
+    const wait=Promise.race([
+      Promise.allSettled([CONTENT_P,REVIEWS_P,POSTS_P,document.fonts?document.fonts.ready:null]),
+      new Promise(r=>setTimeout(r,4000))]);
+    wait.then(()=>requestAnimationFrame(()=>{
+      if(!userMoved){const id2=land();if(id2){id=id2;writeHash('#'+id,false);paint(keyOf(id));}}
+      if(!id)writeHash('',false);  /* noma'lum hash — URL tozalanadi */
+      locked=false;evaluate();
+    }));
+  });
 })();
 
 /* ══════════ REVEAL ══════════ */
@@ -1668,23 +1876,48 @@ if(matchMedia('(hover:hover)').matches){
 })();
 
 /* ══════════ STICKY STACK scale ══════════ */
+/* Har karta keyingisi ustiga chiqqanda kichrayadi va xiralashadi. Oxirgi karta
+   ham stek oxiridagi bo'sh joy (.stackzone::after, 20vh) scroll qilinayotganda
+   xuddi shunday kichrayadi (lekin xiralashmaydi) — stek tugaganda 5 ta karta
+   bir xil kenglikda, bitta taxlam bo'lib yuqoriga ketadi. Xiralashish
+   filter:brightness() emas, .s-dim qatlamining opacity'si (kompozitor). */
 (function(){
-  const cards=[...document.querySelectorAll('.scard')];if(!cards.length||reduced)return;
-  const STICKY_TOP=parseFloat(getComputedStyle(cards[0]).top)||110; /* CSS'dagi .scard top bilan bir xil */
-  let ticking=false;
+  const zone=document.getElementById('stackzone');
+  const cards=[...zone.querySelectorAll('.scard')];if(!cards.length||reduced)return;
+  const dims=cards.map(c=>{const d=document.createElement('i');d.className='s-dim';d.setAttribute('aria-hidden','true');c.appendChild(d);return d;});
+  const mob=matchMedia('(max-width:640px)');
+  const clamp01=v=>Math.min(Math.max(v,0),1);
+  let STICKY_TOP=110,MB=32,K=.06,ticking=false,visible=false;
+  function measure(){
+    const cs=getComputedStyle(cards[0]);
+    STICKY_TOP=parseFloat(cs.top)||110; /* CSS'dagi .scard top bilan bir xil */
+    MB=parseFloat(cs.marginBottom)||0;
+    K=mob.matches?.04:.06;
+  }
   function update(){
     ticking=false;
+    measure();  /* mobil top --header-h'ga bog'liq, u keyinroq o'zgarishi mumkin */
+    const zb=zone.getBoundingClientRect().bottom,spacer=innerHeight*.2;
     cards.forEach((c,i)=>{
-      const r=c.getBoundingClientRect();
-      const next=cards[i+1];
-      if(!next){c.style.transform='';c.style.filter='';return;}
-      const nr=next.getBoundingClientRect();
-      const overlap=Math.min(Math.max((STICKY_TOP+r.height-nr.top)/(r.height),0),1);
-      c.style.transform=`scale(${1-overlap*.06})`;
-      c.style.filter=`brightness(${1-overlap*.18})`;
+      const h=c.offsetHeight,next=cards[i+1];  /* offsetHeight — transform'siz balandlik */
+      let p,dim;
+      if(next){
+        p=clamp01((STICKY_TOP+h-next.getBoundingClientRect().top)/h);dim=p;
+      }else{
+        /* oxirgi karta yopishgan paytdan (zone.bottom = top+h+margin+spacer)
+           u yuqoriga keta boshlaguncha (zone.bottom = top+h+margin): 0 → 1 */
+        p=clamp01((STICKY_TOP+h+MB+spacer-zb)/spacer);dim=0;
+      }
+      c.style.transform=p?`scale(${(1-p*K).toFixed(4)})`:'';
+      dims[i].style.opacity=(dim*.18).toFixed(3);
     });
   }
-  addEventListener('scroll',()=>{if(!ticking){ticking=true;requestAnimationFrame(update);}},{passive:true});
+  const req=()=>{if(visible&&!ticking){ticking=true;requestAnimationFrame(update);}};
+  /* faqat stek ko'rinayotganda ishlaydi */
+  new IntersectionObserver(es=>{visible=es[0].isIntersecting;if(visible)req();}).observe(zone);
+  addEventListener('scroll',req,{passive:true});
+  addEventListener('resize',req,{passive:true});
+  if(document.fonts)document.fonts.ready.then(req);
   update();
 })();
 
@@ -1741,10 +1974,7 @@ function renderFilters(){
 addEventListener('keydown',e=>{
   if(e.key!=='Escape')return;
   closeReview();
-  if(document.body.classList.contains('menu-open')){
-    document.body.classList.remove('menu-open');
-    document.querySelector('#menuBtn span:first-child').textContent='Меню';
-  }
+  if(document.body.classList.contains('menu-open'))setMenu(false);
 });
 
 function renderPackages(){
@@ -1776,42 +2006,28 @@ function renderTeam(){
   div.classList.toggle('show',leads.length>0&&members.length>0);
   staggerIn([...leadBox.children,...box.children],'gi');
 }
-/* P2: bitta karta — mijozlar orasida strelka/nuqta bilan almashtiriladi */
-let _tmItems=[],_tmIdx=0,_tmTimer=null;
-function tmRenderSlide(){
-  const t=_tmItems[_tmIdx];if(!t)return;
-  const bg=t.photo?`style="background-image:url('${esc(t.photo)}')"`:'';
-  const stars=t.rating?`<div class="stars">${'★'.repeat(t.rating)}${'☆'.repeat(5-t.rating)}</div>`:'';
-  const roleLine=[t.role,t.company].filter(Boolean).join(' · ');
-  document.getElementById('tmQuote').innerHTML=
-    `<div class="qm">"</div><p>${esc(t.text)}</p>${stars}
-     <div class="twho"><span class="tav" ${bg}>${t.photo?'':initial(t.name)}</span>
-       <span><b>${esc(t.name)}</b><small>${esc(roleLine)}</small></span></div>`;
-  document.getElementById('tmDots').innerHTML=_tmItems.map((_,i)=>
-    `<span class="${i===_tmIdx?'on':''}" data-i="${i}"></span>`).join('');
-}
-function tmGo(i){_tmIdx=(i+_tmItems.length)%_tmItems.length;tmRenderSlide();}
-function tmAutoplay(){
-  if(reduced||_tmItems.length<2)return;
-  clearInterval(_tmTimer);
-  _tmTimer=setInterval(()=>tmGo(_tmIdx+1),6000);
-}
+/* Harakatlanuvchi kartalar lentasi. Faqat HAQIQIY sharhlar: mijoz kodi bilan
+   tasdiqlangan /api/reviews + admin qo'shgan (seed/namuna bo'lmagan) kontent.
+   Hech biri bo'lmasa — lenta o'rniga "Birinchi sharhni siz qoldiring" taklifi. */
 function renderTestimonials(){
-  /* Mijozlar yozgan fikrlar birinchi; ular yo'q bo'lsa kontentdagilar ko'rinadi */
-  _tmItems=REVIEWS.length
-    ? REVIEWS.map(r=>({text:r.text,name:r.name,role:r.role,company:r.company||'',photo:'',rating:r.rating}))
-    : DATA.testimonials.map(t=>({...t,rating:0}));
-  _tmIdx=0;
-  tmRenderSlide();
-  tmAutoplay();
-}
-document.getElementById('tmPrev').addEventListener('click',()=>{tmGo(_tmIdx-1);tmAutoplay();});
-document.getElementById('tmNext').addEventListener('click',()=>{tmGo(_tmIdx+1);tmAutoplay();});
-document.getElementById('tmDots').addEventListener('click',e=>{
-  const d=e.target.closest('[data-i]');if(!d)return;tmGo(+d.dataset.i);tmAutoplay();
-});
-function renderStack(){
-  document.getElementById('stackList').innerHTML=STACK.map(s=>`<span>${s}</span>`).join('');
+  const sec=document.getElementById('sharhlar'),box=document.getElementById('tmTrack');
+  const items=REVIEWS.map(r=>({text:r.text,name:r.name,role:[r.role,r.company].filter(Boolean).join(' · '),photo:'',rating:r.rating}))
+    .concat((DATA.testimonials||[]).filter(t=>t&&t.text&&!PLACEHOLDER_TM.has((t.name||'').trim())).map(t=>({...t,rating:0})));
+  sec.classList.toggle('is-empty',!items.length);
+  if(!items.length){box.innerHTML='';return;}
+  const cards=items.map(t=>{
+    const bg=t.photo?`style="background-image:url('${esc(t.photo)}')"`:'';
+    const stars=t.rating?`<div class="stars">${'★'.repeat(t.rating)}${'☆'.repeat(5-t.rating)}</div>`:'';
+    return `<div class="tcard"><div class="qm">"</div><p>${esc(t.text)}</p>${stars}
+      <div class="twho"><span class="tav" ${bg}>${t.photo?'':initial(t.name)}</span>
+        <span><b>${esc(t.name)}</b><small>${esc(t.role)}</small></span></div></div>`;
+  });
+  if(reduced){box.innerHTML=cards.join('');return;}
+  /* lenta ikki TENG yarmdan iborat bo'lishi shart (translateX(-50%) = bitta
+     yarm) va har yarm ekrandan keng bo'lsin — kamida ~6 karta */
+  const k=Math.max(1,Math.ceil(6/items.length));
+  const half=Array.from({length:k},()=>cards.join('')).join('');
+  box.innerHTML=half+half.replace(/<div class="tcard">/g,'<div class="tcard" aria-hidden="true">');
 }
 /* aloqa havolalari — admin panelda boshqariladi */
 function renderContacts(){
