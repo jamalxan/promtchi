@@ -288,6 +288,11 @@ def _inject_live_contacts(data: bytes) -> bytes:
         phone = next((c for c in contacts if c.get("icon") == "phone" and c.get("url", "").startswith("tel:")), None)
         if phone:
             org.setdefault("contactPoint", [{}])[0]["telephone"] = phone["url"][len("tel:"):]
+        # email — ichki sahifalar (seo.organization_schema) bilan bir xil:
+        # footer'da ochiq ko'rinadigan kontakt, schema'da ham bo'lsin.
+        email = next((c for c in contacts if c.get("icon") == "email" and c.get("value")), None)
+        if email:
+            org.setdefault("contactPoint", [{}])[0]["email"] = email["value"]
         # Manzil/ish vaqti (BUSINESS_* env) sozlangan bo'lsa — bosh sahifa
         # schema'si ham ichki sahifalar bilan bir xil bo'lsin: u yerda
         # seo.organization_schema() ayni shu maydonlarni qo'shadi.
@@ -1790,10 +1795,14 @@ async def _serve_lang_home(request: Request, cache: "_PageCache"):
     is_canonical = not canonical or host in (canonical, f"www.{canonical}")
 
     etag = cache.etag if is_canonical else cache.etag_noindex
+    # Faqat "Host" — "Accept-Encoding"ni GZipMiddleware o'zi qo'shadi
+    # (ilgari ikkalasi ham yozilib, `Vary: Accept-Encoding, Host, Accept-Encoding`
+    # bo'lib chiqardi — ba'zi CDN/kesh tizimlari takroriy qiymatni xato deb
+    # hisoblaydi).
     headers = {
         "ETag": etag,
         "Cache-Control": _PAGE_CACHE,
-        "Vary": "Accept-Encoding, Host",
+        "Vary": "Host",
     }
     if request.headers.get("if-none-match") == etag:
         return Response(status_code=304, headers=headers)

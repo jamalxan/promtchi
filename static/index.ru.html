@@ -23,6 +23,8 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:locale" content="ru_RU">
+<meta property="og:locale:alternate" content="uz_UZ">
+<meta property="og:locale:alternate" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="promtchi® — разработка сайтов, CRM и AI в Ташкенте">
 <meta name="twitter:description" content="Разработка сайтов, мобильных приложений, CRM/ERP систем и Telegram-ботов в Ташкенте — оживляем ваш бизнес: дизайн, автоматизация и AI в единой системе.">
@@ -34,7 +36,7 @@
 <link rel="alternate" hreflang="x-default" href="https://promtchi.uz/uz/">
 <link rel="icon" href="/static/favicon.png" type="image/png">
 <link rel="icon" href="/favicon.ico" sizes="any">
-<script type="application/ld+json" id="orgSchema">{"@context":"https://schema.org","@type":"Organization","@id":"https://promtchi.uz/#organization","name":"promtchi","url":"https://promtchi.uz/","logo":{"@type":"ImageObject","url":"https://promtchi.uz/static/logo.png"},"foundingDate":"2023","address":{"@type":"PostalAddress","addressLocality":"Tashkent","addressCountry":"UZ"},"contactPoint":[{"@type":"ContactPoint","contactType":"customer service","url":"https://t.me/promtchiadmin","areaServed":"UZ","availableLanguage":["uz","ru","en"]}],"sameAs":["https://t.me/promtchiadmin"]}</script>
+<script type="application/ld+json" id="orgSchema">{"@context":"https://schema.org","@type":"Organization","@id":"https://promtchi.uz/#organization","name":"promtchi","url":"https://promtchi.uz/","logo":{"@type":"ImageObject","url":"https://promtchi.uz/static/logo.png"},"foundingDate":"2023","address":{"@type":"PostalAddress","addressLocality":"Tashkent","addressCountry":"UZ"},"contactPoint":[{"@type":"ContactPoint","contactType":"customer service","email":"hello@promtchi.uz","telephone":"+998931606706","url":"https://t.me/promtchiadmin","areaServed":"UZ","availableLanguage":["uz","ru","en"]}],"sameAs":["https://t.me/promtchiadmin","https://instagram.com/promtchiuz"]}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","@id":"https://promtchi.uz/ru/#website","name":"promtchi","url":"https://promtchi.uz/ru/","publisher":{"@id":"https://promtchi.uz/#organization"},"inLanguage":"ru-RU"}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -78,7 +80,7 @@ body.cur-on, body.cur-on *{cursor:none!important}
    animatsiyalarni muzlatib qo'yadi — telefonlarda o'chiramiz */
 @media(max-width:1023px){.grain{display:none}}
 /* cheksiz marqueelarga alohida GPU qatlami */
-.mq,.tm-track,.hero-bg .ghost,.badge{will-change:transform}
+.mq,.hero-bg .ghost,.badge{will-change:transform}
 
 /* ══════════ PRELOADER ══════════ */
 /* Intro: PROMTCHI. harflari niqob ostidan ketma-ket ko'tariladi, ostida
@@ -146,8 +148,8 @@ html[lang="en"]{--lang-tilt:3deg;--lang-tilt-on:-4deg;--lang-tilt-menu:2deg}
 .lang-mini{display:flex;gap:2px;background:rgba(252,251,247,.05);border:1.5px solid var(--line-w);
   border-radius:999px;padding:3px;transform:rotate(var(--lang-tilt));transition:transform .35s var(--ease)}
 .lang-mini:hover{transform:rotate(0deg)}
-.lang-mini a{display:grid;place-items:center;width:28px;height:22px;border-radius:999px;
-  font-family:var(--mono);font-size:.62rem;font-weight:700;letter-spacing:.02em;
+.lang-mini a{display:grid;place-items:center;width:30px;height:24px;border-radius:999px;
+  font-family:var(--mono);font-size:.7rem;font-weight:700;letter-spacing:.02em;
   color:rgba(252,251,247,.5);text-decoration:none;transition:all .25s var(--ease)}
 .lang-mini a.on{background:var(--acid);color:var(--blk);transform:rotate(var(--lang-tilt-on)) scale(1.05)}
 .lang-mini a:not(.on):hover{color:var(--w);transform:rotate(-5deg) scale(1.1)}
@@ -172,7 +174,7 @@ body.menu-open .menu-btn .mi i:last-child{transform:rotate(-45deg)}
 .topnav{display:none}
 .topnav a{position:relative;display:flex;align-items:baseline;gap:.4rem;text-decoration:none;
   color:#fff;padding:.3rem 0;transition:color .3s var(--ease)}
-.topnav a small{font-family:var(--mono);font-size:.6rem;letter-spacing:.08em;color:var(--acid)}
+.topnav a small{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;color:var(--acid)}
 .topnav a span{font-family:var(--grot);font-weight:600;font-size:.78rem;letter-spacing:.06em;
   text-transform:uppercase;white-space:nowrap}
 .topnav a::after{content:'';position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--acid);
@@ -257,7 +259,7 @@ section{position:relative}
 .split .wln{display:inline-block;overflow:hidden;vertical-align:top;padding-bottom:.06em;margin-bottom:-.06em}
 
 /* ══════════ HERO ══════════ */
-.hero{min-height:100svh;display:flex;flex-direction:column;justify-content:flex-end;
+.hero{min-height:100vh;min-height:100svh;display:flex;flex-direction:column;justify-content:flex-end;
   padding:120px clamp(18px,4vw,48px) clamp(28px,4vw,52px);overflow:hidden}
 .hero-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .hero-bg .col-blue{position:absolute;top:0;right:0;width:34%;height:100%;background:var(--blue)}
@@ -297,7 +299,8 @@ section{position:relative}
   font-size:.68rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;animation:bob 6s ease-in-out infinite}
 @keyframes bob{50%{transform:translateY(-12px) rotate(var(--rr,0deg))}}
 .chip.c1{background:var(--acid);color:var(--blk);left:46%;top:16%;transform:rotate(-7deg);--rr:-7deg}
-.chip.c2{background:var(--w);color:var(--blk);right:6%;bottom:34%;transform:rotate(5deg);--rr:5deg;animation-delay:-2s}
+/* bottom:14% — ilgari 34% edi va h1'ning 3-qatori (RU: «ЕДИНОЙ СИСТЕМЕ») ustiga tushardi */
+.chip.c2{background:var(--w);color:var(--blk);right:6%;bottom:14%;transform:rotate(5deg);--rr:5deg;animation-delay:-2s}
 @media(max-width:900px){
   /* chip'lar mobilda ham jonli tursin — kichraytirilib qayta joylashtiriladi */
   .chip{font-size:.56rem;padding:.4rem .7rem}
@@ -320,6 +323,8 @@ section{position:relative}
 .s-hint i{width:1.5px;height:34px;background:linear-gradient(180deg,var(--acid),transparent);
   display:block;animation:hint 1.6s ease-in-out infinite}
 @keyframes hint{50%{transform:scaleY(.4);opacity:.4}}
+/* 900px'gacha yashirin — 390x844 ekranda «Pastga» yozuvi CTA tugmasi ustiga chiqardi */
+@media(max-width:900px){.s-hint{display:none}}
 
 /* ══════════ MARQUEE BAND ══════════ */
 .mq-band{background:var(--acid);color:var(--blk);padding:1.2rem 0;overflow:hidden;
@@ -462,11 +467,12 @@ section{position:relative}
 .scard .s-no{font-family:var(--mono);font-size:.78rem;letter-spacing:.2em;font-weight:700}
 .scard h3{font-family:var(--anton);font-size:clamp(2rem,5.4vw,4rem);text-transform:uppercase;line-height:.98;margin:1rem 0 .8rem}
 .scard p{max-width:44ch;font-size:1.02rem;opacity:.82}
-.scard .s-meta{font-family:var(--mono);font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;opacity:.62}
+.scard .s-meta{font-family:var(--mono);font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;opacity:.8}
 .sc1{background:var(--w)}
 .sc2{background:var(--blue);color:var(--w);border-color:var(--blk)}
 .sc3{background:var(--acid)}
-.sc4{background:var(--coral);color:var(--w)}
+/* qora matn — krem matn coral fonda 3.2:1 berardi (kerak 4.5:1), .btn-coral bilan bir xil yechim */
+.sc4{background:var(--coral);color:var(--blk)}
 .sc5{background:var(--blk);color:var(--w)}
 .sc5 h3 em{color:var(--acid)}
 
@@ -558,10 +564,28 @@ section{position:relative}
    Lenta ikki teng yarmdan iborat: padding .65rem*2 = gap 1.3rem, shuning uchun
    translateX(-50%) aynan bitta yarmga teng — uzilishsiz aylanadi. */
 .tm-sec{background:var(--blk);overflow:hidden}
-.tm-track{display:flex;gap:1.3rem;width:max-content;animation:mq 38s linear infinite;padding:0 .65rem}
-.tm-track:hover{animation-play-state:paused}
-.tcard{width:min(400px,84vw);background:var(--cream);color:var(--blk);border:3px solid var(--blk);
-  border-radius:18px;padding:1.8rem;flex:none}
+/* Lenta FOYDALANUVCHI boshqaradigan gorizontal scroll-snap qatori — ilgari
+   cheksiz CSS marquee edi (translateX animatsiya, 12 tagacha nusxa karta).
+   Nega o'zgardi: (1) ~5000px kenglikdagi animatsiyalangan qatlam ba'zi
+   Chrome muhitlarida (GPU tezlashtirish o'chiq/zaif qurilma) asosiy oqimni
+   bir necha soniyaga muzlatib qo'yardi — 2026-10-15 auditida 3–16 s
+   "long task"lar o'lchandi, animatsiya o'chirilganda yo'qolardi;
+   (2) touch qurilmada marquee'ni to'xtatib bo'lmas edi (WCAG 2.2.2 —
+   5 s dan uzoq harakatlanuvchi kontent to'xtatiladigan bo'lishi shart);
+   (3) 1 ta sharh 12 marta takrorlanib ko'rinardi. Endi kartalar bir
+   martadan, barmoq/g'ildirak bilan suriladi, 3 tagacha bo'lsa keng ekranda
+   oddiy qator (.tm-few) bo'lib yoyiladi. */
+.tm-track{display:grid;grid-auto-flow:column;grid-auto-columns:min(400px,84vw);gap:1.3rem;
+  overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:var(--acid) transparent;
+  padding:.4rem clamp(18px,4vw,48px) 1.2rem;scroll-padding-inline:clamp(18px,4vw,48px)}
+.tm-track::-webkit-scrollbar{height:6px}
+.tm-track::-webkit-scrollbar-track{background:transparent}
+.tm-track::-webkit-scrollbar-thumb{background:var(--acid);border:0}
+.tm-track.tm-few{grid-auto-flow:row;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),400px));justify-content:start;
+  grid-auto-columns:auto;max-width:1360px;margin:0 auto;overflow:visible;scroll-snap-type:none}
+.tcard{width:auto;min-width:0;background:var(--cream);color:var(--blk);border:3px solid var(--blk);
+  border-radius:18px;padding:1.8rem;scroll-snap-align:start}
 .tcard .qm{font-family:var(--serif);font-style:italic;font-size:2.6rem;line-height:.6;color:var(--coral)}
 .tcard p{margin-top:.9rem;font-size:.96rem}
 .tcard .twho{display:flex;gap:.8rem;align-items:center;margin-top:1.2rem}
@@ -803,7 +827,6 @@ body.menu-open,body.modal-open{overflow:hidden}
   .rv,.split .ch,.svc-row,.gi{opacity:1;transform:none}
   #loader{display:none}
   /* lenta harakatsiz — kartalar o'ralib, hammasi ko'rinadi */
-  .tm-track{width:auto;flex-wrap:wrap;justify-content:center;padding:0 clamp(18px,4vw,48px)}
 }
 </style>
 <noscript><style>#loader{display:none}.rv,.svc-row,.gi{opacity:1;transform:none}.split .ch{transform:none}</style></noscript>
@@ -1865,14 +1888,25 @@ if(matchMedia('(hover:hover)').matches){
   let px=0,py=0,cx=0,cy=0;
   addEventListener('mousemove',e=>{px=e.clientX;py=e.clientY;});
   (function loop(){cx+=(px-cx)*.12;cy+=(py-cy)*.12;pv.style.left=cx+'px';pv.style.top=cy+'px';requestAnimationFrame(loop);})();
-  document.querySelectorAll('.svc-row').forEach(row=>{
-    row.addEventListener('mouseenter',()=>{
-      divs.forEach(d=>d.classList.remove('on'));
-      divs[panes[row.dataset.pv]].classList.add('on');
-      pv.classList.add('show');
-    });
-    row.addEventListener('mouseleave',()=>pv.classList.remove('show'));
-  });
+  /* Qaysi qator ustida turganimiz har mousemove'da aniqlanadi (mouseenter/
+     mouseleave emas): scroll paytida qator kursor ostidan chiqib ketsa bu
+     hodisalar kelmaydi va preview boshqa bo'limda "yopishib" qolardi. Scroll
+     tugagach elementFromPoint bilan qayta tekshiriladi. */
+  let cur=null;
+  function setRow(row){
+    if(row===cur)return;cur=row;
+    if(!row){pv.classList.remove('show');return;}
+    divs.forEach(d=>d.classList.remove('on'));
+    const pane=divs[panes[row.dataset.pv]];if(pane)pane.classList.add('on');
+    pv.classList.add('show');
+  }
+  addEventListener('mousemove',e=>setRow(e.target.closest?e.target.closest('.svc-row'):null),{passive:true});
+  document.addEventListener('mouseleave',()=>setRow(null));
+  let sp=false;
+  addEventListener('scroll',()=>{
+    if(sp)return;sp=true;
+    requestAnimationFrame(()=>{sp=false;const el=document.elementFromPoint(px,py);setRow(el&&el.closest?el.closest('.svc-row'):null);});
+  },{passive:true});
 })();
 
 /* ══════════ STICKY STACK scale ══════════ */
@@ -2022,12 +2056,10 @@ function renderTestimonials(){
       <div class="twho"><span class="tav" ${bg}>${t.photo?'':initial(t.name)}</span>
         <span><b>${esc(t.name)}</b><small>${esc(t.role)}</small></span></div></div>`;
   });
-  if(reduced){box.innerHTML=cards.join('');return;}
-  /* lenta ikki TENG yarmdan iborat bo'lishi shart (translateX(-50%) = bitta
-     yarm) va har yarm ekrandan keng bo'lsin — kamida ~6 karta */
-  const k=Math.max(1,Math.ceil(6/items.length));
-  const half=Array.from({length:k},()=>cards.join('')).join('');
-  box.innerHTML=half+half.replace(/<div class="tcard">/g,'<div class="tcard" aria-hidden="true">');
+  /* nusxasiz: har sharh bir marta; 3 tagacha bo'lsa keng ekranda qator
+     bo'lib yoyiladi, ko'proq bo'lsa gorizontal scroll-snap lenta */
+  box.classList.toggle('tm-few',items.length<=3);
+  box.innerHTML=cards.join('');
 }
 /* aloqa havolalari — admin panelda boshqariladi */
 function renderContacts(){

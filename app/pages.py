@@ -17,6 +17,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import func, select
+from starlette.routing import Match
 
 from . import faq_store, seo, services_store
 from .content.markdown_lite import render_body
@@ -736,28 +737,215 @@ async def favicon():
     )
 
 
+_ROBOTS_DISALLOW = (
+    "Disallow: /admin\n"
+    "Disallow: /api/admin/\n"
+    # Interaktiv API hujjatlari qidiruv natijasida chiqmasligi kerak
+    # (ENABLE_DOCS=false bo'lganda ular umuman ochilmaydi — bu esa
+    # yoqib qo'yilgan holat uchun qo'shimcha himoya).
+    "Disallow: /docs\n"
+    "Disallow: /redoc\n"
+    "Disallow: /openapi.json\n"
+)
+# AI/GEO: javob beruvchi AI tizimlarning kroulerlari ALOHIDA guruh bilan
+# aniq ruxsat oladi. robots.txt'da bot o'z nomidagi guruhni topsa `*`
+# guruhini o'qimaydi — shuning uchun Disallow ro'yxati har guruhda
+# takrorlanadi (aks holda /admin kabi yo'llar ularga ochiq qolardi).
+# Ro'yxat: OpenAI (ChatGPT qidiruv + brauzing), Anthropic (Claude),
+# Perplexity, Google AI (Gemini/AI Overviews — Google-Extended),
+# Apple Intelligence, Meta AI, Amazon (Alexa), Common Crawl (ko'p
+# modellarning o'quv manbai), DuckDuckGo AI, You.com, Cohere, Mistral.
+_AI_BOTS = (
+    "GPTBot", "OAI-SearchBot", "ChatGPT-User",
+    "ClaudeBot", "Claude-SearchBot", "Claude-User", "anthropic-ai",
+    "PerplexityBot", "Perplexity-User",
+    "Google-Extended", "Applebot", "Applebot-Extended",
+    "meta-externalagent", "meta-externalfetcher", "FacebookBot",
+    "Amazonbot", "CCBot", "DuckAssistBot", "YouBot", "cohere-ai", "MistralAI-User",
+)
+
+
 @router.get("/robots.txt", include_in_schema=False)
 async def robots():
-    body = (
-        "User-agent: *\n"
-        "Allow: /\n"
-        "Disallow: /admin\n"
-        "Disallow: /api/admin/\n"
-        # Interaktiv API hujjatlari qidiruv natijasida chiqmasligi kerak
-        # (ENABLE_DOCS=false bo'lganda ular umuman ochilmaydi — bu esa
-        # yoqib qo'yilgan holat uchun qo'shimcha himoya).
-        "Disallow: /docs\n"
-        "Disallow: /redoc\n"
-        "Disallow: /openapi.json\n"
-        f"Sitemap: {settings.SITE_URL}/sitemap.xml\n"
-    )
+    groups = ["User-agent: *\nAllow: /\n" + _ROBOTS_DISALLOW]
+    for bot in _AI_BOTS:
+        groups.append(f"User-agent: {bot}\nAllow: /\n" + _ROBOTS_DISALLOW)
+    body = "\n".join(groups) + f"\nSitemap: {settings.SITE_URL}/sitemap.xml\n"
     return Response(body, media_type="text/plain")
+
+
+# ══════════ LLMS.TXT (AI/GEO) ══════════
+# https://llmstxt.org — AI assistentlar (ChatGPT, Claude, Perplexity, Gemini)
+# saytni bitta qisqa, aniq matndan tushunishi uchun: kompaniya → xizmatlar →
+# yechimlar → keyslar → FAQ → kontakt. Faqat saytda allaqachon ko'rinadigan,
+# tasdiqlangan faktlar — yangi da'vo yo'q (TZ 2/22). Ingliz tili asosiy
+# (modellar uchun eng ishonchli), UZ/RU havolalari alohida bo'limda.
+
+_LLMS_TTL = 300.0
+_llms_cache: dict = {"body": None, "ts": 0.0}
+
+
+def _plain(text: str) -> str:
+    """HTML belgilari va ortiqcha bo'shliqlarsiz bitta qator."""
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", str(text or ""))).strip()
+
+
+async def _build_llms_txt() -> str:
+    org = await _live_org()
+    a = ABOUT["en"]
+    services = await services_store.get_services()
+    cases = await services_store.get_cases()
+    faq_items = await faq_store.get_all()
+    u = seo.abs_url
+    lines = [
+        "# promtchi",
+        "",
+        f"> {_plain(a['lead'])}",
+        "",
+        f"- Official site: {u('/en/')} (English) · {u('/uz/')} (Uzbek, primary) · {u('/ru/')} (Russian)",
+        f"- Location: {org['city_en']}, {org['country_en']} · Founded: {org['founded']}",
+        f"- Contact: {org['email']} · {org['phone']} · Telegram {org['telegram_handle']} ({org['telegram_url']})",
+        "- Working languages: Uzbek, Russian, English",
+        f"- Legal name / brand: {org['legal_name']} (promtchi®)",
+        "",
+        "## What we do",
+        "",
+    ]
+    lines += [f"- {_plain(x)}" for x in a.get("what_we_do", [])]
+    lines += ["", "## Services", ""]
+    for sv in services:
+        d = sv["data_en"] if "data_en" in sv else sv.get("en", {})
+        slug = sv["slugs"]["en"]
+        lines.append(f"- [{_plain(d.get('h1') or d.get('nav'))}]({u(f'/en/xizmatlar/{slug}/')}): {_plain(d.get('value') or d.get('meta'))}")
+    lines += ["", "## Industry solutions", ""]
+    for key in SOLUTION_KEYS:
+        s = SOLUTIONS[key]["en"]
+        lines.append(f"- [{_plain(s['h1'])}]({u(f'/en/yechimlar/{SOLUTION_SLUGS[key]['en']}/')}): {_plain(s['intro'])}")
+    lines += ["", "## Case studies", ""]
+    for c in cases:
+        d = c["data_en"] if "data_en" in c else c.get("en", {})
+        slug = c["slugs"]["en"]
+        lines.append(f"- [{_plain(d.get('title'))}]({u(f'/en/portfolio/{slug}/')}): {_plain(d.get('short'))} Result: {_plain(d.get('result'))}")
+    lines += ["", "## Frequently asked questions", ""]
+    for q, ans in a.get("entity_qa", []):
+        lines.append(f"- **{_plain(q)}** {_plain(ans)}")
+    for item in [i for i in faq_items if i.get("published", True)][:12]:
+        en = item.get("en") or {}
+        q, ans = en.get("question"), en.get("answer")
+        if q and ans:
+            lines.append(f"- **{_plain(q)}** {_plain(ans)}")
+    lines += [
+        "",
+        "## Company pages",
+        "",
+        f"- [About promtchi]({u('/en/biz-haqimizda/')})",
+        f"- [All services]({u('/en/xizmatlar/')})",
+        f"- [Portfolio]({u('/en/portfolio/')})",
+        f"- [FAQ]({u('/en/faq/')})",
+        f"- [Blog]({u('/en/blog/')})",
+        f"- [Contact]({u('/en/aloqa/')})",
+        "",
+        "## Other languages",
+        "",
+        f"- Uzbek (asosiy): {u('/uz/')} · xizmatlar {u('/uz/xizmatlar/')} · FAQ {u('/uz/faq/')}",
+        f"- Russian: {u('/ru/')} · услуги {u('/ru/xizmatlar/')} · FAQ {u('/ru/faq/')}",
+        "",
+        f"## Sitemap: {u('/sitemap.xml')}",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+@router.get("/llms.txt", include_in_schema=False)
+async def llms_txt():
+    now = time.monotonic()
+    if _llms_cache["body"] is None or now - _llms_cache["ts"] > _LLMS_TTL:
+        _llms_cache["body"] = await _build_llms_txt()
+        _llms_cache["ts"] = now
+    return Response(_llms_cache["body"], media_type="text/plain; charset=utf-8",
+                    headers={"Cache-Control": "public, max-age=3600"})
 
 
 # ══════════ 404 (til-mos) ══════════
 
+_CATCH_ALL_PATHS = {"/{lang}/{full_path:path}", "/{lang}"}
+
+
+def _route_exists(request: Request, path: str) -> bool:
+    """`path` biror HAQIQIY marshrutga (catch-all 404 emas) mos keladimi.
+
+    Yo'naltirishdan oldin tekshiriladi — aks holda har qanday noto'g'ri URL
+    avval 301, keyin 404 berardi (ikki bosqichli xato, crawl byudjeti isrofi)."""
+    scope = dict(request.scope)
+    scope["path"] = path
+    scope["root_path"] = ""
+
+    def walk(routes):
+        for route in routes:
+            # FastAPI >=0.140: include_router() marshrutlarni _IncludedRouter
+            # ichiga o'raydi — haqiqiy ro'yxat original_router.routes'da.
+            inner = getattr(route, "original_router", None)
+            if inner is not None:
+                yield from walk(inner.routes)
+            else:
+                yield route
+
+    for route in walk(request.app.router.routes):
+        if getattr(route, "path", None) in _CATCH_ALL_PATHS:
+            continue
+        try:
+            match, _ = route.matches(scope)
+        except Exception:
+            continue
+        if match == Match.FULL:
+            return True
+    return False
+
+
+def _seo_redirect(request: Request, lang: str, rest: str):
+    """Kanonik URL'ga 301: oxirida `/` yo'q (`/uz/xizmatlar` → `/uz/xizmatlar/`)
+    yoki til prefiksi tushib qolgan (`/xizmatlar/` → `/uz/xizmatlar/`) havolalar.
+
+    Ilgari ikkalasi ham 404 edi — tashqi saytlar/ijtimoiy tarmoqlardagi
+    shunday havolalar og'irligi yo'qolardi. Yo'naltirish FAQAT maqsad sahifa
+    mavjud bo'lsa (_route_exists). Starlette'ning o'z `redirect_slashes`i 307
+    beradi va faqat marshrut aniq mos kelganda ishlaydi — SEO uchun 301 kerak."""
+    query = f"?{request.url.query}" if request.url.query else ""
+    if lang in LANGS:
+        if rest and not rest.endswith("/"):
+            target = f"/{lang}/{rest}/"
+            if _route_exists(request, target):
+                return RedirectResponse(target + query, status_code=301)
+        return None
+    # til prefiksi yo'q: /xizmatlar/crm/ → /uz/xizmatlar/crm/
+    tail = f"{lang}/{rest}" if rest else f"{lang}/"
+    if not tail.endswith("/"):
+        tail += "/"
+    target = f"/uz/{tail}"
+    if _route_exists(request, target):
+        return RedirectResponse(target + query, status_code=301)
+    return None
+
+
+@router.get("/{lang}", include_in_schema=False)
+async def lang_root(request: Request, lang: str):
+    """`/uz` → `/uz/` (301, ilgari Starlette 307 berardi); `/xizmatlar` →
+    `/uz/xizmatlar/`; noma'lum bitta segment (`/foo`) — to'g'ridan-to'g'ri 404
+    (ilgari `/foo/`ga 307 qilib, keyin 404 berardi)."""
+    if lang in LANGS:
+        query = f"?{request.url.query}" if request.url.query else ""
+        return RedirectResponse(f"/{lang}/{query}", status_code=301)
+    redirect = _seo_redirect(request, lang, "")
+    if redirect is not None:
+        return redirect
+    return await lang_404(request, "uz", lang)
+
+
 @router.get("/{lang}/{full_path:path}", response_class=HTMLResponse, include_in_schema=False)
 async def lang_404(request: Request, lang: str, full_path: str):
+    redirect = _seo_redirect(request, lang, full_path)
+    if redirect is not None:
+        return redirect
     lang = lang if lang in LANGS else "uz"
     path_by_lang = {l: f"/{l}/" for l in LANGS}
     ctx = await _base_ctx(request, lang, path_by_lang,

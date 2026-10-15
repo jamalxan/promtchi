@@ -19,6 +19,8 @@
 <meta property="og:image:height" content="630">
 {% endif %}
 <meta property="og:locale" content="{{ og_locale }}">
+{% for l in langs if l != lang %}<meta property="og:locale:alternate" content="{{ {'uz':'uz_UZ','ru':'ru_RU','en':'en_US'}[l] }}">
+{% endfor %}
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{{ page_title }}">
 <meta name="twitter:description" content="{{ page_desc }}">

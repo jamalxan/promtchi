@@ -9,6 +9,10 @@ os.environ["JWT_SECRET"] = "test-secret-for-pytest-0123456789abcdef"
 os.environ["ADMIN_EMAIL"] = "test@promtchi.local"
 os.environ["TELEGRAM_BOT_TOKEN"] = ""
 os.environ["TELEGRAM_POLLING"] = "false"
+# Testlar ishlab chiquvchining .env'idagi analitika/GSC qiymatlariga bog'liq
+# bo'lmasin (GA_MEASUREMENT_ID .env'da bo'lsa CSP testi yiqilardi).
+os.environ["GA_MEASUREMENT_ID"] = ""
+os.environ["SEARCH_CONSOLE_VERIFICATION"] = ""
 os.environ["LOGIN_MAX_ATTEMPTS"] = "5"
 os.environ["LOGIN_LOCKOUT_SECONDS"] = "900"
 os.environ["ADMIN_IDLE_TIMEOUT_MINUTES"] = "30"

@@ -110,7 +110,7 @@ p{margin:0 0 1em}
 .site-nav a{display:inline-flex;align-items:center;gap:.4rem;position:relative;text-decoration:none;color:#fff;
   opacity:.8;font-family:var(--grot);font-weight:600;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;
   padding:.2rem 0;transition:opacity .2s,color .2s}
-.site-nav a small{font-family:var(--mono);font-size:.66rem;color:var(--acid);letter-spacing:.04em}
+.site-nav a small{font-family:var(--mono);font-size:.7rem;color:var(--acid);letter-spacing:.04em}
 .site-nav a::after{content:'';position:absolute;left:0;right:0;bottom:-2px;height:2px;background:var(--acid);
   transform:scaleX(0);transform-origin:left center;transition:transform .3s ease}
 .site-nav a:hover,.site-nav a[aria-current="page"]{opacity:1;color:var(--acid)}
@@ -125,8 +125,8 @@ html[lang="en"]{--lang-tilt:3deg;--lang-tilt-on:-4deg}
 .lang-switch{display:flex;gap:2px;background:rgba(252,251,247,.05);border:1.5px solid var(--line);
   border-radius:999px;padding:3px;transform:rotate(var(--lang-tilt));transition:transform .35s ease}
 .lang-switch:hover{transform:rotate(0deg)}
-.lang-switch a{display:grid;place-items:center;width:28px;height:22px;border-radius:999px;
-  font-family:var(--mono);font-size:.62rem;font-weight:700;letter-spacing:.02em;
+.lang-switch a{display:grid;place-items:center;width:30px;height:24px;border-radius:999px;
+  font-family:var(--mono);font-size:.7rem;font-weight:700;letter-spacing:.02em;
   color:rgba(252,251,247,.5);text-decoration:none;transition:all .25s ease}
 .lang-switch a.on{opacity:1;background:var(--acid);color:var(--blk);transform:rotate(var(--lang-tilt-on)) scale(1.05)}
 .lang-switch a:not(.on):hover{color:var(--w);transform:rotate(-5deg) scale(1.1)}
@@ -359,7 +359,7 @@ section.sec.alt::before{content:'';position:absolute;inset:0 calc(50% - 50vw);ba
 
 /* case / portfolio detail */
 .case-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin:1.4rem 0;padding:1.2rem;border:1px solid var(--line);border-radius:14px}
-.case-meta div small{display:block;font-family:var(--mono);font-size:.66rem;text-transform:uppercase;letter-spacing:.1em;opacity:.55;margin-bottom:.3rem}
+.case-meta div small{display:block;font-family:var(--mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;opacity:.55;margin-bottom:.3rem}
 .case-block{margin:1.4rem 0}
 /* var(--acid) (audit C2) — bu bo'lim qora fonli .sec.wrap ichida chiqadi;
    ilgari var(--blue) 2.71:1 kontrast berardi (kerak >=4.5:1), lime esa
