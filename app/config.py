@@ -1,5 +1,7 @@
 """promtchi backend — sozlamalar (.env orqali boshqariladi)."""
+import hashlib
 import os
+import re
 import secrets
 import sys
 from pathlib import Path
@@ -29,6 +31,22 @@ def _bool(name: str, default: bool) -> bool:
 
 # Default (xavfli) qiymatlar — ishlab chiqarishda ishlatilsa ishga tushmaymiz
 DEFAULT_JWT_SECRET = "o'zgartiring-maxfiy-kalit"
+
+
+def _indexnow_key() -> str:
+    """IndexNow kaliti (app/indexnow.py). .env'da INDEXNOW_KEY berilmasa
+    production'da JWT_SECRET'dan sha256 bilan BARQAROR hosil qilinadi — xeshdan
+    sirni tiklab bo'lmaydi, kalit esa baribir /{key}.txt'da ochiq turadi (bu sir
+    emas, egalik belgisi). Dev/testda bo'sh = IndexNow o'chiq (localhost URL'lari
+    tasodifan yuborilmasin)."""
+    k = os.getenv("INDEXNOW_KEY", "").strip()
+    env = os.getenv("ENV", "development").strip().lower()
+    secret = os.getenv("JWT_SECRET", DEFAULT_JWT_SECRET)
+    if not k and env == "production" and secret != DEFAULT_JWT_SECRET:
+        k = hashlib.sha256(("indexnow:" + secret).encode()).hexdigest()[:32]
+    if k and not re.fullmatch(r"[A-Za-z0-9-]{8,128}", k):
+        raise RuntimeError("INDEXNOW_KEY 8–128 ta [a-zA-Z0-9-] belgidan iborat bo'lishi kerak")
+    return k
 DEFAULT_ADMIN_PASSWORD = "promtchi2026"
 
 
@@ -99,6 +117,8 @@ class Settings:
     # Google Search Console tasdiqlash tokeni (meta tag usuli). Bo'sh bo'lsa
     # meta umuman chiqmaydi — token TAXMIN QILINMAYDI, uni GSC beradi.
     SEARCH_CONSOLE_VERIFICATION: str = os.getenv("SEARCH_CONSOLE_VERIFICATION", "").strip()
+    # IndexNow (Bing/Yandex/Seznam/Naver'ga URL o'zgarishini darhol bildirish)
+    INDEXNOW_KEY: str = _indexnow_key()
 
     # Saytning haqiqiy domeni (canonical/OG teglarda ishlatiladi). Shu domendan
     # boshqa Host bilan (masalan to'g'ridan-to'g'ri IP orqali) kirilsa, bosh

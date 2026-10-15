@@ -25,6 +25,7 @@
 <meta name="twitter:title" content="{{ page_title }}">
 <meta name="twitter:description" content="{{ page_desc }}">
 <meta name="twitter:image" content="{{ og_image }}">
+{% block extra_meta %}{% endblock %}
 <link rel="canonical" href="{{ canonical }}">
 {% for hreflang, href in alt_links %}<link rel="alternate" hreflang="{{ hreflang }}" href="{{ href }}">
 {% endfor %}<link rel="icon" href="/static/favicon.png" type="image/png">

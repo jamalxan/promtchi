@@ -13,6 +13,9 @@ os.environ["TELEGRAM_POLLING"] = "false"
 # bo'lmasin (GA_MEASUREMENT_ID .env'da bo'lsa CSP testi yiqilardi).
 os.environ["GA_MEASUREMENT_ID"] = ""
 os.environ["SEARCH_CONSOLE_VERIFICATION"] = ""
+# IndexNow testda O'CHIQ bo'lishi shart — aks holda lifespan haqiqiy
+# api.indexnow.org'ga test URL'larini yuborib yuborardi.
+os.environ["INDEXNOW_KEY"] = ""
 os.environ["LOGIN_MAX_ATTEMPTS"] = "5"
 os.environ["LOGIN_LOCKOUT_SECONDS"] = "900"
 os.environ["ADMIN_IDLE_TIMEOUT_MINUTES"] = "30"

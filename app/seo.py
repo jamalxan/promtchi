@@ -163,14 +163,20 @@ def faq_schema(items: list) -> dict:
     }
 
 
-def article_schema(title: str, description: str, url: str, date_published: str, image: str, lang: str) -> dict:
+def article_schema(title: str, description: str, url: str, date_published: str, image: str, lang: str,
+                   date_modified: str | None = None) -> dict:
+    """`image` — ABSOLYUT URL bo'lishi kerak (nisbiy /static/... Google uchun yaroqsiz).
+    `dateModified` — Google/Yandex maqola yangilanganini shundan biladi; bo'lmasa
+    datePublished'ga teng deb olinadi."""
     data = {
         "@context": "https://schema.org",
         "@type": "Article",
         "headline": title,
         "description": description,
         "url": url,
+        "mainEntityOfPage": {"@type": "WebPage", "@id": url},
         "datePublished": date_published,
+        "dateModified": date_modified or date_published,
         "author": {"@id": ORG_ID},
         "publisher": {"@id": ORG_ID},
         "inLanguage": hreflang_code(lang),

@@ -7,6 +7,7 @@ kontentga bog'liq). Bu yerdagi sahifalar Jinja2 orqali kod-darajasida
 saqlangan, real faktlarga asoslangan trilingual kontentni (app/content/*)
 render qiladi — TZ v1.0 (15.09.2026), 2/5/6/8/9/13-bo'limlar.
 """
+import html
 import re
 import time
 import unicodedata
@@ -606,6 +607,8 @@ async def blog_detail(request: Request, lang: str, slug: str):
         p={
             "title": p.title, "body_html": render_body(p.body), "image": p.image,
             "date": p.created_at.strftime("%Y-%m-%d"),
+            "published_iso": p.created_at.isoformat(timespec="seconds"),
+            "modified_iso": (p.updated_at or p.created_at).isoformat(timespec="seconds"),
             "category": p.category,
             "tags": tags,
             "author": p.author,
@@ -613,7 +616,9 @@ async def blog_detail(request: Request, lang: str, slug: str):
         related_service=({"slug": related_service["slugs"][lang], "nav": related_service[lang]["nav"]}
                           if related_service else None),
         article_schema=seo.json_ld(seo.article_schema(
-            p.title, excerpt, canonical_url, p.created_at.date().isoformat(), p.image, lang)),
+            p.title, excerpt, canonical_url, p.created_at.date().isoformat(),
+            _abs_image(p.image) or "", lang,
+            date_modified=(p.updated_at or p.created_at).date().isoformat())),
     )
     return templates.TemplateResponse(request, "blog_detail.html", ctx)
 
@@ -721,6 +726,24 @@ async def sitemap(request: Request):
             parts.append(f"<url><loc>{loc}</loc><lastmod>{lastmod}</lastmod>{alt_tags}</url>")
     parts.append("</urlset>")
     return Response("".join(parts), media_type="application/xml")
+
+
+async def all_indexable_urls() -> list[str]:
+    """sitemap.xml'dagi <loc> to'plami bilan AYNAN bir xil absolyut URL ro'yxati —
+    IndexNow to'liq yuborish uchun (app/indexnow.py). Sitemap bilan bir manbadan
+    (_all_urls + published/indexable postlar) hosil bo'ladi, ikkisi ajralib
+    ketmasin."""
+    urls: list[str] = []
+    for path_by_lang, _hint in await _all_urls():
+        for lang in path_by_lang:
+            urls.append(seo.abs_url(path_by_lang[lang]))
+    async with SessionLocal() as session:
+        res = await session.execute(
+            select(Post).where(Post.published == True, Post.noindex == False)  # noqa: E712
+        )
+        for p in res.scalars().all():
+            urls.append(seo.abs_url(f"/{p.lang}/blog/{_slugify(p.title, p.id)}/"))
+    return urls
 
 
 # Brauzerlar va ba'zi kroulerlar faviconni HTML'dagi <link>dan qat'i nazar
@@ -864,6 +887,128 @@ async def llms_txt():
         _llms_cache["ts"] = now
     return Response(_llms_cache["body"], media_type="text/plain; charset=utf-8",
                     headers={"Cache-Control": "public, max-age=3600"})
+
+
+# llms-full.txt — llmstxt.org'ning "to'liq" varianti: AI modeli bitta so'rov bilan
+# har bir xizmat/yechim sahifasining asosiy matni, barcha FAQ va blog maqolalarini
+# oladi (llms.txt faqat ro'yxat + havolalar). Faqat saytda ko'rinadigan matn —
+# yangi da'vo yo'q. Ingliz tilida (xizmat/yechim), blog — o'z tilida.
+_llms_full_cache: dict = {"body": None, "ts": 0.0}
+
+
+def _html_to_text(html_: str) -> str:
+    """Blog gavdasi (render_body HTML) → o'qiladigan oddiy matn: blok teglari
+    (p/h*/li/br) qator uzilishiga aylanadi, qolgan teglar tushadi, &#34; kabi
+    HTML belgilari asl holiga qaytadi — AI modeliga yopishib ketgan jumlalar
+    va kodlangan belgilar bilan emas, tiniq matn beriladi."""
+    t = re.sub(r"</(?:p|h[1-6]|li|blockquote|pre|div|tr)>|<br\s*/?>", "\n", html_ or "", flags=re.I)
+    t = re.sub(r"<li[^>]*>", "- ", t, flags=re.I)
+    t = re.sub(r"<[^>]+>", "", t)
+    t = html.unescape(t)
+    t = re.sub(r"[ \t\r\f\v]+", " ", t)
+    t = re.sub(r"\n[ \t]*", "\n", t)
+    return re.sub(r"\n{3,}", "\n\n", t).strip()
+
+
+def _section_lines(title: str, value) -> list[str]:
+    """Xizmat/yechim ma'lumotining bitta maydonini Markdown qatorlariga aylantiradi."""
+    if not value:
+        return []
+    out = [f"### {title}", ""]
+    if isinstance(value, str):
+        out.append(_plain(value))
+    else:
+        for item in value:
+            if isinstance(item, (list, tuple)) and len(item) == 2:
+                out.append(f"- **{_plain(item[0])}** {_plain(item[1])}")
+            elif isinstance(item, dict):
+                q = item.get("q") or item.get("question") or item.get("title")
+                a = item.get("a") or item.get("answer") or item.get("text")
+                out.append(f"- **{_plain(q)}** {_plain(a)}" if q else f"- {_plain(a)}")
+            else:
+                out.append(f"- {_plain(item)}")
+    out.append("")
+    return out
+
+
+async def _build_llms_full_txt() -> str:
+    base = await _build_llms_txt()
+    services = await services_store.get_services()
+    cases = await services_store.get_cases()
+    faq_items = await faq_store.get_all()
+    u = seo.abs_url
+    lines = [base.rstrip(), "", "---", "", "# Full content", ""]
+    lines += ["## Services (full)", ""]
+    for sv in services:
+        d = sv["data_en"] if "data_en" in sv else sv.get("en", {})
+        slug = sv["slugs"]["en"]
+        lines += [f"## {_plain(d.get('h1') or d.get('nav'))}", f"URL: {u(f'/en/xizmatlar/{slug}/')}", ""]
+        for key_, label in (("value", "Summary"), ("for_whom", "Who it is for"), ("problem", "Problem"),
+                            ("solution", "Our approach"), ("includes", "What is included"),
+                            ("features", "Features"), ("integrations", "Integrations"),
+                            ("process", "Process"), ("tech", "Technology"), ("price_note", "Pricing"),
+                            ("faq", "FAQ")):
+            lines += _section_lines(label, d.get(key_))
+    lines += ["## Industry solutions (full)", ""]
+    for key_ in SOLUTION_KEYS:
+        s = SOLUTIONS[key_]["en"]
+        slug = SOLUTION_SLUGS[key_]["en"]
+        lines += [f"## {_plain(s['h1'])}", f"URL: {u(f'/en/yechimlar/{slug}/')}", ""]
+        for k2, label in (("intro", "Summary"), ("challenges", "Typical challenges"),
+                          ("approach", "Our approach"), ("faq", "FAQ")):
+            lines += _section_lines(label, s.get(k2))
+    lines += ["## Case studies (full)", ""]
+    for c in cases:
+        d = c["data_en"] if "data_en" in c else c.get("en", {})
+        slug = c["slugs"]["en"]
+        lines += [f"## {_plain(d.get('title'))}", f"URL: {u(f'/en/portfolio/{slug}/')}", ""]
+        for k2, label in (("short", "Summary"), ("task", "Task"), ("solution", "Solution"),
+                          ("result", "Result"), ("stack", "Stack")):
+            lines += _section_lines(label, d.get(k2))
+    lines += ["## All FAQ", ""]
+    for item in faq_items:
+        if not item.get("published", True):
+            continue
+        en = item.get("en") or {}
+        if en.get("question") and en.get("answer"):
+            lines.append(f"- **{_plain(en['question'])}** {_plain(en['answer'])}")
+    lines += ["", "## Blog articles", ""]
+    async with SessionLocal() as session:
+        res = await session.execute(
+            select(Post).where(Post.published == True, Post.noindex == False)  # noqa: E712
+            .order_by(Post.created_at.desc())
+        )
+        for p in res.scalars().all():
+            url = u(f"/{p.lang}/blog/{_slugify(p.title, p.id)}/")
+            lines += [f"## {_plain(p.title)}", f"URL: {url} · Language: {p.lang} · Published: {p.created_at.date().isoformat()}", "",
+                      _html_to_text(render_body(p.body)), ""]
+    return "\n".join(lines) + "\n"
+
+
+@router.get("/llms-full.txt", include_in_schema=False)
+async def llms_full_txt():
+    now = time.monotonic()
+    if _llms_full_cache["body"] is None or now - _llms_full_cache["ts"] > _LLMS_TTL:
+        _llms_full_cache["body"] = await _build_llms_full_txt()
+        _llms_full_cache["ts"] = now
+    return Response(_llms_full_cache["body"], media_type="text/plain; charset=utf-8",
+                    headers={"Cache-Control": "public, max-age=3600"})
+
+
+# ══════════ INDEXNOW KALIT FAYLI ══════════
+# https://promtchi.uz/{INDEXNOW_KEY}.txt — ichida kalitning o'zi. Bing/Yandex
+# IndexNow so'rovini qabul qilishdan oldin shu faylni o'qib egalikni tekshiradi
+# (app/indexnow.py). Marshrut dinamik (/{token}.txt) — kalit bo'sh yoki mos
+# kelmasa 404 (robots.txt/llms.txt yuqorida aniq yo'l bilan e'lon qilingan,
+# ular avval mos keladi).
+
+@router.get("/{token}.txt", include_in_schema=False)
+async def indexnow_key_file(token: str):
+    key = settings.INDEXNOW_KEY
+    if not key or token != key:
+        raise HTTPException(404)
+    return Response(key, media_type="text/plain; charset=utf-8",
+                    headers={"Cache-Control": "public, max-age=86400", "X-Robots-Tag": "noindex"})
 
 
 # ══════════ 404 (til-mos) ══════════

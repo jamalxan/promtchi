@@ -90,7 +90,7 @@ from .schemas import (
     PostIn, RemoveEmailRequestIn, ResetPasswordIn, ReviewCodeIn, ReviewIn, ServiceIn,
     SetPrimaryRequestIn, TelegramAdminIn, TelegramSettingsIn,
 )
-from . import backup, crm_api, crm_service, crypto, faq_store, pages, seo, services_store
+from . import backup, crm_api, crm_service, crypto, faq_store, indexnow, pages, seo, services_store
 from . import crm_constants as crm
 from .telegram import bot
 from .security import (
@@ -417,6 +417,13 @@ async def lifespan(app: FastAPI):
         limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
     )
 
+    # ── IndexNow (Bing/Yandex) — umumiy klient; to'liq sitemap haftada bir ──
+    indexnow.client = http_client
+    if indexnow.enabled():
+        t = asyncio.create_task(indexnow.full_submit_if_due())
+        _bg_tasks.add(t)
+        t.add_done_callback(_bg_tasks.discard)
+
     # ── Telegram bot (BITTA — umumiy bildirishnoma va CRM birga ishlatadi) ──
     bot.token = settings.TELEGRAM_BOT_TOKEN.strip()
     bot.group_chat_id = settings.TELEGRAM_CHAT_ID.strip()
@@ -526,7 +533,12 @@ app.include_router(crm_api.router)
 
 @app.api_route("/api/health", methods=["GET", "HEAD"])
 async def health():
-    return {"status": "ok", "service": "promtchi-api", "version": app.version}
+    return {
+        "status": "ok", "service": "promtchi-api", "version": app.version,
+        # IndexNow diagnostikasi (kalitning o'zi chiqarilmaydi — faqat holat)
+        "indexnow": {"enabled": indexnow.enabled(), "last_status": indexnow.last_result["status"],
+                     "last_ok": indexnow.last_result["ok"], "last_count": indexnow.last_result["count"]},
+    }
 
 
 @app.get("/api/content")
@@ -992,6 +1004,7 @@ async def put_content(
         row.version += 1
     await session.commit()
     content_cache.set(data, row.version)
+    indexnow.notify(_home_paths())
     return {"ok": True, "version": row.version}
 
 
@@ -1093,6 +1106,7 @@ async def create_post(
     session.add(post)
     await session.commit()
     posts_cache.clear()
+    indexnow.notify(_post_paths(post))
     return {**post.as_dict(), "slug": pages._slugify(post.title, post.id)}
 
 
@@ -1125,6 +1139,7 @@ async def update_post(
     post.published = payload.published
     new_path = f"/{post.lang}/blog/{pages._slugify(post.title, post.id)}/"
     if new_path != old_path:
+        indexnow.notify([old_path])  # eski URL qayta tekshirilsin (301 ko'radi)
         existing = await session.scalar(select(SlugRedirect).where(SlugRedirect.old_path == old_path))
         if existing is not None:
             existing.new_path = new_path
@@ -1132,6 +1147,7 @@ async def update_post(
             session.add(SlugRedirect(old_path=old_path, new_path=new_path))
     await session.commit()
     posts_cache.clear()
+    indexnow.notify(_post_paths(post))
     return {**post.as_dict(), "slug": pages._slugify(post.title, post.id)}
 
 
@@ -1141,9 +1157,12 @@ async def delete_post(
     _: str = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
 ):
+    post = await session.get(Post, post_id)
+    gone = _post_paths(post) if post is not None else []
     await session.execute(delete(Post).where(Post.id == post_id))
     await session.commit()
     posts_cache.clear()
+    indexnow.notify(gone)  # 404 ko'rib indeksdan chiqaradi
     return {"ok": True}
 
 
@@ -1151,6 +1170,33 @@ async def delete_post(
 # Ilgari app/content/services.py va portfolio.py'da qattiq yozilgan edi —
 # endi DB (app/db.py Service/PortfolioCase) yagona manba; public sahifalar
 # app/pages.py orqali services_store keshidan o'qiydi.
+
+_LANGS3 = ("uz", "ru", "en")
+
+
+def _home_paths() -> list[str]:
+    return [f"/{l}/" for l in _LANGS3]
+
+
+def _post_paths(post) -> list[str]:
+    """Post o'zgarganda IndexNow'ga ketadigan yo'llar: postning o'zi + blog indeksi."""
+    return [f"/{post.lang}/blog/{pages._slugify(post.title, post.id)}/", f"/{post.lang}/blog/"]
+
+
+def _service_paths(svc) -> list[str]:
+    """Xizmat 3 tilda + xizmatlar indeksi + bosh sahifa (xizmat kartalari u yerda ham)."""
+    return ([f"/{l}/xizmatlar/{getattr(svc, 'slug_' + l)}/" for l in _LANGS3]
+            + [f"/{l}/xizmatlar/" for l in _LANGS3] + _home_paths())
+
+
+def _case_paths(case) -> list[str]:
+    return ([f"/{l}/portfolio/{getattr(case, 'slug_' + l)}/" for l in _LANGS3]
+            + [f"/{l}/portfolio/" for l in _LANGS3] + _home_paths())
+
+
+def _faq_paths() -> list[str]:
+    return [f"/{l}/faq/" for l in _LANGS3]
+
 
 async def _sync_slug_redirects(
     session: AsyncSession, path_prefix: str, old_slugs: dict, new_slugs: dict
@@ -1196,6 +1242,7 @@ async def create_service(
     session.add(svc)
     await session.commit()
     services_store.invalidate()
+    indexnow.notify(_service_paths(svc))
     return svc.as_dict()
 
 
@@ -1229,6 +1276,7 @@ async def update_service(
     svc.data_en = payload.en.model_dump(exclude={"slug"})
     await session.commit()
     services_store.invalidate()
+    indexnow.notify(_service_paths(svc))
     return svc.as_dict()
 
 
@@ -1238,9 +1286,12 @@ async def delete_service(
     _: str = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
 ):
+    svc = await session.get(Service, service_id)
+    gone = _service_paths(svc) if svc is not None else []
     await session.execute(delete(Service).where(Service.id == service_id))
     await session.commit()
     services_store.invalidate()
+    indexnow.notify(gone)
     return {"ok": True}
 
 
@@ -1270,6 +1321,7 @@ async def create_portfolio_case(
     session.add(case)
     await session.commit()
     services_store.invalidate()
+    indexnow.notify(_case_paths(case))
     return case.as_dict()
 
 
@@ -1304,6 +1356,7 @@ async def update_portfolio_case(
     case.data_en = payload.en.model_dump(exclude={"slug"})
     await session.commit()
     services_store.invalidate()
+    indexnow.notify(_case_paths(case))
     return case.as_dict()
 
 
@@ -1313,9 +1366,12 @@ async def delete_portfolio_case(
     _: str = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
 ):
+    case = await session.get(PortfolioCase, case_id)
+    gone = _case_paths(case) if case is not None else []
     await session.execute(delete(PortfolioCase).where(PortfolioCase.id == case_id))
     await session.commit()
     services_store.invalidate()
+    indexnow.notify(gone)
     return {"ok": True}
 
 
@@ -1378,6 +1434,7 @@ async def create_faq_item(
     session.add(item)
     await session.commit()
     faq_store.invalidate()
+    indexnow.notify(_faq_paths())
     return item.as_dict()
 
 
@@ -1408,6 +1465,7 @@ async def update_faq_item(
     item.question_en, item.answer_en = payload.en.question, payload.en.answer
     await session.commit()
     faq_store.invalidate()
+    indexnow.notify(_faq_paths())
     return item.as_dict()
 
 
@@ -1420,7 +1478,31 @@ async def delete_faq_item(
     await session.execute(delete(FaqItem).where(FaqItem.id == item_id))
     await session.commit()
     faq_store.invalidate()
+    indexnow.notify(_faq_paths())
     return {"ok": True}
+
+
+# ══════════ ADMIN: SEO / INDEXNOW ══════════
+
+@app.get("/api/admin/seo/indexnow")
+async def indexnow_status(_: str = Depends(require_admin)):
+    """IndexNow holati: yoqilganmi, kalit fayli manzili, oxirgi yuborish natijasi."""
+    return {
+        "enabled": indexnow.enabled(),
+        "key_location": indexnow.key_location() if indexnow.key() else None,
+        "last": indexnow.last_result,
+    }
+
+
+@app.post("/api/admin/seo/indexnow")
+async def indexnow_submit_all(_: str = Depends(require_admin)):
+    """Sitemap'dagi BARCHA URL'larni IndexNow'ga qo'lda yuborish (masalan katta
+    kontent yangilanishidan keyin). Oddiy tahrirlar avtomatik ketadi — bu tugma
+    kundalik ish uchun emas."""
+    if not indexnow.enabled():
+        raise HTTPException(400, "IndexNow sozlanmagan — .env'da INDEXNOW_KEY bering")
+    ok, n = await indexnow.full_submit()
+    return {"ok": ok, "submitted": n, "last": indexnow.last_result}
 
 
 # ══════════ ADMIN: TELEGRAM ══════════
