@@ -19,7 +19,7 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = Path(__file__).resolve().parent.parent
 STATIC = ROOT / "static"
 
-BLK = (11, 11, 14)
+BLK = (13, 16, 23)
 CREAM = (252, 251, 247)
 ACID = (217, 255, 63)
 MUTED = (150, 150, 145)
@@ -50,12 +50,10 @@ def make_og() -> Path:
     # pastki acid chiziq — saytdagi urg'u rangi
     d.rectangle([0, 606, 1200, 630], fill=ACID)
 
-    # logo (mavjud brend fayli)
-    logo = Image.open(STATIC / "logo.png").convert("RGBA").resize((96, 96), Image.LANCZOS)
-    img.paste(logo, (80, 74), logo)
-
-    d.text((196, 92), "promtchi", font=anton(64), fill=CREAM)
-    d.text((196 + d.textlength("promtchi", font=anton(64)) + 8, 92), "®", font=mono(22), fill=ACID)
+    # logo (brendbuk gorizontal logotipi, shaffof fon, oq + to'q sariq)
+    logo = Image.open(STATIC / "brand" / "promtchi-horizontal-1024.png").convert("RGBA")
+    logo = logo.resize((380, round(380 * logo.height / logo.width)), Image.LANCZOS)
+    img.paste(logo, (72, 70), logo)
 
     # asosiy satr — uch tilda ham o'qiladigan, brend darajasidagi xabar
     d.text((80, 250), "WEB · MOBILE", font=anton(92), fill=CREAM)

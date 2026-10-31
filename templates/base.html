@@ -30,6 +30,7 @@
 {% for hreflang, href in alt_links %}<link rel="alternate" hreflang="{{ hreflang }}" href="{{ href }}">
 {% endfor %}<link rel="icon" href="/static/favicon.png" type="image/png">
 <link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -47,7 +48,7 @@
 <input type="checkbox" id="navToggle" class="nav-toggle" aria-hidden="true">
 <a class="skip-link" href="#main-content">{{ common.skip_to_content }}</a>
 <header class="site-hd">
-  <a class="brand" href="/{{ lang }}/"><picture><source srcset="/static/logo.webp" type="image/webp"><img src="/static/logo.png" alt="promtchi" width="30" height="30"></picture><b>promtchi</b><sup>&reg;</sup></a>
+  <a class="brand" href="/{{ lang }}/"><img src="/static/brand/promtchi-horizontal.svg" alt="promtchi" width="132" height="26" decoding="async"></a>
   {% set nav_path = request.url.path %}
   {% macro cur(seg) %}{% if nav_path.startswith('/'~lang~'/'~seg~'/') %}aria-current="page"{% endif %}{% endmacro %}
   {# Menyu bosh sahifa bo'limlariga olib boradi (/uz/#section) — bosh
