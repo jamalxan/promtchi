@@ -23,11 +23,11 @@ ABOUT = {
     facts=[("2023", "Tashkil topgan yil"), ("Toshkent", "Asosiy shahar"), ("14 kun", "MVP tayyor bo'lish muddati")],
     entity_qa_title="promtchi haqida qisqacha",
     entity_qa=[
-        ("Promtchi nima?", "promtchi — 2023-yildan Toshkentda faoliyat yuritayotgan IT agentlik va raqamli mahsulotlar studiyasi. Bizneslar uchun veb-sayt, mobil ilova, AI yechimlar va CRM/ERP tizimlarini ishlab chiqamiz."),
-        ("Promtchi qayerda joylashgan?", "Studiya Toshkentda (O'zbekiston) joylashgan va Toshkent hamda butun O'zbekiston bo'ylab mijozlar bilan ishlaydi — IT autsorsing sifatida ham ishlaymiz."),
-        ("Promtchi qanday xizmatlar ko'rsatadi?", "Veb-sayt va web-app yaratish, mobil ilova ishlab chiqish, CRM va ERP tizimlari, Telegram bot dasturlash, AI yechimlar (chatbot, ovozni matnga aylantirish) va biznes jarayonlarini avtomatlashtirish."),
-        ("Promtchi xizmatlari kimlar uchun?", "Yangi biznesini onlaynga chiqarayotgan tadbirkorlardan tortib, sotuv bo'limi bor kompaniyalar va ombori yoki ko'p xodimi bor o'rta-yirik bizneslargacha."),
-        ("Promtchi qanday texnologiyalar bilan ishlaydi?", "Backend uchun FastAPI va Django, ma'lumotlar bazasi uchun PostgreSQL, mobil ilovalar uchun Flutter, botlar uchun aiogram va Telegram Bot API."),
+        ("promtchi nima?", "promtchi — 2023-yildan Toshkentda faoliyat yuritayotgan IT agentlik va raqamli mahsulotlar studiyasi. Bizneslar uchun veb-sayt, mobil ilova, AI yechimlar va CRM/ERP tizimlarini ishlab chiqamiz."),
+        ("promtchi qayerda joylashgan?", "Studiya Toshkentda (O'zbekiston) joylashgan va Toshkent hamda butun O'zbekiston bo'ylab mijozlar bilan ishlaydi — IT autsorsing sifatida ham ishlaymiz."),
+        ("promtchi qanday xizmatlar ko'rsatadi?", "Veb-sayt va web-app yaratish, mobil ilova ishlab chiqish, CRM va ERP tizimlari, Telegram bot dasturlash, AI yechimlar (chatbot, ovozni matnga aylantirish) va biznes jarayonlarini avtomatlashtirish."),
+        ("promtchi xizmatlari kimlar uchun?", "Yangi biznesini onlaynga chiqarayotgan tadbirkorlardan tortib, sotuv bo'limi bor kompaniyalar va ombori yoki ko'p xodimi bor o'rta-yirik bizneslargacha."),
+        ("promtchi qanday texnologiyalar bilan ishlaydi?", "Backend uchun FastAPI va Django, ma'lumotlar bazasi uchun PostgreSQL, mobil ilovalar uchun Flutter, botlar uchun aiogram va Telegram Bot API."),
     ],
 ),
 "ru": dict(
