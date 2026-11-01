@@ -55,7 +55,7 @@ def _template(title: str, body_html: str, button_url: str, button_text: str) -> 
     <img src="{logo}" width="56" height="56" alt="promtchi" style="border-radius:8px;display:block">
   </td></tr>
   <tr><td style="background:#FFFFFF;border-radius:16px;padding:40px 32px;font-family:Outfit,Arial,Helvetica,sans-serif">
-    <div style="font-weight:500;font-size:13px;color:#0B7F73;margin-bottom:14px">
+    <div style="font-weight:500;font-size:13px;color:#097466;margin-bottom:14px">
       promtchi
     </div>
     <h1 style="font-size:22px;line-height:1.35;margin:0 0 16px;font-weight:500;color:#0D1117">{title}</h1>

@@ -2,11 +2,11 @@
    (index.html) og'ir animatsiya tizimidan ataylab soddalashtirilgan —
    bu sahifalar JS'siz ham to'liq ishlashi kerak (SEO/GEO talabi). */
 :root{
-  --blk:#0D1117; --cream:#FFFFFF; --blue:#0B7F73; --acid:#14C8B4; --coral:#FF6A2B;
+  --blk:#0D1117; --cream:#FFFFFF; --blue:#097466; --acid:#14C8B4; --coral:#FF6A2B;
   --w:#FFFFFF; --line:rgba(255,255,255,.14);
   --anton:'Outfit','Manrope',system-ui,-apple-system,'Segoe UI',sans-serif; --serif:'Outfit','Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
   --grot:'Outfit','Manrope',system-ui,-apple-system,'Segoe UI',sans-serif; --mono:'Outfit','Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
-  --ease:cubic-bezier(.16,1,.3,1);--graphite:#1C2027;--teal:#14C8B4;--teal-dark:#0B7F73;--orange:#FF6A2B;--orange-dark:#D9531A;--ink:#0D1117;--ink-muted:#4B5563;--teal-tint:#E7F8F6;--orange-tint:#FFF1EA;--r-sm:4px;--r-md:8px;--r-lg:16px;
+  --ease:cubic-bezier(.16,1,.3,1);--graphite:#1C2027;--teal:#14C8B4;--teal-dark:#097466;--orange:#FF6A2B;--orange-dark:#B8441A;--ink:#0D1117;--ink-muted:#4B5563;--teal-tint:#E7F8F6;--orange-tint:#FFF1EA;--r-sm:4px;--r-md:8px;--r-lg:16px;
 }
 *{box-sizing:border-box}
 /* overflow-x:clip — to'liq kenglikdagi bo'lim fonlari (100vw) scrollbar
@@ -235,7 +235,7 @@ section.hero-in.alt::before{content:'';position:absolute;inset:0 calc(50% - 50vw
 @media(prefers-reduced-motion:reduce){.hero-in .ghost-word{animation:none}}
 @media(max-width:700px){.hero-in .ghost-word{display:none}}
 
-.consent-note{font-size:.76rem;opacity:.55;margin:-.4rem 0 0}
+.consent-note{font-size:.76rem;color:#4B5563;margin:-.4rem 0 0}
 .consent-note a{text-decoration:underline}
 
 /* legal (privacy/terms) */

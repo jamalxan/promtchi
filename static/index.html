@@ -50,7 +50,7 @@
 :root{
   --blk:#0D1117;
   --cream:#FFFFFF;
-  --blue:#0B7F73;
+  --blue:#097466;
   --acid:#14C8B4;
   --coral:#FF6A2B;
   --w:#FFFFFF;
@@ -60,7 +60,7 @@
   --serif:'Outfit','Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
   --grot:'Outfit','Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
   --mono:'Outfit','Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
-  --ease:cubic-bezier(.16,1,.3,1);--graphite:#1C2027;--teal:#14C8B4;--teal-dark:#0B7F73;--orange:#FF6A2B;--orange-dark:#D9531A;--ink:#0D1117;--ink-muted:#4B5563;--teal-tint:#E7F8F6;--orange-tint:#FFF1EA;--r-sm:4px;--r-md:8px;--r-lg:16px;
+  --ease:cubic-bezier(.16,1,.3,1);--graphite:#1C2027;--teal:#14C8B4;--teal-dark:#097466;--orange:#FF6A2B;--orange-dark:#B8441A;--ink:#0D1117;--ink-muted:#4B5563;--teal-tint:#E7F8F6;--orange-tint:#FFF1EA;--r-sm:4px;--r-md:8px;--r-lg:16px;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -922,7 +922,7 @@ h1,h2,h3,h4,b,strong{font-weight:500;font-synthesis:none}
 .mq .out,.mq-band.dark .out{color:var(--teal);-webkit-text-stroke:0}
 
 /* manifest */
-.mn-txt{font-weight:500;letter-spacing:-.02em;color:rgba(13,17,23,.28)}
+.mn-txt{font-weight:500;letter-spacing:-.02em;color:rgba(13,17,23,.55)}
 .mn-txt .se{font-family:inherit;font-style:normal;font-weight:500;color:var(--teal-dark)}
 .mn-txt .card-in,.mn-txt .card-in:hover,.mn-txt .ci2{transform:none;border-radius:var(--r-md);border-width:2px}
 .mn-txt .ci1{background:var(--orange)}
@@ -938,6 +938,7 @@ h1,h2,h3,h4,b,strong{font-weight:500;font-synthesis:none}
 .svc-row .arr,.sol-card .arr,.post-row .arr,.fq .fx{border-radius:var(--r-md);border-width:1.5px}
 .svc-row.is-active .arr{transform:none;color:var(--teal)}
 @media(hover:hover){.svc-row:hover,.svc-row.in:hover{transform:none}}
+.svc-row.is-active .no,.svc-row.is-active .sub{opacity:.9}
 .svc-prev{border:1px solid var(--line);border-radius:var(--r-lg)}
 .svc-prev.show{transform:translate(-50%,-50%) scale(1)}
 .pv1 .brw,.pv1 .bar,.pv4 .kpi b,.pv4 .brs,.pv1 .row-m i,.pv3 .bub{border-width:1.5px}
@@ -1459,7 +1460,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--teal-dark);outli
       <div><label for="fM">G'oyangiz</label><textarea id="fM" placeholder="Loyihangizni qisqacha yozing..." maxlength="4000"></textarea></div>
       <button class="btn btn-blk" id="sendBtn" type="submit" style="width:100%;justify-content:center">Yuborish
         <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
-      <p style="font-size:.76rem;opacity:.55;margin:-.4rem 0 0">Yuborish orqali siz quyidagiga rozilik bildirasiz: <a href="/uz/maxfiylik-siyosati/" style="color:inherit;text-decoration:underline">Maxfiylik siyosati</a></p>
+      <p style="font-size:.76rem;color:#4B5563;margin:-.4rem 0 0">Yuborish orqali siz quyidagiga rozilik bildirasiz: <a href="/uz/maxfiylik-siyosati/" style="color:inherit;text-decoration:underline">Maxfiylik siyosati</a></p>
       <div class="ok-msg" id="okMsg" role="status"></div>
     </form>
   </div>
