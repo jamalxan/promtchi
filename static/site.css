@@ -591,3 +591,30 @@ section.hero-in.alt{overflow:visible}
 .contact-sec .ok-msg{color:var(--ink);font-weight:500}
 
 .err-page .code{font-weight:500;letter-spacing:-.03em;color:var(--teal)}
+
+/* ═══ QUVNOQ QATLAM — ichki sahifalar: teal + orange almashinuvi, yumshoq yorug'liklar ═══ */
+.hero-in:not(.alt){background:
+  radial-gradient(closest-side at 82% 42%,rgba(255,106,43,.16),transparent),
+  radial-gradient(closest-side at 22% 78%,rgba(20,200,180,.14),transparent);
+  background-size:100% 100%}
+.eyebrow::before{background:linear-gradient(90deg,var(--teal) 0 55%,var(--orange) 55% 100%)}
+.card-grid .card:nth-child(3n+1){background:var(--teal-tint)}
+.card-grid .card:nth-child(3n+2){background:#FFF1EA}
+.card-grid .card:nth-child(3n+3){background:var(--w)}
+.card-grid .card::after{border:0;color:var(--w);background:var(--teal-dark)}
+.card-grid .card:nth-child(3n+2)::after{background:var(--orange);color:var(--ink)}
+.card-grid .card:nth-child(3n+3)::after{background:var(--ink);color:var(--teal)}
+.card-grid .card:hover::after{background:var(--ink);color:var(--teal)}
+.card .no{color:var(--teal-dark);opacity:1}
+.card-grid .card:nth-child(3n+2) .no{color:var(--orange-dark)}
+.cta-band::before{background:
+  radial-gradient(40% 90% at 100% 100%,#FFE3D4,transparent 70%),
+  radial-gradient(35% 90% at 0% 0%,#C9F2EC,transparent 70%),var(--teal-tint)}
+.site-ft{border-top:4px solid;border-image:linear-gradient(90deg,var(--teal),var(--orange)) 1;background:
+  radial-gradient(40% 40% at 8% 0%,rgba(20,200,180,.14),transparent 70%),
+  radial-gradient(35% 35% at 95% 30%,rgba(255,106,43,.10),transparent 70%)}
+.check-list li:nth-child(even)::before{background:var(--orange)}
+.process-list li:nth-child(even)::before{border-color:var(--orange);color:var(--orange-light,#FFB48F)}
+.sec.alt .process-list li:nth-child(even)::before{border-color:var(--orange-dark);color:var(--orange-dark)}
+.note-box{border-left:4px solid var(--orange)}
+.card-grid .card p{color:#3B4452;opacity:1}

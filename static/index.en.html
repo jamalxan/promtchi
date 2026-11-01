@@ -1095,6 +1095,116 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--teal-dark);outli
 ::-webkit-scrollbar-thumb{background:var(--graphite);border-radius:var(--r-md);border-color:var(--blk)}
 ::-webkit-scrollbar-thumb:hover{background:var(--teal-dark)}
 
+/* ═══ QUVNOQ QATLAM — brend palitrasi (teal + orange + tintlar) bilan yorqinlik.
+   Qoida: teal sovuq, orange iliq — ular bir-birini almashib, har bo'limda
+   ikkalasi ham ko'rinadi. Matn kontrasti WCAG AA (≥4.5:1) saqlanadi. ═══ */
+:root{--teal-light:#8BE9DE;--orange-light:#FFB48F;--glow-t:rgba(20,200,180,.22);--glow-o:rgba(255,106,43,.22)}
+
+/* hero — iliq/sovuq yorug'lik, teal panel, orange nishon */
+.hero{background:
+  radial-gradient(55% 65% at 8% 92%,var(--glow-t),transparent 62%),
+  radial-gradient(38% 48% at 60% 8%,var(--glow-o),transparent 66%),var(--blk)}
+.hero-bg .col-blue{background:linear-gradient(165deg,#14C8B4 0%,#0FA897 48%,#097466 100%)}
+.hero-bg .col-blue::after{opacity:.14}
+@media(max-width:900px){
+  /* mobilda panel matn ostiga tushadi — matn o'qilishi uchun to'q teal, yorqinlik esa yorug'lik dog'ida */
+  .hero-bg .col-blue{background:radial-gradient(70% 90% at 85% 100%,rgba(20,200,180,.45),transparent 70%),linear-gradient(180deg,#0B3F3A,#0A4E47)}
+}
+.hero-bg .ghost{color:rgba(255,255,255,.05)}
+.hero h1 .l2{background:linear-gradient(transparent 86%,var(--orange) 86% 93%,transparent 93%);
+  -webkit-box-decoration-break:clone;box-decoration-break:clone}
+.badge .bc{fill:var(--orange)}
+.chip.c1{background:var(--orange);color:var(--ink)}
+.chip.c2{background:var(--teal-tint);color:var(--ink)}
+
+/* marquee — 1-band teal, 2-band qora + orange so'zlar */
+.mq-band{background:var(--teal);color:var(--ink);border:0}
+.mq-band .out{color:var(--w)}
+.mq-band span::after{background:var(--ink)}
+.mq-band.dark{background:var(--blk);color:var(--w)}
+.mq-band.dark .out{color:var(--orange)}
+.mq-band.dark span::after{background:var(--teal)}
+
+/* manifest — yumshoq rangli dog'lar, marker bilan ajratilgan so'zlar */
+.manifest{background:
+  radial-gradient(38% 52% at 96% 6%,#FFE3D4,transparent 70%),
+  radial-gradient(42% 60% at 0% 100%,#D3F5F0,transparent 70%),var(--w)}
+.mn-txt .se{background:linear-gradient(transparent 62%,rgba(20,200,180,.32) 62% 94%,transparent 94%);
+  -webkit-box-decoration-break:clone;box-decoration-break:clone}
+.mn-txt .hi{background:linear-gradient(transparent 62%,rgba(255,106,43,.26) 62% 94%,transparent 94%);
+  -webkit-box-decoration-break:clone;box-decoration-break:clone}
+
+/* xizmatlar — raqamlar rangli, juft qatorlar orange bilan yonadi */
+.svc{background:radial-gradient(40% 40% at 100% 0%,rgba(255,106,43,.12),transparent 70%),var(--blk)}
+.svc-row:not(.is-active) .no{color:var(--teal);opacity:1}
+.svc-row:nth-child(even):not(.is-active) .no{color:var(--orange-light)}
+.svc-row:nth-child(even)::before{background:var(--orange)}
+.svc-row:hover .arr{border-color:var(--teal);color:var(--teal)}
+.svc-row:nth-child(even):hover .arr{border-color:var(--orange);color:var(--orange)}
+.svc-row.is-active .arr{background:var(--ink);border-color:var(--ink)}
+.svc-row:nth-child(even).is-active .arr{color:var(--orange)}
+
+/* yechimlar — har karta o'z rangida */
+.sol-sec{background:
+  radial-gradient(45% 60% at 100% 100%,rgba(20,200,180,.16),transparent 70%),
+  radial-gradient(35% 50% at 0% 0%,rgba(255,106,43,.12),transparent 70%),var(--graphite)}
+.sol-card:nth-child(1){background:var(--teal-tint)}
+.sol-card:nth-child(2){background:#FFF1EA}
+.sol-card:nth-child(3){background:var(--teal)}
+.sol-card:nth-child(3) .no,.sol-card:nth-child(3) p{color:var(--ink)}
+.sol-card .arr{border:0;color:var(--w)}
+.sol-card:nth-child(1) .arr{background:var(--teal-dark)}
+.sol-card:nth-child(2) .arr{background:var(--orange);color:var(--ink)}
+.sol-card:nth-child(3) .arr{background:var(--ink);color:var(--teal)}
+.sol-card:hover .arr{background:var(--ink);color:var(--teal)}
+
+/* muddat — 14 teal, 25 orange */
+.dur-sec{background:radial-gradient(40% 55% at 100% 50%,rgba(255,106,43,.10),transparent 70%),var(--blk)}
+.dur-row.r2 .dur-big b{color:var(--orange)}
+.dur-row.r1 .dur-tags span{border-color:rgba(20,200,180,.55);color:var(--teal-light)}
+.dur-row.r2 .dur-tags span{border-color:rgba(255,106,43,.6);color:var(--orange-light)}
+
+/* jarayon — teal-tint → grafit → teal → orange → qora */
+.proc{background:radial-gradient(40% 40% at 0% 30%,#E7F8F6,transparent 70%),
+  radial-gradient(35% 35% at 100% 75%,#FFF1EA,transparent 70%),var(--w)}
+.sc2 h3{color:var(--teal)}
+.sc4{background:var(--orange);color:var(--ink);border:0}
+.sc4 .s-meta,.sc3 .s-meta{opacity:1}
+.sc5{background:radial-gradient(60% 80% at 100% 0%,rgba(255,106,43,.28),transparent 65%),var(--blk)}
+
+/* portfolio — rangli muqovalar */
+.case-sec{background:radial-gradient(40% 35% at 0% 0%,rgba(20,200,180,.14),transparent 70%),var(--blk)}
+.ccover.cat-auto{background:linear-gradient(140deg,#14C8B4,#097466)}
+.ccover.cat-web{background:linear-gradient(140deg,#FF8A57,#FF6A2B)}
+.ccover.cat-ai{background:radial-gradient(70% 90% at 50% 50%,rgba(20,200,180,.35),transparent 70%),var(--graphite)}
+.cbody .ctag{background:var(--teal-tint);color:var(--ink)}
+
+/* sharhlar va blog */
+.tm-sec{background:radial-gradient(40% 50% at 100% 0%,rgba(20,200,180,.14),transparent 70%),var(--blk)}
+.tcard .tav{background-color:var(--teal);color:var(--ink)}
+.tcard .qm{color:var(--orange-dark)}
+.post-row .arr{border-color:var(--teal);color:var(--teal)}
+.post-row:nth-child(even):hover{background:var(--orange)}
+
+/* FAQ */
+.faq-sec{background:radial-gradient(35% 50% at 0% 100%,#FFF1EA,transparent 70%),var(--w)}
+.fq .fx{background:var(--teal-tint);border-color:transparent;color:var(--ink)}
+.fq:hover .fx{background:var(--teal);color:var(--ink)}
+
+/* aloqa */
+.contact-sec{background:
+  radial-gradient(40% 55% at 100% 100%,#FFE3D4,transparent 70%),
+  radial-gradient(35% 45% at 0% 0%,#C9F2EC,transparent 70%),var(--teal-tint)}
+.con-a .ci{background:var(--teal);color:var(--ink)}
+
+/* footer — iliq porlash va ikki rangli chiziq */
+footer{background:radial-gradient(45% 35% at 10% 0%,rgba(20,200,180,.16),transparent 70%),
+  radial-gradient(40% 30% at 95% 40%,rgba(255,106,43,.12),transparent 70%),var(--blk);
+  border-top:4px solid;border-image:linear-gradient(90deg,var(--teal),var(--orange)) 1}
+
+/* bo'lim belgisi — ikki rangli chiziqcha */
+.tag-line::before{background:linear-gradient(90deg,var(--teal) 0 55%,var(--orange) 55% 100%)}
+
 /* Dinamik kartalar uchun stagger fade. Stylesheet OXIRIDA turadi — kaskadda
    pcard/mcard/pstcard'ning o'z transition'laridan ustun kelishi uchun;
    transform/box-shadow ro'yxatga kiritilgan — hover animatsiyalari buzilmasin. */
