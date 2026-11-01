@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#0D1117">
+<meta name="theme-color" content="#0B0B0E">
 <title>{{ page_title }}</title>
 {% if gsc_token %}<meta name="google-site-verification" content="{{ gsc_token }}">{% endif %}
 <meta name="description" content="{{ page_desc }}">
@@ -29,12 +29,10 @@
 <link rel="canonical" href="{{ canonical }}">
 {% for hreflang, href in alt_links %}<link rel="alternate" hreflang="{{ hreflang }}" href="{{ href }}">
 {% endfor %}<link rel="icon" href="/static/favicon.png" type="image/png">
-<link rel="icon" href="/favicon.ico" sizes="48x48">
-<link rel="icon" href="/static/icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+<link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500&family=Manrope:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/site.css?v={{ asset_v }}">
 <script type="application/ld+json">{{ org_schema|safe }}</script>
 <script type="application/ld+json">{{ website_schema|safe }}</script>
@@ -49,7 +47,7 @@
 <input type="checkbox" id="navToggle" class="nav-toggle" aria-hidden="true">
 <a class="skip-link" href="#main-content">{{ common.skip_to_content }}</a>
 <header class="site-hd">
-  <a class="brand" href="/{{ lang }}/"><img src="/static/brand/promtchi-horizontal.svg" alt="promtchi" width="132" height="26" decoding="async"></a>
+  <a class="brand" href="/{{ lang }}/"><picture><source srcset="/static/logo.webp" type="image/webp"><img src="/static/logo.png" alt="promtchi" width="30" height="30"></picture><b>promtchi</b><sup>&reg;</sup></a>
   {% set nav_path = request.url.path %}
   {% macro cur(seg) %}{% if nav_path.startswith('/'~lang~'/'~seg~'/') %}aria-current="page"{% endif %}{% endmacro %}
   {# Menyu bosh sahifa bo'limlariga olib boradi (/uz/#section) — bosh
@@ -131,7 +129,7 @@
     <a href="{{ legal.privacy }}">{{ footer.privacy }}</a>
     <a href="{{ legal.terms }}">{{ footer.terms }}</a>
   </div>
-  <div class="wrap ft-logo" aria-hidden="true"><img src="/static/brand/promtchi-horizontal.svg" alt="" width="1180" height="233" loading="lazy" decoding="async"></div>
+  <div class="ft-word" aria-hidden="true"><span>P</span><span>R</span><span>O</span><span>M</span><span>T</span><span>C</span><span>H</span><span>I</span></div>
 </footer>
 <script src="/static/site.js?v={{ asset_v }}" defer></script>
 {% if ga_id %}

@@ -16,7 +16,7 @@
   </div>
   <div>
     <p>{{ a.mission }}</p>
-    <p style="font-size:.8125rem;opacity:.65;margin-top:1.6rem">{{ a.facts_title }}</p>
+    <p style="font-family:var(--mono);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;opacity:.55;margin-top:1.6rem">{{ a.facts_title }}</p>
     <div class="facts-row">
       {% for num, label in a.facts %}<div class="fact"><b>{{ num }}</b><small>{{ label }}</small></div>{% endfor %}
     </div>

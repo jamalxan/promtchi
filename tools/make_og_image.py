@@ -2,7 +2,7 @@
 
 Nega kerak: og:image sifatida 256x256 logotip ishlatilgan edi — ijtimoiy
 tarmoq va qidiruv preview'lari uchun tavsiya etilgan o'lcham 1200x630.
-Bu skript brendbuk ranglari va brend shrifti (Outfit, OFL litsenziya —
+Bu skript brend ranglari va saytning o'z fonti (Anton, OFL litsenziya —
 sayt uni Google Fonts orqali yuklaydi) bilan bitta neytral banner chizadi:
 uch til uchun ham mos bo'lishi kerak, shuning uchun matn minimal.
 
@@ -19,42 +19,50 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = Path(__file__).resolve().parent.parent
 STATIC = ROOT / "static"
 
-BASE = (13, 17, 23)
-WHITE = (255, 255, 255)
-TEAL = (20, 200, 180)
-MUTED = (155, 163, 175)
+BLK = (11, 11, 14)
+CREAM = (252, 251, 247)
+ACID = (217, 255, 63)
+MUTED = (150, 150, 145)
 
-# Brend shrifti — Outfit (SIL OFL, Google Fonts), o'zgaruvchan og'irlikli fayl
-OUTFIT_URL = "https://github.com/google/fonts/raw/main/ofl/outfit/Outfit%5Bwght%5D.ttf"
-FONT_CACHE = ROOT / "tools" / "Outfit-wght.ttf"
+ANTON_URL = "https://github.com/google/fonts/raw/main/ofl/anton/Anton-Regular.ttf"
+FONT_CACHE = ROOT / "tools" / "Anton-Regular.ttf"
 
 
-def outfit(size: int, weight: int = 400) -> ImageFont.FreeTypeFont:
+def anton(size: int) -> ImageFont.FreeTypeFont:
     if not FONT_CACHE.exists():
-        FONT_CACHE.write_bytes(urllib.request.urlopen(OUTFIT_URL, timeout=60).read())
-    font = ImageFont.truetype(str(FONT_CACHE), size)
-    font.set_variation_by_axes([weight])
-    return font
+        FONT_CACHE.write_bytes(urllib.request.urlopen(ANTON_URL, timeout=60).read())
+    return ImageFont.truetype(str(FONT_CACHE), size)
+
+
+def mono(size: int) -> ImageFont.FreeTypeFont:
+    for name in ("consola.ttf", "cour.ttf", "DejaVuSansMono.ttf"):
+        try:
+            return ImageFont.truetype(name, size)
+        except OSError:
+            continue
+    return ImageFont.load_default()
 
 
 def make_og() -> Path:
-    img = Image.new("RGB", (1200, 630), BASE)
+    img = Image.new("RGB", (1200, 630), BLK)
     d = ImageDraw.Draw(img)
 
-    # brendbuk gorizontal logotipi (shaffof fon, oq + firuza kursor)
-    logo = Image.open(STATIC / "brand" / "promtchi-horizontal-1024.png").convert("RGBA")
-    logo = logo.resize((360, round(360 * logo.height / logo.width)), Image.LANCZOS)
-    img.paste(logo, (72, 72), logo)
+    # pastki acid chiziq — saytdagi urg'u rangi
+    d.rectangle([0, 606, 1200, 630], fill=ACID)
 
-    # asosiy satr — uch tilda ham o'qiladigan, faqat birinchi harf katta (07 Tipografiya)
-    d.text((80, 248), "Web, mobil va CRM/ERP", font=outfit(76, 500), fill=WHITE)
-    d.text((80, 340), "AI bilan bitta tizimda", font=outfit(76, 500), fill=TEAL)
+    # logo (mavjud brend fayli)
+    logo = Image.open(STATIC / "logo.png").convert("RGBA").resize((96, 96), Image.LANCZOS)
+    img.paste(logo, (80, 74), logo)
 
-    d.text((80, 498), "promtchi.uz", font=outfit(32, 500), fill=WHITE)
-    d.text((80, 542), "Toshkent, O‘zbekiston", font=outfit(26), fill=MUTED)
+    d.text((196, 92), "promtchi", font=anton(64), fill=CREAM)
+    d.text((196 + d.textlength("promtchi", font=anton(64)) + 8, 92), "®", font=mono(22), fill=ACID)
 
-    # pastki kursor bloki — logotipdagi `_`
-    d.rectangle([1048, 540, 1128, 566], fill=TEAL)
+    # asosiy satr — uch tilda ham o'qiladigan, brend darajasidagi xabar
+    d.text((80, 250), "WEB · MOBILE", font=anton(92), fill=CREAM)
+    d.text((80, 352), "CRM/ERP · AI", font=anton(92), fill=ACID)
+
+    d.text((80, 500), "promtchi.uz", font=mono(30), fill=CREAM)
+    d.text((80, 540), "Tashkent, Uzbekistan", font=mono(24), fill=MUTED)
 
     out = STATIC / "og-cover.png"
     img.save(out, "PNG", optimize=True)

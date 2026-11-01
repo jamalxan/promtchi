@@ -13,7 +13,7 @@
   <div class="article-body">{{ p.body_html }}</div>
   {% if p.tags %}
   <div style="margin-top:1.5rem;display:flex;gap:.5rem;flex-wrap:wrap">
-    {% for tag in p.tags %}<span class="tag" style="font-size:.78rem;opacity:.7;border:1px solid currentColor;border-radius:4px;padding:8px 14px;display:inline-block">#{{ tag }}</span>{% endfor %}
+    {% for tag in p.tags %}<span class="tag" style="font-size:.78rem;opacity:.7;border:1px solid currentColor;border-radius:999px;padding:8px 14px;display:inline-block">#{{ tag }}</span>{% endfor %}
   </div>
   {% endif %}
   {% if related_service %}

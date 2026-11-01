@@ -6,12 +6,12 @@
 <title>promtchi® — Admin Panel</title>
 <meta name="robots" content="noindex,nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500&family=Manrope:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--blk:#0D1117;--cream:#F5F7F8;--blue:#097466;--acid:#14C8B4;--coral:#FF6A2B;
-  --w:#FFFFFF;--graphite:#1C2027;--teal:#14C8B4;--teal-dark:#097466;--teal-tint:#E7F8F6;--ink-muted:#4B5563;--line:rgba(13,17,23,.14);--green:#22c55e;--orange:#f59e0b;
-  --anton:'Outfit','Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;--grot:'Outfit','Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;--mono:ui-monospace,'SFMono-Regular',Consolas,monospace;
-  --sidebar:260px;--radius:8px}
+:root{--blk:#0B0B0E;--cream:#F3EFE6;--blue:#2B2BFF;--acid:#D9FF3F;--coral:#FF4B2E;
+  --w:#FCFBF7;--green:#22c55e;--orange:#f59e0b;
+  --anton:'Anton',sans-serif;--grot:'Space Grotesk',sans-serif;--mono:'JetBrains Mono',monospace;
+  --sidebar:260px;--radius:13px}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:var(--grot);background:var(--cream);color:var(--blk);min-height:100vh;display:flex}
 button,input,textarea,select{font-family:inherit;font-size:inherit}
@@ -20,20 +20,20 @@ a{color:inherit;text-decoration:none}
 
 /* ═══ LOGIN ═══ */
 .login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;width:100%;padding:1.5rem}
-.login-card{background:var(--w);border:1px solid var(--line);border-radius:var(--radius);padding:2.5rem;
-  width:100%;max-width:400px;box-shadow:none}
-.login-card h1{font-family:var(--anton);font-size:2.2rem;text-transform:none;margin-bottom:.3rem}
+.login-card{background:var(--w);border:3px solid var(--blk);border-radius:var(--radius);padding:2.5rem;
+  width:100%;max-width:400px;box-shadow:6px 6px 0 var(--blk)}
+.login-card h1{font-family:var(--anton);font-size:2.2rem;text-transform:uppercase;margin-bottom:.3rem}
 .login-card p{opacity:.6;margin-bottom:1.5rem;font-size:.92rem}
-.login-card input{width:100%;padding:.85rem 1rem;border:1px solid var(--line);border-radius:10px;
+.login-card input{width:100%;padding:.85rem 1rem;border:2.5px solid var(--blk);border-radius:10px;
   font-size:1rem;background:var(--cream);outline:none;transition:.2s}
-.login-card input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(11,127,115,.12)}
+.login-card input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(43,43,255,.12)}
 .login-card .btn{margin-top:1rem;width:100%}
-.login-card .err{color:var(--coral);font-size:.85rem;margin-top:.7rem;min-height:1.2em;font-weight:500}
+.login-card .err{color:var(--coral);font-size:.85rem;margin-top:.7rem;min-height:1.2em;font-weight:600}
 
 /* ═══ BTN ═══ */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
-  padding:.78rem 1.4rem;border-radius:8px;font-weight:500;font-size:.92rem;
-  border:1px solid var(--line);transition:.18s;min-height:44px}
+  padding:.78rem 1.4rem;border-radius:999px;font-weight:700;font-size:.92rem;
+  border:2.5px solid var(--blk);transition:.18s;min-height:44px}
 .btn-blk{background:var(--blk);color:var(--w)}
 .btn-blk:hover{background:var(--blue)}
 .btn-acid{background:var(--acid);color:var(--blk)}
@@ -48,28 +48,28 @@ a{color:inherit;text-decoration:none}
 .app{display:flex;width:100%;min-height:100vh}
 .sidebar{width:var(--sidebar);background:var(--blk);color:var(--w);display:flex;flex-direction:column;
   position:fixed;top:0;left:0;height:100vh;z-index:100;transition:transform .3s}
-.sidebar .logo{padding:1.5rem;font-family:var(--anton);font-size:1.5rem;text-transform:none;
+.sidebar .logo{padding:1.5rem;font-family:var(--anton);font-size:1.5rem;text-transform:uppercase;
   border-bottom:1px solid rgba(255,255,255,.1);letter-spacing:.05em}
 .sidebar .logo span{color:var(--acid)}
 .sidebar nav{flex:1;padding:1rem 0;overflow-y:auto}
 .sidebar nav a{display:flex;align-items:center;gap:.75rem;padding:.85rem 1.5rem;
-  font-weight:500;font-size:.9rem;color:rgba(255,255,255,.65);transition:.15s;border-left:3px solid transparent}
+  font-weight:600;font-size:.9rem;color:rgba(255,255,255,.65);transition:.15s;border-left:3px solid transparent}
 .sidebar nav a:hover{color:var(--w);background:rgba(255,255,255,.05)}
-.sidebar nav a.active{color:var(--acid);border-left-color:var(--acid);background:rgba(20,200,180,.06)}
+.sidebar nav a.active{color:var(--acid);border-left-color:var(--acid);background:rgba(217,255,63,.06)}
 .sidebar nav a svg{width:20px;height:20px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
 .nav-label{padding:1.1rem 1.5rem .35rem;font-family:var(--mono);font-size:.6rem;letter-spacing:.22em;
-  text-transform:none;color:rgba(255,255,255,.3)}
+  text-transform:uppercase;color:rgba(255,255,255,.3)}
 .nav-badge{margin-left:auto;background:var(--coral);color:var(--w);font-family:var(--mono);
-  font-size:.68rem;font-weight:500;padding:.1rem .5rem;border-radius:8px}
+  font-size:.68rem;font-weight:700;padding:.1rem .5rem;border-radius:999px}
 .sidebar .logout{padding:1.2rem 1.5rem;border-top:1px solid rgba(255,255,255,.1)}
-.sidebar .logout button{color:rgba(255,255,255,.6);font-weight:500;font-size:.85rem;
+.sidebar .logout button{color:rgba(255,255,255,.6);font-weight:600;font-size:.85rem;
   display:flex;align-items:center;gap:.5rem;transition:.15s}
 .sidebar .logout button:hover{color:var(--coral)}
 .sidebar .logout button svg{width:18px;height:18px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
 
 .main{flex:1;min-width:0;margin-left:var(--sidebar);padding:2rem;min-height:100vh}
 .main-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;gap:1rem;flex-wrap:wrap}
-.main-header h2{font-family:var(--anton);font-size:1.8rem;text-transform:none}
+.main-header h2{font-family:var(--anton);font-size:1.8rem;text-transform:uppercase}
 .main-header .actions{display:flex;gap:.6rem;flex-wrap:wrap}
 
 /* ═══ MOBILE MENU ═══ */
@@ -80,37 +80,37 @@ a{color:inherit;text-decoration:none}
 
 /* ═══ STATS ═══ */
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:2rem}
-.stat-card{background:var(--w);border:1px solid var(--line);border-radius:var(--radius);padding:1.3rem;
-  box-shadow:none;transition:.2s}
-.stat-card:hover{transform:translateY(-2px);box-shadow:none}
-.stat-card .label{font-family:var(--mono);font-size:.7rem;text-transform:none;letter-spacing:.15em;
-  color:rgba(13,17,23,.5);margin-bottom:.4rem}
+.stat-card{background:var(--w);border:2.5px solid var(--blk);border-radius:var(--radius);padding:1.3rem;
+  box-shadow:4px 4px 0 var(--blk);transition:.2s}
+.stat-card:hover{transform:translateY(-2px);box-shadow:6px 6px 0 var(--blk)}
+.stat-card .label{font-family:var(--mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.15em;
+  color:rgba(11,11,14,.5);margin-bottom:.4rem}
 .stat-card .value{font-family:var(--anton);font-size:2.2rem;line-height:1}
-.stat-card .sub{font-size:.78rem;color:rgba(13,17,23,.5);margin-top:.3rem}
+.stat-card .sub{font-size:.78rem;color:rgba(11,11,14,.5);margin-top:.3rem}
 .stat-card.accent{background:var(--acid)}
 .stat-card.dark{background:var(--blk);color:var(--w)}
 .stat-card.dark .label{color:rgba(255,255,255,.5)}
 .stat-card.dark .sub{color:rgba(255,255,255,.5)}
 
 /* ═══ TABLE ═══ */
-.table-wrap{background:var(--w);border:1px solid var(--line);border-radius:var(--radius);
-  overflow:hidden;box-shadow:none}
+.table-wrap{background:var(--w);border:2.5px solid var(--blk);border-radius:var(--radius);
+  overflow:hidden;box-shadow:4px 4px 0 var(--blk)}
 .table-bar{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 1.2rem;
-  border-bottom:1px solid var(--line);flex-wrap:wrap}
+  border-bottom:2px solid var(--blk);flex-wrap:wrap}
 .table-bar .left{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap}
 .table-bar .count{font-family:var(--mono);font-size:.78rem;opacity:.6}
-.search-box{display:flex;align-items:center;gap:.5rem;background:var(--cream);border:1px solid var(--line);
-  border-radius:8px;padding:.45rem .9rem}
+.search-box{display:flex;align-items:center;gap:.5rem;background:var(--cream);border:2px solid var(--blk);
+  border-radius:999px;padding:.45rem .9rem}
 .search-box input{border:none;background:none;outline:none;font-size:.88rem;width:160px}
 .search-box svg{width:16px;height:16px;stroke:var(--blk);stroke-width:2;fill:none;opacity:.5}
 table{width:100%;border-collapse:collapse}
 thead{background:var(--cream)}
-th{font-family:var(--mono);font-size:.7rem;text-transform:none;letter-spacing:.12em;
-  text-align:left;padding:.8rem 1.2rem;font-weight:500;white-space:nowrap}
-td{padding:.85rem 1.2rem;border-top:1.5px solid rgba(13,17,23,.08);font-size:.88rem;vertical-align:top}
-tr:hover td{background:rgba(20,200,180,.08)}
-.badge{display:inline-block;padding:.2rem .6rem;border-radius:8px;font-size:.72rem;font-weight:500;
-  font-family:var(--mono);text-transform:none;letter-spacing:.08em}
+th{font-family:var(--mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;
+  text-align:left;padding:.8rem 1.2rem;font-weight:700;white-space:nowrap}
+td{padding:.85rem 1.2rem;border-top:1.5px solid rgba(11,11,14,.08);font-size:.88rem;vertical-align:top}
+tr:hover td{background:rgba(217,255,63,.08)}
+.badge{display:inline-block;padding:.2rem .6rem;border-radius:999px;font-size:.72rem;font-weight:700;
+  font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em}
 .badge-web{background:#e0e7ff;color:#3730a3}
 .badge-auto{background:#dcfce7;color:#166534}
 .badge-ai{background:#fef3c7;color:#92400e}
@@ -120,8 +120,8 @@ tr:hover td{background:rgba(20,200,180,.08)}
 .tg-dot{font-size:.95rem;line-height:1}
 /* status filter tugmalari */
 .seg{display:flex;gap:.4rem;flex-wrap:wrap}
-.seg button{padding:.45rem .95rem;border-radius:8px;border:1px solid var(--line);background:var(--w);
-  font-size:.8rem;font-weight:500;transition:.15s}
+.seg button{padding:.45rem .95rem;border-radius:999px;border:2px solid var(--blk);background:var(--w);
+  font-size:.8rem;font-weight:700;transition:.15s}
 .seg button.on{background:var(--blk);color:var(--acid)}
 .td-actions{white-space:nowrap}
 .td-actions button{width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;
@@ -133,17 +133,17 @@ tr:hover td{background:rgba(20,200,180,.08)}
 
 /* ═══ CONTENT EDITOR ═══ */
 .editor-tabs{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1.5rem}
-.editor-tabs button{padding:.6rem 1.1rem;border-radius:8px;border:1px solid var(--line);
-  background:var(--w);color:var(--blk);font-size:.86rem;font-weight:500;min-height:44px;transition:.15s}
+.editor-tabs button{padding:.6rem 1.1rem;border-radius:999px;border:2.5px solid var(--blk);
+  background:var(--w);color:var(--blk);font-size:.86rem;font-weight:700;min-height:44px;transition:.15s}
 .editor-tabs button.on{background:var(--blk);color:var(--acid)}
 .editor-tabs button:hover:not(.on){background:var(--cream)}
 
 .card-list{display:flex;flex-direction:column;gap:.8rem}
-.edit-card{background:var(--w);border:1px solid var(--line);border-radius:var(--radius);padding:1.2rem;
-  box-shadow:none;transition:.2s}
-.edit-card:hover{box-shadow:none}
+.edit-card{background:var(--w);border:2.5px solid var(--blk);border-radius:var(--radius);padding:1.2rem;
+  box-shadow:3px 3px 0 var(--blk);transition:.2s}
+.edit-card:hover{box-shadow:5px 5px 0 var(--blk)}
 .edit-card .card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem;gap:.5rem}
-.edit-card .card-hd .num{font-family:var(--mono);font-size:.75rem;font-weight:500;
+.edit-card .card-hd .num{font-family:var(--mono);font-size:.75rem;font-weight:700;
   background:var(--blk);color:var(--acid);padding:.2rem .5rem;border-radius:6px}
 .edit-card .card-hd .del-btn{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;
   justify-content:center;border:2px solid var(--coral);color:var(--coral);transition:.15s}
@@ -151,16 +151,16 @@ tr:hover td{background:rgba(20,200,180,.08)}
 .edit-card .card-hd .del-btn svg{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none}
 
 .field{margin-top:.7rem}
-.field label{display:block;font-family:var(--mono);font-size:.7rem;text-transform:none;
-  letter-spacing:.12em;margin-bottom:.3rem;font-weight:500;color:rgba(13,17,23,.6)}
-.field input,.field textarea,.field select{width:100%;padding:.7rem .9rem;border:2px solid rgba(13,17,23,.15);
+.field label{display:block;font-family:var(--mono);font-size:.7rem;text-transform:uppercase;
+  letter-spacing:.12em;margin-bottom:.3rem;font-weight:700;color:rgba(11,11,14,.6)}
+.field input,.field textarea,.field select{width:100%;padding:.7rem .9rem;border:2px solid rgba(11,11,14,.15);
   border-radius:10px;font-size:.9rem;background:var(--cream);outline:none;transition:.2s;resize:vertical}
-.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(11,127,115,.1)}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(43,43,255,.1)}
 .field textarea{min-height:80px}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
 .field-check{display:flex;align-items:center;gap:.6rem;margin-top:.7rem}
 .field-check input[type=checkbox]{width:20px;height:20px;accent-color:var(--blue)}
-.field-check span{font-size:.88rem;font-weight:500}
+.field-check span{font-size:.88rem;font-weight:600}
 
 .pw-wrap{position:relative}
 .pw-wrap input{padding-right:2.6rem !important}
@@ -170,21 +170,21 @@ tr:hover td{background:rgba(20,200,180,.08)}
 .pw-wrap .pw-eye svg{width:18px;height:18px;stroke:currentColor;stroke-width:2;fill:none}
 
 .add-btn{display:flex;align-items:center;justify-content:center;gap:.5rem;width:100%;padding:1rem;
-  border:2.5px dashed rgba(13,17,23,.25);border-radius:var(--radius);font-weight:500;
-  color:rgba(13,17,23,.5);transition:.2s;margin-top:.8rem}
-.add-btn:hover{border-color:var(--blue);color:var(--blue);background:rgba(11,127,115,.03)}
+  border:2.5px dashed rgba(11,11,14,.25);border-radius:var(--radius);font-weight:700;
+  color:rgba(11,11,14,.5);transition:.2s;margin-top:.8rem}
+.add-btn:hover{border-color:var(--blue);color:var(--blue);background:rgba(43,43,255,.03)}
 .add-btn svg{width:20px;height:20px;stroke:currentColor;stroke-width:2.5;fill:none}
 
 /* ═══ MEDIA YUKLASH ═══ */
 .media-field{display:flex;gap:.7rem;align-items:flex-start;margin-top:.7rem}
-.media-prev{width:88px;height:88px;flex:none;border-radius:10px;border:2px solid rgba(13,17,23,.15);
+.media-prev{width:88px;height:88px;flex:none;border-radius:10px;border:2px solid rgba(11,11,14,.15);
   background:var(--cream) center/cover no-repeat;display:grid;place-items:center;overflow:hidden;
-  font-size:.62rem;text-align:center;color:rgba(13,17,23,.4);font-family:var(--mono);padding:.3rem}
+  font-size:.62rem;text-align:center;color:rgba(11,11,14,.4);font-family:var(--mono);padding:.3rem}
 .media-prev video{width:100%;height:100%;object-fit:cover}
 .media-ctl{flex:1;min-width:0}
 .media-ctl .row{display:flex;gap:.4rem;margin-top:.4rem;flex-wrap:wrap}
 .up-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.5rem .9rem;border-radius:8px;
-  border:1px solid var(--line);background:var(--w);font-size:.8rem;font-weight:500;transition:.15s}
+  border:2px solid var(--blk);background:var(--w);font-size:.8rem;font-weight:700;transition:.15s}
 .up-btn:hover{background:var(--blk);color:var(--acid)}
 .up-btn.busy{opacity:.55;pointer-events:none}
 .up-clear{border-color:var(--coral);color:var(--coral)}
@@ -193,7 +193,7 @@ tr:hover td{background:rgba(20,200,180,.08)}
 
 /* ═══ ALOQA / SOCIAL ═══ */
 .icon-pick{display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.4rem}
-.icon-pick button{width:38px;height:38px;border-radius:9px;border:2px solid rgba(13,17,23,.15);
+.icon-pick button{width:38px;height:38px;border-radius:9px;border:2px solid rgba(11,11,14,.15);
   background:var(--w);display:grid;place-items:center;transition:.15s}
 .icon-pick button svg{width:18px;height:18px;fill:currentColor}
 .icon-pick button.on{border-color:var(--blue);background:var(--blue);color:var(--w)}
@@ -201,7 +201,7 @@ tr:hover td{background:rgba(20,200,180,.08)}
 
 /* ═══ TOAST ═══ */
 .toast{position:fixed;bottom:24px;right:24px;background:var(--blk);color:var(--w);
-  padding:.85rem 1.4rem;border-radius:10px;font-weight:500;font-size:.88rem;z-index:9999;
+  padding:.85rem 1.4rem;border-radius:10px;font-weight:600;font-size:.88rem;z-index:9999;
   transform:translateY(100px);opacity:0;transition:.3s;pointer-events:none;
   display:flex;align-items:center;gap:.5rem}
 .toast.show{transform:translateY(0);opacity:1}
@@ -212,38 +212,38 @@ tr:hover td{background:rgba(20,200,180,.08)}
 .confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;
   display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;pointer-events:none;transition:.2s}
 .confirm-overlay.show{opacity:1;pointer-events:all}
-.confirm-box{background:var(--w);border:1px solid var(--line);border-radius:var(--radius);
-  padding:1.8rem;max-width:400px;width:100%;box-shadow:none;text-align:center}
-.confirm-box h4{font-family:var(--anton);font-size:1.3rem;text-transform:none;margin-bottom:.5rem}
+.confirm-box{background:var(--w);border:3px solid var(--blk);border-radius:var(--radius);
+  padding:1.8rem;max-width:400px;width:100%;box-shadow:6px 6px 0 var(--blk);text-align:center}
+.confirm-box h4{font-family:var(--anton);font-size:1.3rem;text-transform:uppercase;margin-bottom:.5rem}
 .confirm-box p{font-size:.9rem;opacity:.7;margin-bottom:1.2rem}
 .confirm-box .btns{display:flex;gap:.6rem;justify-content:center}
 
 /* ═══ CRM KANBAN ═══ */
 .kanban-toolbar{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem}
-.kanban-toolbar select{padding:.5rem .8rem;border:1px solid var(--line);border-radius:8px;background:var(--w);font-size:.82rem;font-weight:500}
+.kanban-toolbar select{padding:.5rem .8rem;border:2px solid var(--blk);border-radius:999px;background:var(--w);font-size:.82rem;font-weight:700}
 .kanban-board{display:flex;gap:1rem;overflow-x:auto;padding-bottom:1rem;align-items:flex-start}
-.kanban-col{flex:0 0 280px;width:280px;background:var(--w);border:1px solid var(--line);border-radius:var(--radius);
+.kanban-col{flex:0 0 280px;width:280px;background:var(--w);border:2.5px solid var(--blk);border-radius:var(--radius);
   display:flex;flex-direction:column;max-height:calc(100vh - 220px)}
 .kanban-col-hd{padding:.85rem 1rem;border-bottom:3px solid var(--col,var(--blk));display:flex;align-items:center;gap:.5rem;flex-shrink:0}
-.kanban-col-hd .title{font-weight:500;font-size:.86rem;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.kanban-col-hd .cnt{font-family:var(--mono);font-size:.72rem;background:var(--cream);padding:.1rem .5rem;border-radius:8px;font-weight:500}
+.kanban-col-hd .title{font-weight:700;font-size:.86rem;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kanban-col-hd .cnt{font-family:var(--mono);font-size:.72rem;background:var(--cream);padding:.1rem .5rem;border-radius:999px;font-weight:700}
 .kanban-col-body{flex:1;overflow-y:auto;padding:.6rem;display:flex;flex-direction:column;gap:.6rem;min-height:60px}
-.kanban-col-body.drag-over{background:rgba(11,127,115,.08);outline:2px dashed var(--blue);outline-offset:-4px}
-.kanban-card{background:var(--cream);border:2px solid rgba(13,17,23,.15);border-radius:10px;padding:.75rem .85rem;
+.kanban-col-body.drag-over{background:rgba(43,43,255,.08);outline:2px dashed var(--blue);outline-offset:-4px}
+.kanban-card{background:var(--cream);border:2px solid rgba(11,11,14,.15);border-radius:10px;padding:.75rem .85rem;
   cursor:grab;transition:.15s;font-size:.85rem}
-.kanban-card:hover{border-color:var(--blk);box-shadow:none}
+.kanban-card:hover{border-color:var(--blk);box-shadow:2px 2px 0 var(--blk)}
 .kanban-card:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 .kanban-card.dragging{opacity:.4}
 .kanban-card .kc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:.4rem;margin-bottom:.3rem}
 .kanban-card .kc-id{font-family:var(--mono);font-size:.68rem;opacity:.4}
-.kanban-card .kc-name{font-weight:500;font-size:.92rem;margin-bottom:.2rem;word-break:break-word}
+.kanban-card .kc-name{font-weight:700;font-size:.92rem;margin-bottom:.2rem;word-break:break-word}
 .kanban-card .kc-contact{font-size:.78rem;opacity:.65;margin-bottom:.4rem}
 .kanban-card .kc-meta{display:flex;flex-wrap:wrap;gap:.3rem;align-items:center;font-size:.7rem}
-.kanban-card .kc-age{font-family:var(--mono);padding:.1rem .4rem;border-radius:8px;background:rgba(13,17,23,.08)}
+.kanban-card .kc-age{font-family:var(--mono);padding:.1rem .4rem;border-radius:999px;background:rgba(11,11,14,.08)}
 .kanban-card .kc-age.warn{background:#fef3c7;color:#92400e}
 .kanban-card .kc-age.danger{background:#fee2e2;color:#991b1b}
 .kanban-card .kc-assignee{margin-left:auto;width:22px;height:22px;border-radius:50%;background:var(--blk);color:var(--w);
-  display:grid;place-items:center;font-size:.65rem;font-weight:500;flex-shrink:0}
+  display:grid;place-items:center;font-size:.65rem;font-weight:700;flex-shrink:0}
 .kanban-empty{opacity:.35;font-size:.78rem;text-align:center;padding:1.2rem 0}
 
 /* ═══ STATISTIKA VORONKA ═══ */
@@ -255,18 +255,18 @@ tr:hover td{background:rgba(20,200,180,.08)}
 .drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9500;opacity:0;pointer-events:none;transition:.2s}
 .drawer-overlay.show{opacity:1;pointer-events:all}
 .drawer{position:fixed;top:0;right:0;height:100vh;width:min(480px,100vw);background:var(--w);z-index:9600;
-  box-shadow:-1px 0 0 var(--line);transform:translateX(100%);transition:.25s;display:flex;flex-direction:column;border-left:1px solid var(--line)}
+  box-shadow:-8px 0 0 var(--blk);transform:translateX(100%);transition:.25s;display:flex;flex-direction:column;border-left:3px solid var(--blk)}
 .drawer.show{transform:translateX(0)}
-.drawer-hd{padding:1.3rem 1.4rem;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-shrink:0}
-.drawer-hd h3{font-family:var(--anton);font-size:1.3rem;text-transform:none}
+.drawer-hd{padding:1.3rem 1.4rem;border-bottom:2.5px solid var(--blk);display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-shrink:0}
+.drawer-hd h3{font-family:var(--anton);font-size:1.3rem;text-transform:uppercase}
 .drawer-body{flex:1;overflow-y:auto;padding:1.2rem 1.4rem}
-.drawer-close{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);flex-shrink:0}
+.drawer-close{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--blk);flex-shrink:0}
 .drawer-close:hover{background:var(--blk);color:var(--w)}
 .drawer-section{margin-bottom:1.4rem}
-.drawer-section h4{font-family:var(--mono);font-size:.7rem;text-transform:none;letter-spacing:.12em;opacity:.5;margin-bottom:.6rem}
+.drawer-section h4{font-family:var(--mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;opacity:.5;margin-bottom:.6rem}
 .dw-note{background:var(--cream);border-radius:8px;padding:.6rem .8rem;font-size:.85rem;margin-bottom:.5rem}
 .dw-note .meta{font-size:.7rem;opacity:.5;margin-top:.3rem}
-.dw-hist{display:flex;gap:.6rem;font-size:.8rem;padding:.4rem 0;border-bottom:1px solid rgba(13,17,23,.08)}
+.dw-hist{display:flex;gap:.6rem;font-size:.8rem;padding:.4rem 0;border-bottom:1px solid rgba(11,11,14,.08)}
 .dw-hist .dot{width:8px;height:8px;border-radius:50%;background:var(--blue);margin-top:.4rem;flex-shrink:0}
 @media(max-width:600px){.drawer{width:100vw}}
 
@@ -297,7 +297,7 @@ tr:hover td{background:rgba(20,200,180,.08)}
 <!-- ═══ LOGIN ═══ -->
 <div class="login-wrap" id="loginPage" style="display:none">
   <div class="login-card" id="loginCard">
-    <h1>promtchi<span style="color:var(--teal-dark)">®</span></h1>
+    <h1>promtchi<span style="color:var(--acid)">®</span></h1>
     <p>Admin panelga kirish uchun email va parolni kiriting.</p>
     <input type="email" id="loginEmail" placeholder="Email" autocomplete="username" style="margin-bottom:.7rem" autofocus>
     <input type="password" id="loginPass" placeholder="Parol" autocomplete="current-password">
@@ -890,7 +890,7 @@ function renderDashboard() {
 
   $('mainContent').innerHTML = `
     <div class="main-header"><h2>Dashboard</h2>
-      ${isPrimary() ? `<div class="actions" style="font-size:.85rem;font-weight:500">Telegram: ${tgState}</div>` : ''}
+      ${isPrimary() ? `<div class="actions" style="font-size:.85rem;font-weight:600">Telegram: ${tgState}</div>` : ''}
     </div>
     <div class="stats">
       <div class="stat-card accent">
@@ -1010,7 +1010,7 @@ function renderLeads() {
         <option value="">Barcha loyihalar</option>
         ${CRM_META.project_types.map(p => `<option value="${p.slug}" ${crmFilterProject === p.slug ? 'selected' : ''}>${esc(p.label)}</option>`).join('')}
       </select>
-      ${!isManager() ? `<label style="display:flex;align-items:center;gap:.4rem;font-size:.82rem;font-weight:500">
+      ${!isManager() ? `<label style="display:flex;align-items:center;gap:.4rem;font-size:.82rem;font-weight:600">
         <input type="checkbox" id="crmOnlyMine" ${crmOnlyMine ? 'checked' : ''}> Faqat menikilar
       </label>` : ''}
       <span class="count">${filtered.length} ta mijoz</span>
@@ -1330,7 +1330,7 @@ async function renderStats() {
       <div style="flex:1;background:var(--cream);border-radius:6px;height:22px;overflow:hidden;min-width:40px">
         <div style="width:${pct}%;height:100%;background:${s.color}"></div>
       </div>
-      <span style="width:34px;text-align:right;font-family:var(--mono);font-weight:500;flex-shrink:0">${n}</span>
+      <span style="width:34px;text-align:right;font-family:var(--mono);font-weight:700;flex-shrink:0">${n}</span>
     </div>`;
   }).join('');
 
@@ -1351,12 +1351,12 @@ async function renderStats() {
     </div>
 
     <div class="edit-card" style="margin-bottom:1rem">
-      <div class="card-hd"><span class="num">Voronka</span></div>
+      <div class="card-hd"><span class="num">VORONKA</span></div>
       ${funnelRows}
     </div>
 
     ${managerRows ? `<div class="edit-card" style="margin-bottom:1rem">
-      <div class="card-hd"><span class="num">Menejerlar kesimida</span></div>
+      <div class="card-hd"><span class="num">MENEJERLAR KESIMIDA</span></div>
       <div style="overflow-x:auto"><table style="min-width:480px"><thead><tr><th>Menejer</th><th>Jami</th><th>Muvaffaqiyatli</th><th>Sifatsiz</th><th>Konversiya</th></tr></thead>
       <tbody>${managerRows}</tbody></table></div>
     </div>` : ''}
@@ -1462,7 +1462,7 @@ function renderContentCards() {
         ${makeField('Xususiyatlar (har qatorda 1 ta)', 'features', i, (item.features || []).join('\n'), true)}
         <div class="field-check">
           <input type="checkbox" id="pop_${i}" ${item.popular ? 'checked' : ''}>
-          <span>Ommabop</span>
+          <span>OMMABOP</span>
         </div>`;
     } else if (contentTab === 'team') {
       fields = `
@@ -1776,7 +1776,7 @@ function renderReviews() {
         </div>
       </div>
       <div style="font-size:.95rem;line-height:1.55;white-space:pre-wrap;background:var(--cream);
-                  border:2px solid rgba(13,17,23,.12);border-radius:10px;padding:.9rem 1rem">${esc(r.text)}</div>
+                  border:2px solid rgba(11,11,14,.12);border-radius:10px;padding:.9rem 1rem">${esc(r.text)}</div>
       <div style="margin-top:.7rem;font-size:.88rem">
         <b>${esc(r.name)}</b>${r.role ? ` · <span style="opacity:.65">${esc(r.role)}</span>` : ''}${r.company ? ` · <span style="opacity:.65">${esc(r.company)}</span>` : ''}
         <span style="opacity:.4;font-family:var(--mono);font-size:.75rem;margin-left:.5rem">kod: ${esc(r.code || '—')}</span>
@@ -1796,7 +1796,7 @@ function renderReviews() {
       Siz faqat tasdiqlaysiz yoki o'chirasiz. Yozish uchun mijozga bir martalik kod bering.</p>
 
     <div class="edit-card" style="margin-bottom:1.4rem">
-      <div class="card-hd"><span class="num">Mijoz kodlari</span>
+      <div class="card-hd"><span class="num">MIJOZ KODLARI</span>
         <span style="font-size:.82rem;opacity:.6">${unused.length} ta ishlatilmagan</span></div>
       ${RCODES.length ? `<div style="overflow-x:auto"><table style="margin-top:.4rem;min-width:380px">
         <thead><tr><th>Kod</th><th>Mijoz</th><th>Holat</th><th></th></tr></thead>
@@ -1817,10 +1817,10 @@ function renderReviews() {
         : '<p style="opacity:.5;font-size:.88rem;padding:.6rem 0">Hali kod yaratilmagan. Mijozga fikr yozdirish uchun kod yarating.</p>'}
     </div>
 
-    ${pending.length ? `<h3 style="font-family:var(--anton);text-transform:none;font-size:1.15rem;margin:.4rem 0 .8rem">
+    ${pending.length ? `<h3 style="font-family:var(--anton);text-transform:uppercase;font-size:1.15rem;margin:.4rem 0 .8rem">
       Tasdiq kutmoqda (${pending.length})</h3><div class="card-list">${pending.map(revCard).join('')}</div>` : ''}
 
-    <h3 style="font-family:var(--anton);text-transform:none;font-size:1.15rem;margin:1.6rem 0 .8rem">
+    <h3 style="font-family:var(--anton);text-transform:uppercase;font-size:1.15rem;margin:1.6rem 0 .8rem">
       Saytda ko'rinayotgan (${approved.length})</h3>
     <div class="card-list">${approved.length ? approved.map(revCard).join('')
       : '<div class="empty-state"><p>Hali tasdiqlangan fikr yo\'q</p></div>'}</div>
@@ -2607,7 +2607,7 @@ function renderTelegram() {
 
     <div class="edit-card" style="max-width:620px">
       <div class="card-hd"><span class="num">BOT</span>
-        <span style="font-weight:500;font-size:.9rem;color:${st.active ? 'var(--green)' : 'var(--coral)'}">
+        <span style="font-weight:700;font-size:.9rem;color:${st.active ? 'var(--green)' : 'var(--coral)'}">
           ${st.active ? `● Ishlayapti — ${st.targets} ta chatga yuboriladi` : (st.has_token ? '● Chat ulanmagan' : '● Token yo\'q')}</span>
       </div>
       ${st.has_token && !st.active ? `
@@ -2684,7 +2684,7 @@ function renderTelegram() {
     </div>
 
     <div class="edit-card" style="max-width:620px;margin-top:1rem">
-      <div class="card-hd"><span class="num">Bot nima qila oladi</span></div>
+      <div class="card-hd"><span class="num">BOT NIMA QILA OLADI</span></div>
       <ul style="font-size:.88rem;opacity:.8;padding-left:1.1rem;display:grid;gap:.45rem">
         <li>Har bir yangi ariza guruhga va ulangan barcha chatlarga tushadi</li>
         <li>Xabardagi <b>"✅ Javob berildi"</b> tugmasi bilan arizani to'g'ridan-to'g'ri
@@ -2814,7 +2814,7 @@ async function renderCrmTelegram() {
 
     <div class="edit-card" style="max-width:620px">
       <div class="card-hd"><span class="num">BOT</span>
-        <span style="font-weight:500;font-size:.9rem;color:${st.has_token ? 'var(--green)' : 'var(--coral)'}">
+        <span style="font-weight:700;font-size:.9rem;color:${st.has_token ? 'var(--green)' : 'var(--coral)'}">
           ${st.has_token ? `● ${st.bot_username ? '@' + esc(st.bot_username) : 'ulangan'}` : "● Token yo'q"}</span>
       </div>
       <div class="field">
@@ -2825,7 +2825,7 @@ async function renderCrmTelegram() {
     </div>
 
     <div class="edit-card" style="max-width:620px;margin-top:1rem">
-      <div class="card-hd"><span class="num">Mijozlar guruhi</span></div>
+      <div class="card-hd"><span class="num">MIJOZLAR GURUHI</span></div>
       <p style="font-size:.85rem;opacity:.65;margin-bottom:.3rem">Har bir yangi mijoz shu guruhga (yoki kanalga) yuboriladi va bosqich o'zgarganda shu xabar tahrirlanadi.</p>
       <div class="field"><label>Guruh/kanal chat ID</label>
         <input id="crmTgChat" type="text" value="${esc(st.leads_chat_id || '')}" placeholder="-1001234567890" autocomplete="off"></div>
@@ -2841,7 +2841,7 @@ async function renderCrmTelegram() {
     </div>
 
     <div class="edit-card" style="max-width:620px;margin-top:1rem">
-      <div class="card-hd"><span class="num">Rejim</span></div>
+      <div class="card-hd"><span class="num">REJIM</span></div>
       <div class="field-check"><input type="checkbox" id="crmTgEnabled" ${st.is_enabled ? 'checked' : ''}><span>Telegram integratsiyasi yoqilgan</span></div>
       <div class="field-check"><input type="checkbox" id="crmTgSendCreate" ${st.send_on_create !== false ? 'checked' : ''}><span>Yangi mijoz kelganda xabar yuborilsin</span></div>
       <div class="field-check"><input type="checkbox" id="crmTgEditUpdate" ${st.edit_on_update !== false ? 'checked' : ''}><span>O'zgarishda xabar tahrirlansin</span></div>
@@ -2850,7 +2850,7 @@ async function renderCrmTelegram() {
     </div>
 
     <div class="edit-card" style="max-width:620px;margin-top:1rem">
-      <div class="card-hd"><span class="num">Holat</span></div>
+      <div class="card-hd"><span class="num">HOLAT</span></div>
       <div class="field"><label>Oxirgi tekshiruv</label>
         <div style="padding:.5rem 0">${st.last_health_check ? formatDate(st.last_health_check) : '—'} ·
           <span style="color:${st.last_health_status === 'ok' ? 'var(--green)' : 'var(--coral)'}">${esc(st.last_health_status || '—')}</span></div></div>
@@ -2901,7 +2901,7 @@ function renderSettings() {
     <div class="edit-card" style="max-width:500px;margin-top:1rem">
       <div class="card-hd"><span class="num">ADMIN HISOBLARI (${accCount}/${maxAcc})</span></div>
       <div id="accountsList">${ACCOUNT ? ACCOUNT.accounts.map(accountRowHtml).join('') : ''}</div>
-      <div class="field" style="margin-top:1.1rem;padding-top:1rem;border-top:1px solid rgba(13,17,23,.08)">
+      <div class="field" style="margin-top:1.1rem;padding-top:1rem;border-top:1px solid rgba(11,11,14,.08)">
         <label>Yangi hisob qo'shish</label>
         <input id="newEmailInput" type="email" placeholder="Email" autocomplete="off" ${full ? 'disabled' : ''}>
         <div style="margin-top:.5rem">${pwFieldHtml('newPassInput', "Parol (kamida 8 belgi)")}</div>
@@ -2916,13 +2916,13 @@ function renderSettings() {
             "Tasdiqlash havolasi <b>super admin</b>ning emailiga yuboriladi — faqat u tasdiqlasa hisob DARHOL shu email+parol bilan kirish imkoniga ega bo'ladi (Sotuv hisobi kirganda to'g'ridan-to'g'ri o'z Kanban'iga tushadi). Login ma'lumotlari Telegram admin(lar)ga yuboriladi."}
         </p>
       </div>
-      <div id="addAccountMsg" style="font-size:.85rem;margin-top:.3rem;font-weight:500"></div>
+      <div id="addAccountMsg" style="font-size:.85rem;margin-top:.3rem;font-weight:600"></div>
     </div>`;
 
   const telegramCard = !superAdmin ? '' : `
     <div class="edit-card" style="max-width:500px;margin-top:1rem">
-      <div class="card-hd"><span class="num">Telegram</span></div>
-      <div style="padding:.3rem 0;font-weight:500;color:${TG && TG.active ? 'var(--green)' : 'var(--coral)'}">
+      <div class="card-hd"><span class="num">TELEGRAM</span></div>
+      <div style="padding:.3rem 0;font-weight:600;color:${TG && TG.active ? 'var(--green)' : 'var(--coral)'}">
         ${TG && TG.active ? '● Ulangan' : '● Sozlanmagan'}
         <button class="btn btn-outline btn-sm" style="margin-left:.8rem" onclick="navigate('telegram')">Boshqarish →</button>
       </div>
@@ -2932,17 +2932,17 @@ function renderSettings() {
     <div class="main-header"><h2>Sozlamalar</h2></div>
 
     <div class="edit-card" style="max-width:500px">
-      <div class="card-hd"><span class="num">Mening hisobim</span></div>
+      <div class="card-hd"><span class="num">MENING HISOBIM</span></div>
       <div class="field">
         <label>Email</label>
-        <div style="padding:.7rem 0;font-weight:500">${esc(ACCOUNT ? ACCOUNT.email : '')}</div>
+        <div style="padding:.7rem 0;font-weight:600">${esc(ACCOUNT ? ACCOUNT.email : '')}</div>
       </div>
       <div class="field">
         <label>Parol</label>
         <button class="btn btn-outline btn-sm" onclick="requestPasswordReset()">Parolni o'zgartirish havolasini yuborish</button>
         <p style="font-size:.8rem;opacity:.6;margin-top:.5rem">Havola sizning o'z emailingizga yuboriladi.</p>
       </div>
-      <div id="accountMsg" style="font-size:.85rem;margin-top:.3rem;font-weight:500"></div>
+      <div id="accountMsg" style="font-size:.85rem;margin-top:.3rem;font-weight:600"></div>
     </div>
 
     ${adminAccountsCard}
@@ -2954,7 +2954,7 @@ function renderSettings() {
         <label>Tizim holati</label>
         <div style="padding:.7rem 0;display:flex;align-items:center;gap:.5rem">
           <span style="width:10px;height:10px;background:var(--green);border-radius:50%;display:inline-block"></span>
-          <span style="font-weight:500">Ishlayapti</span>
+          <span style="font-weight:600">Ishlayapti</span>
         </div>
       </div>
       <div class="field">
@@ -2963,7 +2963,7 @@ function renderSettings() {
       </div>
       <div class="field">
         <label>Arizalar soni</label>
-        <div style="padding:.7rem 0;font-weight:500">${LEADS.length} ta</div>
+        <div style="padding:.7rem 0;font-weight:600">${LEADS.length} ta</div>
       </div>
       <div class="field">
         <label>Kontent bo'limlari</label>
@@ -2979,7 +2979,7 @@ function renderSettings() {
     </div>
 
     <div class="edit-card" style="max-width:500px;margin-top:1rem">
-      <div class="card-hd"><span class="num">Xavfli zona</span></div>
+      <div class="card-hd"><span class="num">XAVFLI ZONA</span></div>
       <p style="font-size:.88rem;opacity:.7;margin-bottom:1rem">Kontentni boshlang'ich holatga qaytarish barcha tahrirlarni o'chiradi.</p>
       <button class="btn btn-coral btn-sm" onclick="resetContent()">↺ Kontentni reset qilish</button>
     </div>
@@ -3010,7 +3010,7 @@ async function requestPasswordReset() {
 function accountRowHtml(a) {
   const iAmPrimary = isPrimary();
   const badge = a.is_primary
-    ? '<span style="background:var(--acid);color:var(--blk);font-size:.65rem;font-weight:500;padding:.15rem .55rem;border-radius:8px;text-transform:none">Super Admin</span>'
+    ? '<span style="background:var(--acid);color:var(--blk);font-size:.65rem;font-weight:700;padding:.15rem .55rem;border-radius:999px;text-transform:uppercase">Super Admin</span>'
     : '';
   const pending = (!a.activated)
     ? '<span style="color:var(--orange);font-size:.72rem">faollashtirilmagan</span>'
@@ -3023,7 +3023,7 @@ function accountRowHtml(a) {
     ? `<button class="btn btn-outline btn-sm" onclick="requestSetPrimary('${emailArg}')">Super admin qilib tayinlash</button>`
     : '';
   const roleSelect = (!a.is_primary && a.activated && iAmPrimary)
-    ? `<select onchange="setAccountRole('${emailArg}', this.value)" style="padding:.35rem .6rem;border:1px solid var(--line);border-radius:8px;font-size:.8rem;font-weight:500">
+    ? `<select onchange="setAccountRole('${emailArg}', this.value)" style="padding:.35rem .6rem;border:2px solid var(--blk);border-radius:8px;font-size:.8rem;font-weight:700">
         <option value="manager" ${a.role === 'manager' ? 'selected' : ''}>Manager (sotuv)</option>
         <option value="admin" ${a.role === 'admin' ? 'selected' : ''}>Admin</option>
       </select>`
@@ -3031,8 +3031,8 @@ function accountRowHtml(a) {
   const removeBtn = a.is_primary
     ? ''
     : `<button class="btn btn-coral btn-sm" style="margin-left:auto" onclick="requestRemoveEmail('${emailArg}')">O'chirish</button>`;
-  return `<div style="display:flex;align-items:center;gap:.6rem;padding:.6rem 0;border-bottom:1px solid rgba(13,17,23,.08);flex-wrap:wrap">
-    <span style="font-weight:500;font-size:.92rem">${esc(a.email)}</span>${badge}${pending}${roleSelect}${resendBtn}${makePrimaryBtn}${removeBtn}
+  return `<div style="display:flex;align-items:center;gap:.6rem;padding:.6rem 0;border-bottom:1px solid rgba(11,11,14,.08);flex-wrap:wrap">
+    <span style="font-weight:600;font-size:.92rem">${esc(a.email)}</span>${badge}${pending}${roleSelect}${resendBtn}${makePrimaryBtn}${removeBtn}
   </div>`;
 }
 
