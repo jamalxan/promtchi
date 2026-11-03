@@ -34,8 +34,10 @@
 <link rel="alternate" hreflang="ru-RU" href="https://promtchi.uz/ru/">
 <link rel="alternate" hreflang="en" href="https://promtchi.uz/en/">
 <link rel="alternate" hreflang="x-default" href="https://promtchi.uz/uz/">
-<link rel="icon" href="/static/favicon.png" type="image/png">
-<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+<link rel="manifest" href="/static/site.webmanifest">
 <script type="application/ld+json" id="orgSchema">{"@context":"https://schema.org","@type":"Organization","@id":"https://promtchi.uz/#organization","name":"promtchi","url":"https://promtchi.uz/","logo":{"@type":"ImageObject","url":"https://promtchi.uz/static/logo.png"},"foundingDate":"2023","address":{"@type":"PostalAddress","addressLocality":"Tashkent","addressCountry":"UZ"},"contactPoint":[{"@type":"ContactPoint","contactType":"customer service","email":"hello@promtchi.uz","telephone":"+998931606706","url":"https://t.me/promtchiadmin","areaServed":"UZ","availableLanguage":["uz","ru","en"]}],"sameAs":["https://t.me/promtchiadmin","https://instagram.com/promtchiuz"]}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","@id":"https://promtchi.uz/en/#website","name":"promtchi","url":"https://promtchi.uz/en/","publisher":{"@id":"https://promtchi.uz/#organization"},"inLanguage":"en"}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -135,6 +137,8 @@ header{position:fixed;top:0;left:0;right:0;z-index:1000;padding:clamp(14px,2.4vw
 /* <picture> flex-element sifatida siqilib, 34px logo 16px'ga tushib qolardi */
 .brand picture{display:block;flex:none}
 .brand img{width:34px;height:34px;border-radius:9px;flex:none}
+/* brend paketi: >_ gorizontal logo, kursor SVG ichida yonib-o'chadi */
+.brand img.logo-h{width:auto;height:26px;border-radius:0}
 .brand b{font-family:var(--anton);font-size:1.3rem;letter-spacing:.03em;text-transform:uppercase}
 .brand sup{font-family:var(--mono);font-size:.6rem}
 .h-right{display:flex;align-items:center;gap:1.2rem}
@@ -848,7 +852,7 @@ body.menu-open,body.modal-open{overflow:hidden}
 
 <!-- NAV -->
 <header>
-  <a class="brand" href="#top"><picture><source srcset="/static/logo.webp" type="image/webp"><img src="/static/logo.png" alt="promtchi" width="34" height="34" decoding="async"></picture><b>promtchi</b><sup>®</sup></a>
+  <a class="brand" href="#top"><img class="logo-h" src="/static/brand/promtchi-horizontal-animated.svg" alt="promtchi" width="155" height="26" decoding="async"></a>
   <nav class="topnav" id="topNav" aria-label="Main navigation"></nav>
   <div class="h-right">
     <nav class="lang-mini header-lang" aria-label="Language">
