@@ -1967,22 +1967,6 @@ async def tg_super_confirm_page():
     raise HTTPException(404, "static/tg-super-confirm.html topilmadi")
 
 
-@app.api_route("/baza", methods=["GET", "HEAD"], include_in_schema=False)
-async def baza_page():
-    """«BAZA» lead-magnit: Instagram videosi ostida «BAZA» deb yozganlarga
-    yuboriladigan xabar shablonlari qo'llanmasi. pages.router'dagi /{lang}
-    404-fallback'dan OLDIN ro'yxatga olinishi kerak."""
-    f = STATIC_DIR / "baza.html"
-    if f.exists():
-        return FileResponse(f, headers={"Cache-Control": _PAGE_CACHE})
-    raise HTTPException(404, "static/baza.html topilmadi")
-
-
-@app.api_route("/baza/", methods=["GET", "HEAD"], include_in_schema=False)
-async def baza_page_slash():
-    return RedirectResponse(url="/baza", status_code=301)
-
-
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
